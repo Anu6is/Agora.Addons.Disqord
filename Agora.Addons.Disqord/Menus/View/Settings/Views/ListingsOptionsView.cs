@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (context.Settings.AllowedListings.Any(listing => listing == option.Label)) option.IsDefault = true;
         }
 
-        [Selection(MaximumSelectedOptions = 6, Row = 1)]
+        [Selection(MaximumSelectedOptions = 6, Row = 1, Placeholder = "Select listings to allow")]
         [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
         [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction end time expires.")]
         [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]
@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("Exchange", Value = "6", Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)
         {
-            _settings.AllowedListings.Clear();
+            _settings.AllowedListings.Clear();            
             foreach (var option in e.Selection.Options) option.IsDefault = false;
 
             if (e.SelectedOptions.Any(x => x.Value == "0"))
@@ -73,7 +73,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.AsEmbed());
+                TemplateMessage.WithEmbeds(settings.AsEmbed("Allowed Listings", new LocalEmoji("📖")));
             }
 
             foreach (var component in EnumerateComponents().OfType<SelectionViewComponent>())

@@ -12,48 +12,27 @@ namespace Agora.Addons.Disqord.Menus.View
     {
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
-        private readonly ButtonViewComponent ShillBiddingButton;
-        private readonly ButtonViewComponent AbsenteeBiddingButton;
 
         public BiddingAllowanceView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions) 
         {
             _context = context;
             _settings = context.Settings.DeepClone();
-            
-            ShillBiddingButton = new ButtonViewComponent(ShillBidding)
-            {
-                Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding",
-                Style = LocalButtonComponentStyle.Primary,
-                Position = 1,
-                Row = 1
-            };
 
-            AbsenteeBiddingButton = new ButtonViewComponent(AbsenteeBidding)
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
-                Label = $"{(_settings.AllowAbsenteeBidding ? "Disable" : "Enable")} Absentee Bidding",
-                Style = LocalButtonComponentStyle.Primary,
-                Position = 2,
-                Row = 1
-            };
+                if (button.Position == 1)
+                    button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
 
-            var saveButton = new ButtonViewComponent(SaveBidingOptions)
-            {
-                Label = "Save",
-                Style = LocalButtonComponentStyle.Success,
-                Emoji = new LocalEmoji("💾"),
-                Position = 3,
-                Row = 1
-            };
-
-            AddComponent(ShillBiddingButton);
-            AddComponent(AbsenteeBiddingButton);
-            AddComponent(saveButton);
+                if (button.Position == 2)
+                    button.Label = $"{(_settings.AllowAbsenteeBidding ? "Disable" : "Enable")} Absentee Bidding";
+            }
         }
 
-        private ValueTask ShillBidding(ButtonEventArgs e)
+        [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 1)]
+        public ValueTask ShillBidding(ButtonEventArgs e)
         {
             _settings.AllowShillBidding = !_settings.AllowShillBidding;
-            ShillBiddingButton.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+            e.Button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
 
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = true;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = false;
@@ -64,11 +43,12 @@ namespace Agora.Addons.Disqord.Menus.View
 
             return default; ;
         }
-        
-        private ValueTask AbsenteeBidding(ButtonEventArgs e)
+
+        [Button(Label = "Absentee Bidding", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 1)]
+        public ValueTask AbsenteeBidding(ButtonEventArgs e)
         {
             _settings.AllowAbsenteeBidding = !_settings.AllowAbsenteeBidding;
-            AbsenteeBiddingButton.Label = $"{(_settings.AllowAbsenteeBidding ? "Disable" : "Enable")} Absentee Bidding";
+            e.Button.Label = $"{(_settings.AllowAbsenteeBidding ? "Disable" : "Enable")} Absentee Bidding";
 
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = false;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = true;
@@ -80,6 +60,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 1, Emoji = "💾")]
         public async ValueTask SaveBidingOptions(ButtonEventArgs e)
         {
             if (_settings.AllowShillBidding == _context.Settings.AllowShillBidding

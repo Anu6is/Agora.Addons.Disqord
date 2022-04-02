@@ -12,41 +12,32 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal class ServerTimeView : GuildSettingsView
+    internal class ServerTimeView : BaseGuildSettingsView
     {
         private readonly Emporium _emporium;
         private readonly GuildSettingsContext _context;
-        private readonly DefaultDiscordGuildSettings _settings;
+        private readonly IDiscordGuildSettings _settings;
         
         public ServerTimeView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions) 
         {
             _context = context;
+            _settings = context.Settings.DeepClone();
             _emporium = Emporium.Create(new EmporiumId(context.GuildId)).WithLocalTime(Time.From(TimeFromOffset(context.Settings.Offset)));
-            _settings = DefaultDiscordGuildSettings.Create(context.Settings.GuildId, context.Settings.DefaultCurrency, context.Settings.ResultLogChannelId, 
-                                                           context.Settings.AuditLogChannelId, context.Settings.Offset);
-            _settings.AdminRole = context.Settings.AdminRole;
-            _settings.AllowAbsenteeBidding = context.Settings.AllowAbsenteeBidding;
-            _settings.AllowedListings = context.Settings.AllowedListings;
-            _settings.AllowShillBidding = context.Settings.AllowShillBidding;
-            _settings.BrokerRole = context.Settings.BrokerRole;
-            _settings.MerchantRole = context.Settings.MerchantRole;
-            _settings.SnipeRange = context.Settings.SnipeRange;
-            _settings.SnipeExtension = context.Settings.SnipeExtension;
         }
 
-        [Button(Label = "Decrease", Style = LocalButtonComponentStyle.Primary, Emoji = "⬇️")]
+        [Button(Label = "Decrease", Style = LocalButtonComponentStyle.Primary, Emoji = "⬇️", Row = 1)]
         public ValueTask DecreaseTime(ButtonEventArgs e)
         {
             return UpdateTemplateTime(TimeFromOffset(_settings.Offset, -1));
         }
 
-        [Button(Label = "Increase", Style = LocalButtonComponentStyle.Primary, Emoji = "⬆️")]
+        [Button(Label = "Increase", Style = LocalButtonComponentStyle.Primary, Emoji = "⬆️", Row = 1)]
         public ValueTask IncreaseTime(ButtonEventArgs e)
         {
             return UpdateTemplateTime(TimeFromOffset(_settings.Offset, 1));
         }
 
-        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾")]
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 1)]
         public async ValueTask SetUpdatedTime(ButtonEventArgs e)
         {
             if (_settings.Offset == _context.Settings.Offset) return;

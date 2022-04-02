@@ -18,8 +18,8 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Snipe Trigger", settings.SnipeRange)
                 .AddInlineField("Snipe Extension", settings.SnipeExtension)
                 .AddInlineBlankField()
-                .AddInlineField("Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : "Disabled")
-                .AddInlineField("Absentee Bidding", settings.AllowAbsenteeBidding ? Markdown.Bold("Enabled") : "Disabled")
+                .AddInlineField("Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddInlineField("Absentee Bidding", settings.AllowAbsenteeBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineBlankField()
                 .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Manager Role", settings.AdminRole == 0 ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
                 .AddInlineField("Merchant Role", settings.MerchantRole == 0 ? Mention.Everyone : Mention.Role(new Snowflake(settings.MerchantRole)))
-                .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings) : Markdown.Italics("None"));
+                .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("None"));
 
             if (highlightField != null)
                 embed.Fields.FirstOrDefault(x => x.Name == highlightField)?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");

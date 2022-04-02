@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Ophios\Repos\Emporia.Extensions.Discord\src\Emporia.Extensions.Discord.csproj" />
+    <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -5,14 +5,14 @@ using Disqord.Extensions.Interactivity.Menus;
 
 namespace Agora.Addons.Disqord.Menus
 {
-    public abstract class GuildSettingsView : ViewBase
+    public abstract class BaseGuildSettingsView : ViewBase
     {
         private readonly GuildSettingsContext _context;
         private readonly List<GuildSettingsOption> _settingsOptions;
         
         public SelectionViewComponent Selection { get; }
         
-        public GuildSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions)
+        public BaseGuildSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions)
             : base(new LocalMessage().AddEmbed(context.Settings.AsEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
         {
             _context = context;
@@ -39,12 +39,16 @@ namespace Agora.Addons.Disqord.Menus
                 if (!int.TryParse(e.SelectedOptions[0].Value, out var value))
                     throw new InvalidOperationException("All the values of the selection's options must be page indexes");
 
-                if (Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption)
-                    defaultOption.IsDefault = false;
-                
-                _settingsOptions[value].IsDefault = true;
+                if (Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption) 
+                { 
+                    defaultOption.IsDefault = false; 
+                    _settingsOptions[int.Parse(defaultOption.Value)].IsDefault = false;
+
+                }
+
                 Selection.Options.FirstOrDefault(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
-                
+                _settingsOptions[value].IsDefault = true;
+
                 Menu.View = _settingsOptions[value].GetView(_context, _settingsOptions);
             }
             else

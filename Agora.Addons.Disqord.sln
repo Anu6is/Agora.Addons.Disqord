@@ -10,8 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Emporia.Extensions.Discord", "..\..\Ophios\Repos\Emporia.Extensions.Discord\src\Emporia.Extensions.Discord.csproj", "{471D9CA3-B9F4-4CFE-9336-D84D1E6F27EC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,10 +20,6 @@ Global
 		{44BA3469-B32C-49C7-AEAC-6BAAA1B030EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44BA3469-B32C-49C7-AEAC-6BAAA1B030EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44BA3469-B32C-49C7-AEAC-6BAAA1B030EB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{471D9CA3-B9F4-4CFE-9336-D84D1E6F27EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{471D9CA3-B9F4-4CFE-9336-D84D1E6F27EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{471D9CA3-B9F4-4CFE-9336-D84D1E6F27EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{471D9CA3-B9F4-4CFE-9336-D84D1E6F27EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

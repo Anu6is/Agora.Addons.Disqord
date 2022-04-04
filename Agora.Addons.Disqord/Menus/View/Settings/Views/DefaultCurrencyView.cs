@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var selection = EnumerateComponents().OfType<SelectionViewComponent>().First(x => x.Row == 1);
             var cacheService = context.Services.GetRequiredService<IEmporiaCacheService>();
-            var emporium = cacheService.GetCachedEmporium(context.GuildId);
+            var emporium = cacheService.GetCachedEmporium(context.Guild.Id);
 
             selection.Options.Clear();
             
@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 selection.Options.Add(new LocalSelectionComponentOption("Error loading currencies", "0"));
             else if (emporium.Currencies != null)
                 _currencies = emporium.Currencies.ToArray();
-
+            
             foreach (var currency in _currencies)
             {
                 var option = new LocalSelectionComponentOption($"Symbol: {currency.Symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
@@ -41,6 +41,7 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             if (e.SelectedOptions.Count > 0)
             {
+                if (e.SelectedOptions[0].Value == "0") return;
                 if (e.SelectedOptions[0].Value == _context.Settings.DefaultCurrency.Code) return;
 
                 if (e.Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption)

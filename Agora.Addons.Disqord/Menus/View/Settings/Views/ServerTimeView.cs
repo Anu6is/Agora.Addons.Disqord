@@ -22,7 +22,7 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             _context = context;
             _settings = context.Settings.DeepClone();
-            _emporium = Emporium.Create(new EmporiumId(context.GuildId)).WithLocalTime(Time.From(TimeFromOffset(context.Settings.Offset)));
+            _emporium = Emporium.Create(new EmporiumId(context.Guild.Id)).WithLocalTime(Time.From(TimeFromOffset(context.Settings.Offset)));
         }
 
         [Button(Label = "Decrease", Style = LocalButtonComponentStyle.Primary, Emoji = "⬇️", Row = 1)]
@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await dataAccessor.BeginTransactionAsync(async () =>
                 {
-                    var emporiumId = new EmporiumId(_context.GuildId);
+                    var emporiumId = new EmporiumId(_context.Guild.Id);
                     var emporium = await mediator.Send(new UpdateLocalTimeCommand(emporiumId, Time.From(time)));
 
                     var settings = (DefaultDiscordGuildSettings)_context.Settings;

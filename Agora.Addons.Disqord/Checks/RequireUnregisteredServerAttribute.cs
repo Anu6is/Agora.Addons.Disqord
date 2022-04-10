@@ -12,7 +12,7 @@ namespace Agora.Addons.Disqord.Checks
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>()
                                                  .GetEmporiumAsync(context.GuildId);
 
-            if (emporium == null) Success();
+            if (emporium == null) return Success();
             
             return Failure("Setup Previously Completed: Execute the command 'Server Settings' to edit or 'Server Reset' to delete.");
         }

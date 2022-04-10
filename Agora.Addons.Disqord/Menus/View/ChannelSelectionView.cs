@@ -4,12 +4,14 @@ using Disqord.Gateway;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal abstract class ChannelSelectionView : BaseGuildSettingsView
+    public abstract class ChannelSelectionView : BaseSettingsView
     {
         public GuildSettingsContext Context { get; }        
         public ulong CurrentChannelId { get; set; }
-        
-        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) : base(context, settingsOptions)
+        public ulong SelectedChannelId { get; private set; }
+
+        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, LocalMessage templateMessage) 
+            : base(context, settingsOptions, templateMessage)
         {
             Context = context;
 
@@ -26,7 +28,7 @@ namespace Agora.Addons.Disqord.Menus.View
                         .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                         .ForEach(component => selection.Options.Add(component));
                 else if (selection.Row == 2)
-                    selection.Placeholder = "Select a channel category to populate options";
+                    selection.Placeholder = "Select a channel category to populate the options below";
 
                 if (selection.Options.Count == 0)
                 {
@@ -52,13 +54,13 @@ namespace Agora.Addons.Disqord.Menus.View
                 
                 textSelection.Options.Clear();
 
-                textChannels.Where(x => x.Id != CurrentChannelId && x.CategoryId == category).Take(25) //TODO - exclude current channel
+                textChannels.Where(x => x.Id != CurrentChannelId && x.CategoryId == category).Take(25)
                     .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                     .ForEach(component => textSelection.Options.Add(component));
 
                 if (textSelection.Options.Count > 0) 
                 {
-                    textSelection.Placeholder = "Select a log channel";
+                    textSelection.Placeholder = "Select a text channel";
                     textSelection.IsDisabled = false;
                 }
             }
@@ -68,28 +70,36 @@ namespace Agora.Addons.Disqord.Menus.View
 
         [Selection(MaximumSelectedOptions = 1, MinimumSelectedOptions = 1, Row = 2, Placeholder = "Select a text channel.")]
         [SelectionOption("No available text channels", Value = "0")]
-        public async ValueTask SelectResultLogChannel(SelectionEventArgs e)
+        public async ValueTask SelectTextChannel(SelectionEventArgs e)
         {
             if (e.SelectedOptions.Count > 0)
             {
-                var selectedChannelId = ulong.Parse(e.SelectedOptions[0].Value);
+                SelectedChannelId = ulong.Parse(e.SelectedOptions[0].Value);
                 
-                if (selectedChannelId == 0ul) return;
-                if (selectedChannelId == CurrentChannelId) return;
+                if (SelectedChannelId == 0ul) return;
+                if (SelectedChannelId == CurrentChannelId) return;
 
                 if (e.Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption) defaultOption.IsDefault = false;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
 
-                await SaveChannelAsync(selectedChannelId);
-
-                foreach (var selection in EnumerateComponents().OfType<SelectionViewComponent>())
-                    if (selection.Row != null) selection.IsDisabled = true;
+                await SaveChannelAsync();
+                await LockSelectionAsync();
+                
+                ReportChanges();
             }
 
             return;
         }
 
-        public abstract ValueTask SaveChannelAsync(ulong selectedChannelId);
+        public virtual ValueTask LockSelectionAsync()
+        {
+            foreach (var selection in EnumerateComponents().OfType<SelectionViewComponent>())
+                if (selection.Row != null) selection.IsDisabled = true;
+
+            return default;
+        }
+
+        public abstract ValueTask SaveChannelAsync();
     }
 }

@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal class DefaultCurrencyView : BaseGuildSettingsView
+    public class DefaultCurrencyView : ServerSettingsView
     {
         private readonly GuildSettingsContext _context;
         private readonly Currency[] _currencies = Array.Empty<Currency>();

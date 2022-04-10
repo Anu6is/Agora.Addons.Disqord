@@ -1,19 +1,18 @@
-﻿using Agora.Addons.Disqord.Extensions;
-using Agora.Addons.Disqord.Menus.View;
-using Disqord;
+﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 
 namespace Agora.Addons.Disqord.Menus
 {
-    public abstract class BaseGuildSettingsView : ViewBase
+    public abstract class BaseSettingsView : ViewBase
     {
         private readonly GuildSettingsContext _context;
         private readonly List<GuildSettingsOption> _settingsOptions;
         
         public SelectionViewComponent Selection { get; }
+        public Func<ViewBase> DefaultView { get; init; }
         
-        public BaseGuildSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions)
-            : base(new LocalMessage().AddEmbed(context.Settings.AsEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
+        public BaseSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, LocalMessage templateMessage)
+            : base(templateMessage)
         {
             _context = context;
             _settingsOptions = settingsOptions;
@@ -29,7 +28,7 @@ namespace Agora.Addons.Disqord.Menus
                 Selection.Options.Add(selectionOption);
             }
 
-            AddComponent(Selection);
+            if (Selection.Options.Count > 0) AddComponent(Selection);
         }
 
         private ValueTask HandleSelection(SelectionEventArgs e)
@@ -48,12 +47,12 @@ namespace Agora.Addons.Disqord.Menus
 
                 Selection.Options.FirstOrDefault(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
                 _settingsOptions[value].IsDefault = true;
-
+                
                 Menu.View = _settingsOptions[value].GetView(_context, _settingsOptions);
             }
             else
             {
-                Menu.View = new MainSettingsView(_context);
+                Menu.View = DefaultView();
             }
 
             return default;

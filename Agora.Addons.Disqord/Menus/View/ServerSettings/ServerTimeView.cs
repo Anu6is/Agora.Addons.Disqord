@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal class ServerTimeView : BaseGuildSettingsView
+    public class ServerTimeView : ServerSettingsView
     {
         private readonly Emporium _emporium;
         private readonly GuildSettingsContext _context;

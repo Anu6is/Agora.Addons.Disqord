@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal class BiddingAllowanceView : BaseGuildSettingsView
+    public class BiddingAllowanceView : ServerSettingsView
     {
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;

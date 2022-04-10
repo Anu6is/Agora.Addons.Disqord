@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    internal class ListingsOptionsView : BaseGuildSettingsView
+    public class ListingsOptionsView : ServerSettingsView
     {
         private readonly IDiscordGuildSettings _settings;
         private readonly GuildSettingsContext _context;
@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (context.Settings.AllowedListings.Any(listing => listing == option.Label)) option.IsDefault = true;
         }
 
-        [Selection(MaximumSelectedOptions = 6, Row = 1, Placeholder = "Select listings to allow")]
+        [Selection(MaximumSelectedOptions = 6, Row = 1, Placeholder = "Select the listing types to allow")]
         [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
         [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction end time expires.")]
         [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]
@@ -64,6 +64,8 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 2)]
         public async ValueTask SaveSelectedOptions(ButtonEventArgs e)
         {
+            if (_settings.AllowedListings.Count == 0) return;
+
             using (var scope = _context.Services.CreateScope())
             {
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();

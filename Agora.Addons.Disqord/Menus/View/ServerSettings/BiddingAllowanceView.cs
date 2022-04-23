@@ -37,7 +37,7 @@ namespace Agora.Addons.Disqord.Menus.View
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = true;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = false;
 
-            TemplateMessage.WithEmbeds(_settings.AsEmbed("Shill Bidding"));
+            TemplateMessage.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
 
             ReportChanges();
 
@@ -53,7 +53,7 @@ namespace Agora.Addons.Disqord.Menus.View
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = false;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = true;
             
-            TemplateMessage.WithEmbeds(_settings.AsEmbed("Absentee Bidding"));
+            TemplateMessage.WithEmbeds(_settings.ToEmbed("Absentee Bidding"));
 
             ReportChanges();
 
@@ -76,7 +76,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.AsEmbed());
+                TemplateMessage.WithEmbeds(settings.ToEmbed());
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())

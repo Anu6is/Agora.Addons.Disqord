@@ -13,14 +13,11 @@
   <ItemGroup>
     <PackageReference Include="Disqord.Bot" Version="1.0.0-183" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+    <PackageReference Include="HumanTimeParser.English" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Menus\Paged\" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@ using Emporia;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using System.Reflection;
 
 namespace Agora.Addons.Disqord
 {
@@ -19,6 +20,7 @@ namespace Agora.Addons.Disqord
                    .ConfigureAppConfiguration(builder => builder.AddCommandLine(args))
                    .ConfigureLogging((context, builder) => builder.AddSentry(context).ReplaceDefaultLogger().WithSerilog(context))
                    .ConfigureEmporiaServices()
+                   .ConfigureDisqordCommands()
                    .UseEmporiaDiscordExtension()
                    .ConfigureCustomAgoraServices()
                    .ConfigureDiscordBotSharder((context, bot) =>
@@ -26,6 +28,7 @@ namespace Agora.Addons.Disqord
                        bot.UseMentionPrefix = true;
                        bot.Status = UserStatus.Offline;
                        bot.Token = context.Configuration["Discord:Token"];
+                       bot.ServiceAssemblies.Add(Assembly.GetExecutingAssembly());
                        bot.Intents = GatewayIntent.Guilds | GatewayIntent.Integrations
                                    | GatewayIntent.GuildMessages | GatewayIntent.GuildReactions
                                    | GatewayIntent.DirectMessages | GatewayIntent.DirectReactions;

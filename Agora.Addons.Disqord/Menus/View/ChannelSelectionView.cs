@@ -83,7 +83,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
 
-                await SaveChannelAsync();
+                await SaveChannelAsync(e);
                 await LockSelectionAsync();
                 
                 ReportChanges();
@@ -100,6 +100,6 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        public abstract ValueTask SaveChannelAsync();
+        public abstract ValueTask SaveChannelAsync(SelectionEventArgs e);
     }
 }

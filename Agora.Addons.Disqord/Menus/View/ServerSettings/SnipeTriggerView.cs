@@ -41,7 +41,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.AsEmbed("Snipe Trigger", new LocalEmoji("⌛")));
+                TemplateMessage.WithEmbeds(settings.ToEmbed("Snipe Trigger", new LocalEmoji("⌛")));
                 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             }

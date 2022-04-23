@@ -54,7 +54,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 }
             }
 
-            TemplateMessage.WithEmbeds(_settings.AsEmbed("Allowed Listings"));
+            TemplateMessage.WithEmbeds(_settings.ToEmbed("Allowed Listings"));
             
             ReportChanges();
 
@@ -75,7 +75,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.AsEmbed("Allowed Listings", new LocalEmoji("📖")));
+                TemplateMessage.WithEmbeds(settings.ToEmbed("Allowed Listings", new LocalEmoji("📖")));
             }
 
             foreach (var component in EnumerateComponents().OfType<SelectionViewComponent>())

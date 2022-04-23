@@ -60,7 +60,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    TemplateMessage.WithEmbeds(settings.AsEmbed("Server Time", new LocalEmoji("🕰")));
+                    TemplateMessage.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
                 });
             }
 
@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord.Menus.View
             _emporium.WithLocalTime(Time.From(time));
             _settings.Offset = _emporium.TimeOffset;
             
-            TemplateMessage.WithEmbeds(_settings.AsEmbed("Server Time"));
+            TemplateMessage.WithEmbeds(_settings.ToEmbed("Server Time"));
 
             ReportChanges();
             

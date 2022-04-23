@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Menus.View
         private readonly List<ShowroomModel> _showrooms;
         
         public AuctionRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.AsEmbed(showrooms)))
+            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(showrooms)))
         {
             DefaultView = () => new MainShowroomView(context, showrooms);
             _showrooms = showrooms;
@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             _showrooms.RemoveAll(x => x.ShowroomId == SelectedChannelId && x.ItemType == auction);
 
-            TemplateMessage.WithEmbeds(Context.Settings.AsEmbed(_showrooms));
+            TemplateMessage.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
 
             ReportChanges();
         }
@@ -46,7 +46,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        public async override ValueTask SaveChannelAsync()
+        public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             if (_showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ItemType == auction)) return;
             
@@ -58,7 +58,10 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await data.BeginTransactionAsync(async () => 
             {
-                await mediator.Send(new CreateShowroomCommand<AuctionItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId)));
+                var emporiumId = new EmporiumId(Context.Guild.Id);
+                
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, ReferenceNumber.Create(e.AuthorId));
+                await mediator.Send(new CreateShowroomCommand<AuctionItem>(emporiumId, new ShowroomId(SelectedChannelId)));
                 
                 if (settings.AvailableRooms.Add("Auction"))
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
@@ -66,7 +69,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 _showrooms.Add(new ShowroomModel(SelectedChannelId) { ItemType = auction, IsActive = true } );
             });
             
-            TemplateMessage.WithEmbeds(settings.AsEmbed(_showrooms));
+            TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
             
             return;
         }

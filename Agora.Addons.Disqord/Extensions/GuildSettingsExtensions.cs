@@ -76,7 +76,7 @@ namespace Agora.Addons.Disqord.Extensions
             },  "Exchange room configured but exchange are listings not allowed.")
         };
 
-        public static LocalEmbed AsEmbed(this IDiscordGuildSettings settings, string highlightField = null, LocalEmoji highlighEmoji = null)
+        public static LocalEmbed ToEmbed(this IDiscordGuildSettings settings, string highlightField = null, LocalEmoji highlighEmoji = null)
         {
             var serverTime = Markdown.Bold(DateTimeOffset.UtcNow.ToOffset(settings.Offset).ToString("MMMM d, yyyy HH:mm  [zzz] "));
             var snipeExtension = settings.SnipeExtension == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
@@ -118,7 +118,7 @@ namespace Agora.Addons.Disqord.Extensions
             return embed;
         }
 
-        public static LocalEmbed AsEmbed(this IDiscordGuildSettings settings, IEnumerable<ShowroomModel> showrooms)
+        public static LocalEmbed ToEmbed(this IDiscordGuildSettings settings, IEnumerable<ShowroomModel> showrooms)
         {
             var missing = settings.GetMissingRequirements();
             var description = missing.IsNull()

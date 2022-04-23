@@ -1,7 +1,9 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Models;
 using Disqord;
+using Disqord.Extensions.Interactivity.Menus;
 using Emporia.Application.Common;
+using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -14,13 +16,13 @@ namespace Agora.Addons.Disqord.Menus.View
         private readonly List<ShowroomModel> _showrooms;
 
         public ExchangeRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.AsEmbed(showrooms)))
+            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(showrooms)))
         {
             DefaultView = () => new MainShowroomView(context, showrooms);
             _showrooms = showrooms;
         }
 
-        public async override ValueTask SaveChannelAsync()
+        public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
@@ -33,6 +35,8 @@ namespace Agora.Addons.Disqord.Menus.View
                 await data.BeginTransactionAsync(async () =>
                 {
                     //TODO - enable market items
+                    //var emporiumId = new EmporiumId(Context.Guild.Id);
+                    //scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, ReferenceNumber.Create(e.AuthorId));
                     //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
@@ -40,7 +44,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 });
             }
 
-            TemplateMessage.WithEmbeds(settings.AsEmbed(_showrooms));
+            TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
 
             return;
         }

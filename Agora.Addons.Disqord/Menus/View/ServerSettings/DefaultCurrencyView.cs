@@ -73,7 +73,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
                 
-                TemplateMessage.WithEmbeds(settings.AsEmbed("Default Currency", new LocalEmoji("💰")));
+                TemplateMessage.WithEmbeds(settings.ToEmbed("Default Currency", new LocalEmoji("💰")));
             }
 
             ReportChanges();

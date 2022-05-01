@@ -32,7 +32,7 @@ namespace Agora.Addons.Disqord
             {
                 Message = new SentryMessage() { Message = result.Exception.ToString() },
                 ServerName = context.Guild.Name,
-                Logger = context.Channel.Name
+                Logger = $"{context.Guild.Name}.{context.Channel.Name}.{context.Command.Name}",
             }, scope =>
             {
                 scope.AddBreadcrumb(
@@ -64,9 +64,9 @@ namespace Agora.Addons.Disqord
                 if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")
                     return null;
 
-                if (@event.Level == SentryLevel.Error && @event.ServerName == null)
+                if (@event.Level == SentryLevel.Error && @event.Logger == "Disqord.Bot.Sharding.DiscordBotSharder")
                 {
-                    Console.WriteLine(@event.Message.Message);
+                    Console.WriteLine($"Discarding event {@event.EventId}: {@event.Message.Message}");
                     return null;
                 }
 

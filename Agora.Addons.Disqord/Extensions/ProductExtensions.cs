@@ -26,7 +26,7 @@ namespace Agora.Addons.Disqord.Extensions
                                         .AddInlineField("Current Bid", auction.ValueTag)
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(auction.Listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(auction.Listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expires In", Markdown.Timestamp(auction.Listing.ExpiresAt, Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expires In", Markdown.Timestamp(auction.Listing.ExpirationDate, Markdown.TimestampFormat.RelativeTime))
                                         .AddField("Item Owner", product.Listing.Anonymous 
                                                                     ? Markdown.BoldItalics("Anonymous") 
                                                                     : Mention.User(product.Listing.Owner.ReferenceNumber.Value)),

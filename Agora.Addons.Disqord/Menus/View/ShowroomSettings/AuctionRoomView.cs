@@ -59,8 +59,9 @@ namespace Agora.Addons.Disqord.Menus.View
             await data.BeginTransactionAsync(async () => 
             {
                 var emporiumId = new EmporiumId(Context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
                 
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, ReferenceNumber.Create(e.AuthorId));
                 await mediator.Send(new CreateShowroomCommand<AuctionItem>(emporiumId, new ShowroomId(SelectedChannelId)));
                 
                 if (settings.AvailableRooms.Add("Auction"))

@@ -3,6 +3,8 @@ using Agora.Shared.Models;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Emporia.Application.Common;
+using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -33,9 +35,10 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await data.BeginTransactionAsync(async () =>
                 {
-                    //TODO - enable market items
-                    //var emporiumId = new EmporiumId(Context.Guild.Id);
-                    //scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, ReferenceNumber.Create(e.AuthorId));
+                    var emporiumId = new EmporiumId(Context.Guild.Id);
+                    var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+                    scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
+                    //TODO - enable trade items
                     //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 

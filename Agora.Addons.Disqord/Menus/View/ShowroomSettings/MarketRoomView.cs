@@ -5,6 +5,7 @@ using Disqord.Extensions.Interactivity.Menus;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -14,6 +15,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class MarketRoomView : ChannelSelectionView
     {
+        private readonly static string market = "MarketItem";
         private readonly List<ShowroomModel> _showrooms;
 
         public MarketRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
@@ -23,31 +25,66 @@ namespace Agora.Addons.Disqord.Menus.View
             _showrooms = showrooms;
         }
 
+        [Button(Label = "Remove Room", Style = LocalButtonComponentStyle.Danger, Row = 4)]
+        public async ValueTask DeleteRoom(ButtonEventArgs e)
+        {
+            using var scope = Context.Services.CreateScope();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), market));
+
+            _showrooms.RemoveAll(x => x.ShowroomId == SelectedChannelId && x.ItemType == market);
+
+            TemplateMessage.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
+
+            ReportChanges();
+        }
+        
+        [Button(Label = "Update Hours", Style = LocalButtonComponentStyle.Primary, Row = 4)]
+        public ValueTask UpdateHours(ButtonEventArgs e)
+        {
+            //TODO - add text input modal
+            return default;
+        }
+
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
+            if (_showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ItemType == market)) return;
+
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
-            if (settings.AvailableRooms.Add("Market"))
-            {
-                using var scope = Context.Services.CreateScope();
-                var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            using var scope = Context.Services.CreateScope();
+            var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                await data.BeginTransactionAsync(async () =>
-                {
-                    //TODO - enable market items
-                    //var emporiumId = new EmporiumId(Context.Guild.Id);
-                    //scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, ReferenceNumber.Create(e.AuthorId));
-                    //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
+            await data.BeginTransactionAsync(async () =>
+            {
+                var emporiumId = new EmporiumId(Context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
+
+                await mediator.Send(new CreateShowroomCommand<MarketItem>(emporiumId, new ShowroomId(SelectedChannelId)));
+
+                if (settings.AvailableRooms.Add("Market"))
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    _showrooms.Add(new ShowroomModel(SelectedChannelId) { ItemType = "MarketItem", IsActive = true });
-                });
-            }
+                _showrooms.Add(new ShowroomModel(SelectedChannelId) { ItemType = market, IsActive = true });
+            });
 
             TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
 
             return;
         }
+
+        public override ValueTask UpdateAsync()
+        {
+            var exists = _showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ItemType == market);
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+                button.IsDisabled = !exists;
+
+            return base.UpdateAsync();
+        }
+
+        public override ValueTask LockSelectionAsync() => default;
     }
 }

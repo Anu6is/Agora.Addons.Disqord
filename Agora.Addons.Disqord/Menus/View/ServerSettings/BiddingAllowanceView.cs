@@ -1,6 +1,9 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Emporia.Application.Common;
+using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -70,7 +73,10 @@ namespace Agora.Addons.Disqord.Menus.View
             {
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var settings = (DefaultDiscordGuildSettings)_context.Settings;
-
+                var emporiumId = new EmporiumId(_context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+                
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
                 settings.AllowShillBidding = _settings.AllowShillBidding;
                 settings.AllowAbsenteeBidding = _settings.AllowAbsenteeBidding;
 

@@ -48,7 +48,11 @@ namespace Agora.Addons.Disqord.Menus.View
             {
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var dataAccessor = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
+                var emporiumId = new EmporiumId(_context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
 
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
+                
                 await dataAccessor.BeginTransactionAsync(async () =>
                 {
                     var emporiumId = new EmporiumId(_context.Guild.Id);

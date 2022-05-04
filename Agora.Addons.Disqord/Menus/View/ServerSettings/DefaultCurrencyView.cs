@@ -1,7 +1,9 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Emporia.Application.Common;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -53,7 +55,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 if (currency == null) return;
                 
-                await UpdateDefaultCurrency(currency);
+                await UpdateDefaultCurrency(currency, e);
 
                 e.Selection.IsDisabled = true;
             }
@@ -61,7 +63,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
-        private async ValueTask UpdateDefaultCurrency(Currency currency) 
+        private async ValueTask UpdateDefaultCurrency(Currency currency, SelectionEventArgs e) 
         {
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
             
@@ -70,6 +72,10 @@ namespace Agora.Addons.Disqord.Menus.View
                 settings.DefaultCurrency = currency;
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                var emporiumId = new EmporiumId(_context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
                 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
                 

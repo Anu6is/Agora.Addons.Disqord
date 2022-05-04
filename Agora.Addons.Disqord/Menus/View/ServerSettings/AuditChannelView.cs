@@ -1,6 +1,9 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Emporia.Application.Common;
+using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -25,7 +28,11 @@ namespace Agora.Addons.Disqord.Menus.View
             settings.AuditLogChannelId = SelectedChannelId;
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
+            var emporiumId = new EmporiumId(Context.Guild.Id);
+            var referenceNumber = ReferenceNumber.Create(e.AuthorId);
+            
+            scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
+            
             await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
             TemplateMessage.WithEmbeds(settings.ToEmbed("Audit Logs", new LocalEmoji("📃")));

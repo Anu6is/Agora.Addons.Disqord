@@ -1,6 +1,9 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Emporia.Application.Common;
+using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -69,9 +72,12 @@ namespace Agora.Addons.Disqord.Menus.View
             using (var scope = _context.Services.CreateScope())
             {
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                var emporiumId = new EmporiumId(_context.Guild.Id);
+                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
                 var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
                 settings.AllowedListings = _settings.AllowedListings;
+                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
 
                 await mediator.Send(new UpdateGuildSettingsCommand(settings));
 

@@ -6,30 +6,30 @@ namespace Agora.Addons.Disqord.Extensions
 {
     public static class ProductExtensions
     {
-        public static LocalEmbed ToEmbed(this Product product)
+        public static LocalEmbed ToEmbed(this Listing listing)
         {
             return new LocalEmbed
             {
-                Title = product.Title.Value,
-                Author = product.Listing.UniqueTrait(),
-                Description = product.Description?.Value,
-                ImageUrl = product.Carousel?.Images.FirstOrDefault()?.Url,
-                Footer = new LocalEmbedFooter().WithText($"Reference Code: {product.Listing.ReferenceCode}")
+                Title = listing.Product.Title.Value,
+                Author = listing.UniqueTrait(),
+                Description = listing.Product.Description?.Value,
+                ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
+                Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode}")
             }
-            .WithProductDetails(product);
+            .WithProductDetails(listing);
         }
 
-        private static LocalEmbed WithProductDetails(this LocalEmbed embed, Product product) => product switch
+        private static LocalEmbed WithProductDetails(this LocalEmbed embed, Listing listing) => listing.Product switch
         {
             AuctionItem auction => embed.AddInlineField("Quantity", auction.Quantity.Amount.ToString())
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
-                                        .AddInlineField("Current Bid", auction.ValueTag)
-                                        .AddInlineField("Scheduled Start", Markdown.Timestamp(auction.Listing.ScheduledPeriod.ScheduledStart))
-                                        .AddInlineField("Scheduled End", Markdown.Timestamp(auction.Listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expires In", Markdown.Timestamp(auction.Listing.ExpirationDate, Markdown.TimestampFormat.RelativeTime))
-                                        .AddField("Item Owner", product.Listing.Anonymous 
+                                        .AddInlineField("Current Bid", auction.CurrentPrice.ToString())
+                                        .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
+                                        .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
+                                        .AddInlineField("Expires In", Markdown.Timestamp(listing.ExpirationDate, Markdown.TimestampFormat.RelativeTime))
+                                        .AddField("Item Owner", listing.Anonymous 
                                                                     ? Markdown.BoldItalics("Anonymous") 
-                                                                    : Mention.User(product.Listing.Owner.ReferenceNumber.Value)),
+                                                                    : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
 
         };

@@ -42,7 +42,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    _showrooms.Add(new ShowroomModel(SelectedChannelId) { ItemType = "MarketItem", IsActive = true });
+                    _showrooms.Add(new ShowroomModel(SelectedChannelId) { ListingType = ListingType.Market, IsActive = true });
                 });
             }
 

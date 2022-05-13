@@ -1,6 +1,7 @@
 ﻿using Agora.Shared.Extensions;
 using Agora.Shared.Models;
 using Disqord;
+using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Humanizer;
@@ -126,7 +127,7 @@ namespace Agora.Addons.Disqord.Extensions
                 : Markdown.Bold($"💡{Markdown.CodeBlock(missing)}");
             var rooms = settings.AllowedListings
                                 .Select(x => x.Split().Last())
-                                .Concat(showrooms.Select(x => x.ItemType.Replace("item", "", StringComparison.OrdinalIgnoreCase)))
+                                .Concat(showrooms.Select(x => x.ListingType.ToString()))
                                 .ToHashSet();
 
             var embed = new LocalEmbed()
@@ -134,17 +135,17 @@ namespace Agora.Addons.Disqord.Extensions
                 .WithTitle("Server Rooms")
                 .WithDescription(description);
 
-            embed.AddField("Auction", rooms.Contains("Auction") ? GetRoomDetails(showrooms, "Auction") : $"{AgoraEmoji.RedCrossMark}| Auction listings disabled");
-            embed.AddField("Market", rooms.Contains("Market") ? GetRoomDetails(showrooms, "Market") : $"{AgoraEmoji.RedCrossMark}| Market listings disabled");
-            embed.AddField("Trade", rooms.Contains("Trade") ? GetRoomDetails(showrooms, "Trade") : $"{AgoraEmoji.RedCrossMark}| Trade listings disabled");
-            embed.AddField("Exchange", rooms.Contains("Exchange") ? GetRoomDetails(showrooms, "Exchange") : $"{AgoraEmoji.RedCrossMark}| Exchange listings disabled");
+            embed.AddField("Auction", rooms.Contains("Auction") ? GetRoomDetails(showrooms, ListingType.Auction) : $"{AgoraEmoji.RedCrossMark}| Auction listings disabled");
+            embed.AddField("Market", rooms.Contains("Market") ? GetRoomDetails(showrooms, ListingType.Market) : $"{AgoraEmoji.RedCrossMark}| Market listings disabled");
+            embed.AddField("Trade", rooms.Contains("Trade") ? GetRoomDetails(showrooms, ListingType.Trade) : $"{AgoraEmoji.RedCrossMark}| Trade listings disabled");
+            embed.AddField("Exchange", rooms.Contains("Exchange") ? GetRoomDetails(showrooms, ListingType.Exchange) : $"{AgoraEmoji.RedCrossMark}| Exchange listings disabled");
 
             return embed;
         }
 
-        private static string GetRoomDetails(IEnumerable<ShowroomModel> showrooms, string roomType)
+        private static string GetRoomDetails(IEnumerable<ShowroomModel> showrooms, ListingType listingType)
         {
-            var rooms = showrooms.Where(x => x.ItemType.Contains(roomType, StringComparison.OrdinalIgnoreCase));
+            var rooms = showrooms.Where(x => x.ListingType == listingType);
 
             if (rooms.Any())
                 return string.Join(Environment.NewLine, rooms.Select(s =>

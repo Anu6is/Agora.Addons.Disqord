@@ -11,16 +11,16 @@ namespace Agora.Addons.Disqord
     public class InitializationService : DiscordBotService
     {
         private readonly IMessageBroker _messageBroker;
-        
+
         public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger) : base(logger, bot)
         {
             _messageBroker = messageBroker;
         }
-        
+
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             using var scope = Bot.Services.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();                    
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             var emporiumList = await mediator.Send(new GetEmporiumListQuery(), cancellationToken);
 
             foreach (var emporiumId in emporiumList.Data)

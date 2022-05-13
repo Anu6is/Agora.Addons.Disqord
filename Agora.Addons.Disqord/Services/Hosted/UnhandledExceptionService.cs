@@ -15,7 +15,7 @@ namespace Agora.Addons.Disqord
         {
             SentrySdk.ConfigureScope(scope =>
             {
-                scope.AddEventProcessor(new SentryEventProcessor());
+                scope.AddEventProcessor(new SentryEventProcessor(logger));
             });
 
             commandService.CommandExecutionFailed += CommandExecutionFailed;
@@ -59,6 +59,10 @@ namespace Agora.Addons.Disqord
         
         private class SentryEventProcessor : ISentryEventProcessor
         {
+            private readonly ILogger<UnhandledExceptionService> _logger;
+            
+            public SentryEventProcessor(ILogger<UnhandledExceptionService> logger) => _logger = logger;
+            
             public SentryEvent Process(SentryEvent @event)
             {
                 if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")
@@ -66,7 +70,7 @@ namespace Agora.Addons.Disqord
 
                 if (@event.Level == SentryLevel.Error && @event.Logger == "Disqord.Bot.Sharding.DiscordBotSharder")
                 {
-                    Console.WriteLine($"Discarding event {@event.EventId}: {@event.Message.Message}");
+                    _logger.LogDebug("Discarding event {EventId}: {EventMessage}",@event.EventId, @event.Message.Message);
                     return null;
                 }
 

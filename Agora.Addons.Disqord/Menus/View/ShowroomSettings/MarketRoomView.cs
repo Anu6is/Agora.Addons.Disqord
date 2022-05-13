@@ -15,7 +15,6 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class MarketRoomView : ChannelSelectionView
     {
-        private readonly static string market = "MarketItem";
         private readonly List<ShowroomModel> _showrooms;
 
         public MarketRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
@@ -30,9 +29,9 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             using var scope = Context.Services.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), market));
+            await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Market));
 
-            _showrooms.RemoveAll(x => x.ShowroomId == SelectedChannelId && x.ItemType == market);
+            _showrooms.RemoveAll(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Market);
 
             TemplateMessage.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
 
@@ -48,7 +47,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
-            if (_showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ItemType == market)) return;
+            if (_showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Market)) return;
 
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
@@ -62,12 +61,12 @@ namespace Agora.Addons.Disqord.Menus.View
                 var referenceNumber = ReferenceNumber.Create(e.AuthorId);
                 scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
 
-                await mediator.Send(new CreateShowroomCommand<MarketItem>(emporiumId, new ShowroomId(SelectedChannelId)));
+                await mediator.Send(new CreateShowroomCommand(emporiumId, new ShowroomId(SelectedChannelId), ListingType.Market));
 
                 if (settings.AvailableRooms.Add("Market"))
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                _showrooms.Add(new ShowroomModel(SelectedChannelId) { ItemType = market, IsActive = true });
+                _showrooms.Add(new ShowroomModel(SelectedChannelId) { ListingType = ListingType.Market, IsActive = true });
             });
 
             TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
@@ -77,7 +76,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
         public override ValueTask UpdateAsync()
         {
-            var exists = _showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ItemType == market);
+            var exists = _showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Market);
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
                 button.IsDisabled = !exists;

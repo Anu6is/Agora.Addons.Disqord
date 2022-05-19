@@ -6,25 +6,26 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Agora.Addons.Disqord
 {
     [AgoraService(AgoraServiceAttribute.ServiceLifetime.Scoped)]
-    public class UserManagerService : AgoraService, IUserManager, ICurrentUserService
+    public class UserManagerService : AgoraService, IUserManager
     {
-        private readonly ICommandContextAccessor _accessor;
-        private readonly IGuildSettingsService _guildSettingsService;
+        private Snowflake? GuildId { get; }
+        private DiscordBotBase Bot { get; }
         
-        public EmporiumUser CurrentUser { get; set; }
+        private readonly IGuildSettingsService _guildSettingsService;
 
-        public UserManagerService(ILogger<UserManagerService> logger, ICommandContextAccessor accessor) : base(logger)
+        public UserManagerService(ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor,
+                                  IGuildSettingsService guildSettingsService, ILogger<UserManagerService> logger) : base(logger)
         {
-            _accessor = accessor;
-            _guildSettingsService = accessor.Context?.Services.GetRequiredService<IGuildSettingsService>();
+            _guildSettingsService = guildSettingsService;
+         
+            Bot = commandAccessor.Context?.Bot ?? interactionAccessor.Context?.Bot;
+            GuildId = (commandAccessor.Context?.GuildId ?? interactionAccessor.Context?.GuildId);
         }
 
         public async ValueTask<bool> IsAdministrator(IEmporiumUser user)
@@ -34,7 +35,7 @@ namespace Agora.Addons.Disqord
             if (member == null) return false;
             if (member.GetPermissions().ManageGuild) return true;
 
-            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(_accessor.Context.GuildId.Value);
+            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var adminRole = guildSettings.AdminRole;
 
             return member.RoleIds.Contains(adminRole);
@@ -45,7 +46,7 @@ namespace Agora.Addons.Disqord
             if (await IsAdministrator(user)) return true;
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
-            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(_accessor.Context.GuildId.Value);
+            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var brokerRole = guildSettings.BrokerRole;
 
             return member.RoleIds.Contains(brokerRole);
@@ -55,10 +56,10 @@ namespace Agora.Addons.Disqord
         {
             if (await IsBroker(user)) return true;
 
-            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(_accessor.Context.GuildId.Value);
+            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var hostRole = guildSettings.MerchantRole;
 
-            if (hostRole == 0ul || hostRole == _accessor.Context.GuildId.Value) return true;
+            if (hostRole == 0ul || hostRole == GuildId) return true;
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
@@ -74,38 +75,23 @@ namespace Agora.Addons.Disqord
 
         private async ValueTask<IMember> GetMemberAsync(Snowflake id)
         {
-            _accessor.Context.Bot.CacheProvider.TryGetMembers(_accessor.Context.GuildId.Value, out var memberCache);
+            Bot.CacheProvider.TryGetMembers(GuildId.GetValueOrDefault(), out var memberCache);
 
             if (memberCache.TryGetValue(id, out var cachedMember)) return cachedMember;
 
             IMember member;
 
-            await using (_accessor.Context.BeginYield())
+            if (Bot.GetShard(GuildId).RateLimiter.GetRemainingRequests() < 3)
             {
-                if (_accessor.Context.Bot.GetShard(_accessor.Context.GuildId).RateLimiter.GetRemainingRequests() < 3)
-                {
-                    member = await _accessor.Context.Bot.FetchMemberAsync(_accessor.Context.GuildId.Value, id);
-                }
-                else
-                {
-                    var members = await _accessor.Context.Bot.Chunker.QueryAsync(_accessor.Context.GuildId.Value, new[] { id });
-                    member = members.GetValueOrDefault(id);
-                }
+                member = await Bot.FetchMemberAsync(GuildId.GetValueOrDefault(), id);
+            }
+            else
+            {
+                var members = await Bot.Chunker.QueryAsync(GuildId.GetValueOrDefault(), new[] { id });
+                member = members.GetValueOrDefault(id);
             }
 
             return member;
-        }
-
-        public async ValueTask<EmporiumUser> GetCurrentUserAsync()
-        {
-            if (CurrentUser != null) return CurrentUser;
-            
-            var cache = _accessor.Context.Services.GetRequiredService<IEmporiaCacheService>();
-            var user = await cache.GetUserAsync(_accessor.Context.GuildId.Value, _accessor.Context.Author.Id);
-            
-            CurrentUser = EmporiumUser.Create(new EmporiumId(user.EmporiumId), new UserId(user.UserId), ReferenceNumber.Create(user.ReferenceNumber));
-
-            return CurrentUser;
         }
     }
 }

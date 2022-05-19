@@ -11,8 +11,12 @@ namespace Agora.Addons.Disqord
 {
     public class UnhandledExceptionService : DiscordBotService
     {
-        public UnhandledExceptionService(DiscordBotBase bot, CommandService commandService, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
+        private readonly IHub _hub;
+        
+        public UnhandledExceptionService(DiscordBotBase bot, CommandService commandService, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
         {
+            _hub = sentryHub;
+            
             SentrySdk.ConfigureScope(scope =>
             {
                 scope.AddEventProcessor(new SentryEventProcessor(logger));
@@ -23,12 +27,11 @@ namespace Agora.Addons.Disqord
 
         private ValueTask CommandExecutionFailed(object sender, CommandExecutionFailedEventArgs args)
         {
-            var hub =  args.Context.Services.GetRequiredService<IHub>();
             var context = (DiscordGuildCommandContext)args.Context;
             var command = context.Command;
             var result = args.Result;
 
-            hub.CaptureEvent(new SentryEvent()
+            _hub.CaptureEvent(new SentryEvent()
             {
                 Message = new SentryMessage() { Message = result.Exception.ToString() },
                 ServerName = context.Guild.Name,

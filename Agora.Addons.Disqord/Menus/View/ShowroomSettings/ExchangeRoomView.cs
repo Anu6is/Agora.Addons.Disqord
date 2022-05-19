@@ -30,14 +30,13 @@ namespace Agora.Addons.Disqord.Menus.View
             if (settings.AvailableRooms.Add("Market"))
             {
                 using var scope = Context.Services.CreateScope();
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+                
                 var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
                 await data.BeginTransactionAsync(async () =>
                 {
-                    var emporiumId = new EmporiumId(Context.Guild.Id);
-                    var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-                    scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
                     //TODO - enable exchange items
                     //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));

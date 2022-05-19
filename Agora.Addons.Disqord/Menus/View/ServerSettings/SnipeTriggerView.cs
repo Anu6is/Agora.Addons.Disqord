@@ -36,22 +36,18 @@ namespace Agora.Addons.Disqord.Menus.View
 
             if (trigger == settings.SnipeRange) return;
 
+            settings.SnipeRange = trigger;
+
             using (var scope = _context.Services.CreateScope())
             {
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);                
-                settings.SnipeRange = trigger;
-
-                await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+                
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
                 TemplateMessage.WithEmbeds(settings.ToEmbed("Snipe Trigger", new LocalEmoji("⌛")));
-                
-                e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             }
 
+            e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             e.Selection.IsDisabled = true;
 
             ReportChanges();

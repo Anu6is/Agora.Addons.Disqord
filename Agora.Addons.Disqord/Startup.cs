@@ -23,7 +23,7 @@ namespace Agora.Addons.Disqord
                    .ConfigureDisqordCommands()
                    .UseEmporiaDiscordExtension()
                    .ConfigureCustomAgoraServices()
-                   .ConfigureDiscordBotSharder((context, bot) =>
+                   .ConfigureDiscordBotSharder<AgoraBot>((context, bot) =>
                    {
                        bot.UseMentionPrefix = true;
                        bot.Status = UserStatus.Offline;

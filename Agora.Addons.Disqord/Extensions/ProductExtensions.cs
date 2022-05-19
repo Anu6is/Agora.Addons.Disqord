@@ -13,17 +13,18 @@ namespace Agora.Addons.Disqord.Extensions
                 Title = listing.Product.Title.Value,
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
-                ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
+                ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,               
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode}")
             }
-            .WithProductDetails(listing);
+            .WithProductDetails(listing)
+            .WithDefaultColor();
         }
 
         private static LocalEmbed WithProductDetails(this LocalEmbed embed, Listing listing) => listing.Product switch
         {
             AuctionItem auction => embed.AddInlineField("Quantity", auction.Quantity.Amount.ToString())
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
-                                        .AddInlineField("Current Bid", auction.CurrentPrice.ToString())
+                                        .AddInlineField("Current Bid", listing.ValueTag.ToString())
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
                                         .AddInlineField("Expires In", Markdown.Timestamp(listing.ExpirationDate, Markdown.TimestampFormat.RelativeTime))

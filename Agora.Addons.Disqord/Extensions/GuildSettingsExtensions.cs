@@ -149,8 +149,9 @@ namespace Agora.Addons.Disqord.Extensions
 
             if (rooms.Any())
                 return string.Join(Environment.NewLine, rooms.Select(s =>
-                {   //TODO - enabled/disabled status
-                    var roomDetails = $"{Mention.Channel(new Snowflake(s.ShowroomId))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(s.BusinessHours())}";
+                {
+                    var status = s.IsActive ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+                    var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.ShowroomId))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(s.BusinessHours())}";
 
                     return roomDetails.Length > LocalEmbedField.MaxFieldValueLength 
                             ? roomDetails[..LocalEmbedField.MaxFieldValueLength] 

@@ -68,18 +68,15 @@ namespace Agora.Addons.Disqord.Menus.View
         public async ValueTask SaveSelectedOptions(ButtonEventArgs e)
         {
             if (_settings.AllowedListings.Count == 0) return;
-
+            
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
+            settings.AllowedListings = _settings.AllowedListings;
+            
             using (var scope = _context.Services.CreateScope())
             {
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-                var settings = (DefaultDiscordGuildSettings)_context.Settings;
-
-                settings.AllowedListings = _settings.AllowedListings;
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-
-                await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+                
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
                 TemplateMessage.WithEmbeds(settings.ToEmbed("Allowed Listings", new LocalEmoji("📖")));
             }

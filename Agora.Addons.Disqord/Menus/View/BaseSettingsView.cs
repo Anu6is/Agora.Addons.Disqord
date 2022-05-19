@@ -17,8 +17,12 @@ namespace Agora.Addons.Disqord.Menus
             _context = context;
             _settingsOptions = settingsOptions;
 
-            Selection = new SelectionViewComponent(HandleSelection) { MinimumSelectedOptions = 0, MaximumSelectedOptions = 1 };
-            
+            Selection = new SelectionViewComponent(HandleSelection) 
+            { 
+                MinimumSelectedOptions = 0, 
+                MaximumSelectedOptions = 1, 
+                Placeholder = "Select an option to modify" };
+
             for (var i = 0; i < settingsOptions.Count; i++)
             {
                 var selectionOption = new LocalSelectionComponentOption(settingsOptions[i].Name, i.ToString())

@@ -52,16 +52,14 @@ namespace Agora.Addons.Disqord.Menus.View
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
             using var scope = Context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+        
             var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             await data.BeginTransactionAsync(async () =>
             {
-                var emporiumId = new EmporiumId(Context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-
-                await mediator.Send(new CreateShowroomCommand(emporiumId, new ShowroomId(SelectedChannelId), ListingType.Market));
+                await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Market));
 
                 if (settings.AvailableRooms.Add("Market"))
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));

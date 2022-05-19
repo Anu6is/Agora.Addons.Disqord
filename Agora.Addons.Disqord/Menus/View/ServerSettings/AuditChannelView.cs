@@ -23,17 +23,13 @@ namespace Agora.Addons.Disqord.Menus.View
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
-
-            using var scope = Context.Services.CreateScope();
+            
             settings.AuditLogChannelId = SelectedChannelId;
 
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            var emporiumId = new EmporiumId(Context.Guild.Id);
-            var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-            
-            scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-            
-            await mediator.Send(new UpdateGuildSettingsCommand(settings));
+            using var scope = Context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+            await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
             TemplateMessage.WithEmbeds(settings.ToEmbed("Audit Logs", new LocalEmoji("📃")));
 

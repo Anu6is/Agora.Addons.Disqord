@@ -69,18 +69,16 @@ namespace Agora.Addons.Disqord.Menus.View
             if (_settings.AllowShillBidding == _context.Settings.AllowShillBidding
                 && _settings.AllowAbsenteeBidding == _context.Settings.AllowAbsenteeBidding) return;
 
-            using (var scope = _context.Services.CreateScope())
-            {
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var settings = (DefaultDiscordGuildSettings)_context.Settings;
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-                
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-                settings.AllowShillBidding = _settings.AllowShillBidding;
-                settings.AllowAbsenteeBidding = _settings.AllowAbsenteeBidding;
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-                await mediator.Send(new UpdateGuildSettingsCommand(settings));
+            settings.AllowShillBidding = _settings.AllowShillBidding;
+            settings.AllowAbsenteeBidding = _settings.AllowAbsenteeBidding;
+
+            using var scope = _context.Services.CreateScope();
+            {
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
                 TemplateMessage.WithEmbeds(settings.ToEmbed());
             }

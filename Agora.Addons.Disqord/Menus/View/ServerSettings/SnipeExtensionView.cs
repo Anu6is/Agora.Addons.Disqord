@@ -35,23 +35,19 @@ namespace Agora.Addons.Disqord.Menus.View
                 duration = TimeSpan.FromSeconds(int.Parse(e.SelectedOptions[0].Value));
 
             if (duration == settings.SnipeExtension) return;
+            
+            settings.SnipeExtension = duration;
 
             using (var scope = _context.Services.CreateScope())
             {
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-                settings.SnipeExtension = duration;
-
-                await mediator.Send(new UpdateGuildSettingsCommand(settings));
-
-                TemplateMessage.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
                 
-                e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
-            }
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
+                TemplateMessage.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));                
+            }
+            
+            e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             e.Selection.IsDisabled = true;
 
             ReportChanges();

@@ -23,11 +23,11 @@ namespace Agora.Addons.Disqord
             var commandService = new CommandService();
 
             commandService.AddTypeParser(new IntValueTypeParser<Stock>());
-            commandService.AddTypeParser(new StringValueTypeParser<ProductTitle>());
-            commandService.AddTypeParser(new StringValueTypeParser<HiddenMessage>());
-            commandService.AddTypeParser(new StringValueTypeParser<CategoryTitle>());
-            commandService.AddTypeParser(new StringValueTypeParser<SubcategoryTitle>());
-            commandService.AddTypeParser(new StringValueTypeParser<ProductDescription>());
+            commandService.AddTypeParser(new StringValueTypeParser<ProductTitle>(75));
+            commandService.AddTypeParser(new StringValueTypeParser<HiddenMessage>(250));
+            commandService.AddTypeParser(new StringValueTypeParser<CategoryTitle>(25));
+            commandService.AddTypeParser(new StringValueTypeParser<SubcategoryTitle>(25));
+            commandService.AddTypeParser(new StringValueTypeParser<ProductDescription>(500));
             commandService.AddTypeParser(new DateTimeTypeParser());
             commandService.AddTypeParser(new TimeSpanTypeParser());
 

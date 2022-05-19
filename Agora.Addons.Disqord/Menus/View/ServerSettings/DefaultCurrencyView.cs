@@ -66,18 +66,13 @@ namespace Agora.Addons.Disqord.Menus.View
         private async ValueTask UpdateDefaultCurrency(Currency currency, SelectionEventArgs e) 
         {
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
-            
+            settings.DefaultCurrency = currency;
+
             using (var scope = _context.Services.CreateScope())
             {
-                settings.DefaultCurrency = currency;
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
-                
-                await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
                 
                 TemplateMessage.WithEmbeds(settings.ToEmbed("Default Currency", new LocalEmoji("💰")));
             }

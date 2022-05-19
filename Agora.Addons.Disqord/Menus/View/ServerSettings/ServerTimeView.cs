@@ -41,18 +41,18 @@ namespace Agora.Addons.Disqord.Menus.View
         public async ValueTask SetUpdatedTime(ButtonEventArgs e)
         {
             if (_settings.Offset == _context.Settings.Offset) return;
-
+            
             var time = TimeFromOffset(_settings.Offset);
 
             using (var scope = _context.Services.CreateScope())
             {
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var dataAccessor = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
-                var emporiumId = new EmporiumId(_context.Guild.Id);
-                var referenceNumber = ReferenceNumber.Create(e.AuthorId);
-
-                scope.ServiceProvider.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(emporiumId, referenceNumber);
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
                 
+                var dataAccessor = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
+                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+                var emporiumId = new EmporiumId(_context.Guild.Id);
+                
+
                 await dataAccessor.BeginTransactionAsync(async () =>
                 {
                     var emporiumId = new EmporiumId(_context.Guild.Id);

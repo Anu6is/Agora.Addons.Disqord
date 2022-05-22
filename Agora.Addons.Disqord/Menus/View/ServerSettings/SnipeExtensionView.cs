@@ -32,7 +32,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
             if (e.SelectedOptions.Count > 0)
-                duration = TimeSpan.FromSeconds(int.Parse(e.SelectedOptions[0].Value));
+                duration = TimeSpan.FromSeconds(int.Parse(e.SelectedOptions[0].Value.ToString()));
 
             if (duration == settings.SnipeExtension) return;
             

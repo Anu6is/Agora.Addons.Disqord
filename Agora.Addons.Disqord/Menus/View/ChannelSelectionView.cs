@@ -44,11 +44,11 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             if (e.SelectedOptions.Count > 0) 
             {
-                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption) defaultOption.IsDefault = false;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
                 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
                 
-                var category = ulong.Parse(e.SelectedOptions[0].Value);
+                var category = ulong.Parse(e.SelectedOptions[0].Value.ToString());
                 var textChannels = Context.Guild.GetChannels().Values.OfType<CachedTextChannel>();
                 var textSelection = (SelectionViewComponent) EnumerateComponents().First(x => x.Row == 2);
                 
@@ -74,12 +74,12 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             if (e.SelectedOptions.Count > 0)
             {
-                SelectedChannelId = ulong.Parse(e.SelectedOptions[0].Value);
+                SelectedChannelId = ulong.Parse(e.SelectedOptions[0].Value.ToString());
                 
                 if (SelectedChannelId == 0ul) return;
                 if (SelectedChannelId == CurrentChannelId) return;
 
-                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption) defaultOption.IsDefault = false;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
 

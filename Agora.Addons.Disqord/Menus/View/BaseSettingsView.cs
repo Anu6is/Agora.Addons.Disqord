@@ -39,13 +39,13 @@ namespace Agora.Addons.Disqord.Menus
         {
             if (e.SelectedOptions.Count > 0)
             {
-                if (!int.TryParse(e.SelectedOptions[0].Value, out var value))
+                if (!int.TryParse(e.SelectedOptions[0].Value.ToString(), out var value)) //e.SelectedOptions[0].Value
                     throw new InvalidOperationException("All the values of the selection's options must be page indexes");
 
-                if (Selection.Options.FirstOrDefault(x => x.IsDefault) is { } defaultOption) 
+                if (Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) 
                 { 
                     defaultOption.IsDefault = false; 
-                    _settingsOptions[int.Parse(defaultOption.Value)].IsDefault = false;
+                    _settingsOptions[int.Parse(defaultOption.Value.ToString())].IsDefault = false;
 
                 }
 

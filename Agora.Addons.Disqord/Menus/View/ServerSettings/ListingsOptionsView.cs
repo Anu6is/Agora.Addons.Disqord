@@ -42,15 +42,15 @@ namespace Agora.Addons.Disqord.Menus.View
                 for (var i = 1; i < e.Selection.Options.Count; i++) 
                 {
                     e.Selection.Options[i].IsDefault = true;
-                    _settings.AllowedListings.Add(e.Selection.Options[i].Label);
+                    _settings.AllowedListings.Add(e.Selection.Options[i].Label.ToString());
                 }
             }
             else
             {
                 foreach (var option in e.SelectedOptions) 
                 {
-                    e.Selection.Options[int.Parse(option.Value)].IsDefault = true;
-                    _settings.AllowedListings.Add(option.Label);
+                    e.Selection.Options[int.Parse(option.Value.ToString())].IsDefault = true;
+                    _settings.AllowedListings.Add(option.Label.ToString());
                 }
             }
 

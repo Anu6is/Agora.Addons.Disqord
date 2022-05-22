@@ -3,7 +3,6 @@ using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using FluentValidation;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qmmands;
 using Sentry;
@@ -21,7 +20,7 @@ namespace Agora.Addons.Disqord
             
             SentrySdk.ConfigureScope(scope =>
             {
-                scope.AddEventProcessor(new SentryEventProcessor(bot.Services.GetRequiredService<IServiceScopeFactory>(), logger));
+                scope.AddEventProcessor(new SentryEventProcessor());
             });
 
             commandService.CommandExecutionFailed += CommandExecutionFailed;
@@ -46,7 +45,6 @@ namespace Agora.Addons.Disqord
                     dataPair: ("reason", result.FailureReason),
                     type: "user");
 
-                scope.Platform = "discord";
                 scope.TransactionName = command.Name;
                 scope.User = new User() { Id = context.Author.Id.ToString(), Username = context.Author.Tag };
 
@@ -96,7 +94,6 @@ namespace Agora.Addons.Disqord
                     dataPair: ("reason", reason),
                     type: "user");
 
-                scope.Platform = "discord";
                 scope.TransactionName = command;
                 scope.User = new User() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
 
@@ -114,15 +111,6 @@ namespace Agora.Addons.Disqord
 
         private class SentryEventProcessor : ISentryEventProcessor
         {
-            private readonly ILogger<UnhandledExceptionService> _logger;
-            private readonly IServiceScopeFactory _scopeFactory;
-
-            public SentryEventProcessor(IServiceScopeFactory scopeFactory, ILogger<UnhandledExceptionService> logger)
-            {
-                _logger = logger;
-                _scopeFactory = scopeFactory;
-            }
-
             public SentryEvent Process(SentryEvent @event)
             {
                 if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")

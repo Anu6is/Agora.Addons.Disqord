@@ -25,6 +25,8 @@ namespace Agora.Addons.Disqord
         
         public async ValueTask AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
         {
+            //if (await _userManager.IsAdministrator(currentUser)) return;
+                
             var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
 
@@ -67,7 +69,7 @@ namespace Agora.Addons.Disqord
                         case AuthorizationPolicy.CanModify:
                             authorized = request switch
                             {
-                                UpdateAuctionItemCommand command => command.Showroom.Listings.First().CurrentOffer == null,// || await _userManager.IsAdministrator(currentUser),
+                                UpdateAuctionItemCommand command => command.Showroom.Listings.First().CurrentOffer == null,
                                 _ => true
                             };
                             break;
@@ -79,6 +81,11 @@ namespace Agora.Addons.Disqord
                             };
                             break;
                         case AuthorizationPolicy.Manager:
+                            authorized = request switch
+                            {
+                                WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || currentUser.Equals(command.Showroom.Listings.First().User),
+                                _ => true
+                            };
                             break;
                         case AuthorizationPolicy.StaffOnly:
                             break;

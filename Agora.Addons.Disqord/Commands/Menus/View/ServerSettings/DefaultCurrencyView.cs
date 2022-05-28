@@ -46,7 +46,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (e.SelectedOptions[0].Value == "0") return;
                 if (e.SelectedOptions[0].Value == _context.Settings.DefaultCurrency.Code) return;
 
-                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption)
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
                     defaultOption.IsDefault = false;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;

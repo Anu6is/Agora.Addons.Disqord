@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             if (e.SelectedOptions.Count > 0) 
             {
-                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
                 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
                 
@@ -79,7 +79,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (SelectedChannelId == 0ul) return;
                 if (SelectedChannelId == CurrentChannelId) return;
 
-                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
 

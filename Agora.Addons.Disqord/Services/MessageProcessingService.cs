@@ -9,6 +9,7 @@ using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace Agora.Addons.Disqord
 {
@@ -97,8 +98,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask RemoveProductListingAsync(ReferenceNumber referenceNumber)
         {
-            await _agora.DeleteMessageAsync(ShowroomId.Value, referenceNumber.Value);
-            
+            await _agora.DeleteMessageAsync(ShowroomId.Value, referenceNumber.Value);            
             return;
         }
         
@@ -120,7 +120,7 @@ namespace Agora.Addons.Disqord
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledEnd))
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
-                                        .WithDefaultColor();
+                                        .WithColor(Color.SteelBlue);
             
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
             
@@ -139,28 +139,49 @@ namespace Agora.Addons.Disqord
             var quantity = productListing.Product.Quantity.ToString();
             var user = string.Empty;
 
-            if (owner != productListing.User.ReferenceNumber.Value) user = $"by {Mention.User(owner)}";
+            if (owner != productListing.User.ReferenceNumber.Value) user = $"by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
             var embed = new LocalEmbed().WithDescription($"{Markdown.Bold(title)} (x{quantity}) hosted by {Mention.User(owner)} has been {Markdown.Underline("withrawn")} {user}")
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
-                                        .WithDefaultColor();
+                                        .WithColor(Color.OrangeRed);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
             return ReferenceNumber.Create(message.Id);
         }
 
-        public ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing)
+        public ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing)
+        public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)
         {
-            throw new NotImplementedException();
+            var title = productListing.Product.Title.ToString();
+            var owner = productListing.Owner.ReferenceNumber.Value;
+            var submitter = offer.User.ReferenceNumber.Value;
+            var quantity = productListing.Product.Quantity.ToString();
+            var user = string.Empty;
+
+            if (submitter != productListing.User.ReferenceNumber.Value) user = $" by {Mention.User(productListing.User.ReferenceNumber.Value)}";
+
+            var description = new StringBuilder()
+                .Append("An offer of ").Append(Markdown.Bold(offer.Submission))
+                .Append(" made by ").Append(Mention.User(submitter))
+                .Append(" for ").Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
+                .Append(" hosted by ").Append(Mention.User(owner))
+                .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
+
+            var embed = new LocalEmbed().WithDescription(description.ToString())
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithColor(Color.Orange);
+
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+
+            return ReferenceNumber.Create(message.Id);
         }
-        
-        public ValueTask<ReferenceNumber> LogOfferAcceptedAsync(Listing productListing)
+               
+        public ValueTask<ReferenceNumber> LogOfferAcceptedAsync(Listing productListing, Offer offer)
         {
             throw new NotImplementedException();
         }
@@ -173,9 +194,18 @@ namespace Agora.Addons.Disqord
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.User.ReferenceNumber.Value;
             var duration = DateTimeOffset.UtcNow.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
-            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold(title)} (x{quantity}) hosted by {Mention.User(owner)} was {Markdown.Underline("claimed")} after {duration.Humanize()} for {Markdown.Bold(value)} by {Mention.User(buyer)}")
+
+            var description = new StringBuilder()
+                .Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
+                .Append("hosted by ").Append(Mention.User(owner))
+                .Append(" was ").Append(Markdown.Underline("claimed"))
+                .Append(" after ").Append(duration.Humanize())
+                .Append(" for ").Append(Markdown.Bold(value))
+                .Append(" by ").Append(Mention.User(buyer));
+
+            var embed = new LocalEmbed().WithDescription(description.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
-                                        .WithDefaultColor();
+                                        .WithColor(Color.Teal);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
@@ -188,9 +218,16 @@ namespace Agora.Addons.Disqord
             var owner = productListing.Owner.ReferenceNumber.Value;
             var quantity = productListing.Product.Quantity.ToString();
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
-            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold(title)} (x{quantity}) hosted by {Mention.User(owner)} has {Markdown.Underline("expired")} after {duration.Humanize()}")
+
+            var description = new StringBuilder()
+                .Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
+                .Append("hosted by ").Append(Mention.User(owner))
+                .Append(" has ").Append(Markdown.Underline("expired"))
+                .Append(" after ").Append(duration.Humanize());
+            
+            var embed = new LocalEmbed().WithDescription(description.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
-                                        .WithDefaultColor();
+                                        .WithColor(Color.SlateGray);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
@@ -202,7 +239,7 @@ namespace Agora.Addons.Disqord
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.User.ReferenceNumber.Value;
             var embed = new LocalEmbed().WithTitle($"{productListing} Claimed")
-                                        .AddField($"{productListing.Product.Title} (x{productListing.Product.Quantity})", productListing.ValueTag.ToString())
+                                        .AddField($"{productListing.Product.Title} (x{productListing.Product.Quantity})", productListing.CurrentOffer.Submission.ToString())
                                         .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer))
                                         .WithColor(Color.Teal);
 

@@ -5,6 +5,7 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
+using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,9 +16,11 @@ namespace Agora.Addons.Disqord
     public class PersistentButtonService : DiscordBotService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-        
-        public PersistentButtonService(DiscordBotBase bot, IServiceScopeFactory scopeFactory, ILogger<PersistentButtonService> logger) : base(logger, bot)
+        private readonly IEmporiaCacheService _cache;
+
+        public PersistentButtonService(DiscordBotBase bot, IServiceScopeFactory scopeFactory, IEmporiaCacheService cache, ILogger<PersistentButtonService> logger) : base(logger, bot)
         {
+            _cache = cache;
             _scopeFactory = scopeFactory;
         }
         
@@ -29,6 +32,8 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button 
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id) 
             {
+                await _cache.GetUserAsync(e.GuildId.Value, e.AuthorId);
+
                 using var scope = _scopeFactory.CreateScope();
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
                 
@@ -64,7 +69,9 @@ namespace Agora.Addons.Disqord
 
         private static IBaseRequest HandleInteraction(IComponentInteraction interaction) => interaction.CustomId switch
         {
-            "withdraw" => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id)),
+            "acceptAuction" => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), "Auction"),
+            "withdrawAuction" => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), "Auction"),
+            "undobid" => new UndoBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id)),
             "minbid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), 0) { UseMinimum = true },
             "maxbid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), 0) { UseMaximum = true },
             _ => null
@@ -72,7 +79,7 @@ namespace Agora.Addons.Disqord
 
         private static Task HandleResponse(IComponentInteraction interaction) => interaction.CustomId switch
         {
-            "withdraw" => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Listing successfuly withdrawn!").WithIsEphemeral(true)),
+            "withdrawAuction" => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Auction listing withdrawn!").WithIsEphemeral(true)),
             "buy" => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
             _ => Task.CompletedTask
         };

@@ -42,7 +42,7 @@ namespace Agora.Addons.Disqord.Menus
                 if (!int.TryParse(e.SelectedOptions[0].Value.ToString(), out var value)) //e.SelectedOptions[0].Value
                     throw new InvalidOperationException("All the values of the selection's options must be page indexes");
 
-                if (Selection.Options.FirstOrDefault(x => x.IsDefault.Value) is { } defaultOption) 
+                if (Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) 
                 { 
                     defaultOption.IsDefault = false; 
                     _settingsOptions[int.Parse(defaultOption.Value.ToString())].IsDefault = false;

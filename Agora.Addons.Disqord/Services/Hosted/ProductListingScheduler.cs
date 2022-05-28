@@ -18,7 +18,7 @@ namespace Agora.Addons.Disqord
 
         public override async Task StartAsync(CancellationToken stoppingToken)
         {
-            await Bot.WaitUntilReadyAsync(stoppingToken);
+            //await Bot.WaitUntilReadyAsync(stoppingToken);
             
             _logger.LogInformation("Starting Product Listing Scheduler");
 

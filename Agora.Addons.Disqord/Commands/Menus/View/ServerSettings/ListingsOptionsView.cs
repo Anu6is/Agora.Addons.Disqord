@@ -25,13 +25,15 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Selection(MaximumSelectedOptions = 6, Row = 1, Placeholder = "Select the listing types to allow")]
-        [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
-        [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction end time expires.")]
-        [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]
-        [SelectionOption("Vickrey Auction", Value = "3", Description = "Bids are hidden (sealed). Winner pays the second highest bid.")]
-        [SelectionOption("Market", Value = "4", Description = "List item(s) for sale at a fixed price.")]
-        [SelectionOption("Trade", Value = "5", Description = "List an item for trade, and accept an incoming trade offer.")]
-        [SelectionOption("Exchange", Value = "6", Description = "Post an item you want, and agree to a submitted exchange offer.")]
+        [SelectionOption("Select All",       Value = "0",   Description = "Allow all available listing options.")]
+        [SelectionOption("Standard Auction", Value = "1",   Description = "Highest bid wins after the auction ends/expires.")]
+        [SelectionOption("Live Auction",     Value = "2",   Description = "Auction ends if a set amount of time passes with no new bids.")]
+        [SelectionOption("Sealed Auction",   Value = "3",   Description = "Bids are hidden (sealed). Winner pays the second highest bid.")]
+        [SelectionOption("Standard Market",  Value = "4",   Description = "List items at a fixed price.")]
+        [SelectionOption("Flash Market",     Value = "5",   Description = "List items at a fixed price with a timed discount period.")]
+        [SelectionOption("Mass Market",      Value = "6",   Description = "List a large quantity of items. Buyers select their quantity.")]
+        [SelectionOption("Trade",            Value = "7",   Description = "List an item for trade, and accept an incoming trade offer.")]
+        [SelectionOption("Exchange",         Value = "8",   Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)
         {
             _settings.AllowedListings.Clear();            

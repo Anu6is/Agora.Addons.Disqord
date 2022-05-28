@@ -23,21 +23,18 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalRowComponent[] Buttons(this Listing listing)
         {
+            var type = listing.Type.ToString();
             var edit = new LocalButtonComponent().WithCustomId("edit").WithLabel("Edit").WithStyle(LocalButtonComponentStyle.Primary);
             var extend = new LocalButtonComponent().WithCustomId("extend").WithLabel("Extend").WithStyle(LocalButtonComponentStyle.Primary);
-            var withdraw = new LocalButtonComponent().WithCustomId("withdraw").WithLabel("Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
+            var withdraw = new LocalButtonComponent().WithCustomId($"withdraw{type}").WithLabel("Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
             var firstRowButtons = new LocalRowComponent().WithComponents(new LocalButtonComponent[] { withdraw, edit, extend});
 
-            if (listing.Product is not MarketItem)              
-                firstRowButtons.AddComponent(new LocalButtonComponent() 
-                {
-                    CustomId = "accept",
-                    Label = "Accept Offer",
-                    Style = LocalButtonComponentStyle.Success,
-                    IsDisabled = listing.CurrentOffer == null
-                });
+            if (listing.Product is MarketItem)
+                firstRowButtons.AddComponent(new LocalButtonComponent() { CustomId = "buy", Label = "Buy", Style = LocalButtonComponentStyle.Success, IsDisabled = !listing.IsActive() });
+            else
+                firstRowButtons.AddComponent(new LocalButtonComponent() { CustomId = $"accept{type}", Label = "Accept Offer", Style = LocalButtonComponentStyle.Success, IsDisabled = listing.CurrentOffer == null });
 
-            if (!listing.IsActive())
+            if (!listing.IsActive() || listing.Product is MarketItem)
                 return new LocalRowComponent[] { firstRowButtons };
             
             var secondRowButtons = ParticipantButtons(listing);
@@ -47,32 +44,32 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalRowComponent ParticipantButtons(Listing listing) => listing switch
         {
-            { Product: MarketItem } => new LocalRowComponent()
-            {
-                Components = new LocalButtonComponent[]
-                {
-                    new LocalButtonComponent() { CustomId = "buy",  Label = "Purchase", Style = LocalButtonComponentStyle.Success },
-                }
-            }, 
             { Product: AuctionItem auctionItem } => new LocalRowComponent()
             {
                 Components = new LocalButtonComponent[]
                 {
                     new LocalButtonComponent() { CustomId = "undobid", Label = "Undo Bid", Style = LocalButtonComponentStyle.Danger, IsDisabled = listing.CurrentOffer == null },
-                    new LocalButtonComponent() 
+                    new LocalButtonComponent()
                     { 
                         CustomId = "minbid",
-                        Label = $"Min Bid [{Money.Create(auctionItem.BidIncrement.MinValue, auctionItem.CurrentPrice.Currency)}]", 
-                        Style = LocalButtonComponentStyle.Primary 
+                        Label = $"Min Bid [{auctionItem.FormatIncrement(auctionItem.BidIncrement.MinValue)}]", 
+                        Style = LocalButtonComponentStyle.Primary,
+                        IsDisabled = listing is VickreyAuction                        
                     },
                     new LocalButtonComponent() 
                     { 
                         CustomId = "maxbid",
-                        Label = $"Max Bid [{(auctionItem.BidIncrement.MaxValue.HasValue ? Money.Create(auctionItem.BidIncrement.MaxValue.Value, auctionItem.CurrentPrice.Currency).ToString() : "Unlimited")}]",
+                        Label = $"Max Bid [{auctionItem.FormatIncrement(auctionItem.BidIncrement.MaxValue.GetValueOrDefault())}]",
                         Style = LocalButtonComponentStyle.Primary, 
-                        IsDisabled = !auctionItem.BidIncrement.MaxValue.HasValue 
+                        IsDisabled = !auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction
                     },
-                    new LocalButtonComponent() { CustomId = "autobid",  Label = "Auto Bid", Style = LocalButtonComponentStyle.Success },
+                    new LocalButtonComponent() 
+                    { 
+                        CustomId = "autobid",  
+                        Label = "Auto Bid", 
+                        Style = LocalButtonComponentStyle.Success,
+                        IsDisabled = listing is VickreyAuction
+                    },
                 }
             },
             _ => new LocalRowComponent()
@@ -97,8 +94,11 @@ namespace Agora.Addons.Disqord.Extensions
                                         .AddInlineField("Item Owner", listing.Anonymous 
                                                                     ? Markdown.BoldItalics("Anonymous") 
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
+            MarketItem marketItem => embed.AddInlineField("Quantity", marketItem.Quantity.Amount.ToString())
+                                          .AddInlineField("Price", marketItem.CurrentPrice.ToString())
+                                          .AddInlineField("Scheduled Start", 0)
+                                          .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart)),
             _ => embed
-
         };
         
         private static LocalEmbedAuthor UniqueTrait(this Listing listing) => listing switch
@@ -106,6 +106,7 @@ namespace Agora.Addons.Disqord.Extensions
             StandardAuction auction => auction.BuyNowPrice == null ? null : new LocalEmbedAuthor().WithName($"Instant Purchase Price: {auction.BuyNowPrice}"),
             VickreyAuction auction => auction.MaxParticipants == 0 ? null : new LocalEmbedAuthor().WithName($"Max Participants: {auction.MaxParticipants}"),
             LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Humanize()}"),
+            StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {(market.Discount == Discount.Percent ? $"{market.DiscountValue}%" : market.ValueTag.ToString())}"),
             _ => null
         };
         
@@ -115,5 +116,12 @@ namespace Agora.Addons.Disqord.Extensions
                 || listing.Status == ListingStatus.Locked
                 || (listing.Status == ListingStatus.Listed && listing.ScheduledPeriod.ScheduledStart.ToUniversalTime().Subtract(SystemClock.Now) <= TimeSpan.FromSeconds(5));
         }
+
+        private static string FormatIncrement(this AuctionItem auction, decimal value) => value switch
+        {
+            0 => "Unlimited",
+            >= 10000 => decimal.ToDouble(value).ToMetric(),
+            _ => Money.Create(value, auction.StartingPrice.Currency).ToString(),
+        };
     }
 }

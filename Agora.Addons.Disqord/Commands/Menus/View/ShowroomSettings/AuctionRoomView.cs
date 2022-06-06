@@ -1,5 +1,4 @@
 ﻿using Agora.Addons.Disqord.Extensions;
-using Agora.Shared.Models;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Emporia.Application.Common;
@@ -15,10 +14,10 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class AuctionRoomView : ChannelSelectionView
     {
-        private readonly List<ShowroomModel> _showrooms;
+        private List<Showroom> _showrooms;
         
-        public AuctionRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(showrooms)))
+        public AuctionRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<Showroom> showrooms)
+            : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(showrooms)))
         {
             DefaultView = () => new MainShowroomView(context, showrooms);
             _showrooms = showrooms;
@@ -31,13 +30,16 @@ namespace Agora.Addons.Disqord.Menus.View
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
             await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
 
-            _showrooms.RemoveAll(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Auction);
-
-            TemplateMessage.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
-
+            _showrooms.RemoveAll(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
+            
+            MessageTemplate = message => message.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
+            
             ReportChanges();
+
+            return;
         }
 
         [Button(Label = "Update Hours", Style = LocalButtonComponentStyle.Primary, Row = 4)]
@@ -49,37 +51,44 @@ namespace Agora.Addons.Disqord.Menus.View
 
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
-            if (_showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Auction)) return;
+            if (_showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString())) return;
             
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
             using var scope = Context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-            
+
             var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var room = _showrooms.FirstOrDefault(x => x.Id.Value.Equals(SelectedChannelId) && x.ListingType.Equals(ListingType.Auction.ToString()));
 
-            await data.BeginTransactionAsync(async () => 
+            if (room == null)
             {
-                await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
-                
-                if (settings.AvailableRooms.Add("Auction"))
-                    await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                await data.BeginTransactionAsync(async () =>
+                {
+                    var showroom = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
 
-                _showrooms.Add(new ShowroomModel(SelectedChannelId) { ListingType = ListingType.Auction, IsActive = true } );
-            });
+                    if (settings.AvailableRooms.Add(ListingType.Auction.ToString()))
+                        await mediator.Send(new UpdateGuildSettingsCommand(settings));
+
+                    _showrooms.Add(showroom);
+                });
+            }
             
-            TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
-            
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));
+
+            ReportChanges();
+
             return;
         }
         
         public override ValueTask UpdateAsync()
         {
-            var exists = _showrooms.Any(x => x.ShowroomId == SelectedChannelId && x.ListingType == ListingType.Auction);
+            var exists = _showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
-                button.IsDisabled = !exists;
+                if (button.Label != "Close")
+                    button.IsDisabled = !exists;
 
             return base.UpdateAsync();
         }

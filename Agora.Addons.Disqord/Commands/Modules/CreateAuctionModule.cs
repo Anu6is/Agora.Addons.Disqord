@@ -1,0 +1,222 @@
+﻿using Agora.Addons.Disqord.Checks;
+using Disqord;
+using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
+using Emporia.Application.Features.Commands;
+using Emporia.Application.Models;
+using Emporia.Domain.Common;
+using Emporia.Extensions.Discord;
+using Emporia.Extensions.Discord.Features.Commands;
+using Qmmands;
+
+namespace Agora.Addons.Disqord.Commands
+{
+    [RequireSetup]
+    [RequireMerchant]
+    [SlashGroup("add")] //[RequireShowroom("Auction")]
+    [RequireBotPermissions(Permission.SendMessages | Permission.SendEmbeds | Permission.ManageThreads)]
+    public sealed class CreateAuctionModule : AgoraModuleBase
+    {
+        [SlashCommand("standard-auction")]
+        [Description("User with the highest bid wins when the auction ends.")]
+        public async Task CreateStandarAuction(
+            [Description("Length of time the auction should run. (example: 7d or 1 week)")] TimeSpan duration,
+            [Description("Title of the item to be auctioned.")] ProductTitle title,
+            [Description("Price at which bidding should start at. Numbers only!")] decimal startingPrice,
+            [Description("Currency to use. Defaults to server default")] string currency = null,
+            [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
+            [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
+            [Description("Additional information about the item.")] ProductDescription description = null,
+            [Description("Sell immediately for this price.")] decimal buyNowPrice = 0,
+            [Description("Do NOT sell unless bids exceed this price.")] decimal reservePrice = 0,
+            [Description("Min amount bids can be increased by. Defaults to 1")] decimal minBidIncrease = 1,
+            [Description("Min amount bids can be increased by.")] decimal maxBidIncrease = 0,
+            [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
+            [Description("Category the item is associated with")] AgoraCategory category = null,                            //TODO - auto-complete
+            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,    //TODO - auto-complete
+            [Description("A hidden message to be sent to the winner.")] HiddenMessage message = null,
+            [Description("Item owner. Defaults to the command user.")] IMember owner = null,
+            [Description("True to hide the item owner.")] bool anonymous = false)
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            quantity ??= Stock.Create(1);
+            currency ??= Settings.DefaultCurrency.Symbol;
+            scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
+
+            var scheduledEnd = scheduledStart.Value.Add(duration);
+            var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
+            var item = new AuctionItemModel(title, currency, startingPrice, quantity)
+            {
+                ImageUrl = imageUrl,
+                Category = category?.ToDomainObject(),
+                Subcategory = subcategory.ToDomainObject(),
+                Description = description,
+                ReservePrice = reservePrice,
+                MinBidIncrease = minBidIncrease,
+                MaxBidIncrease = maxBidIncrease
+            };
+
+            var ownerId = owner?.Id ?? Context.Author.Id;
+            var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+            var listing = new StandardAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
+            {
+                BuyNowPrice = buyNowPrice,
+                HiddenMessage = message,
+                Anonymous = anonymous
+            };
+
+            await Deferral(isEphemeral: true);
+            await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
+
+            _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+            
+            await Response("Standard Auction successfully created!");
+        }
+
+        [SlashCommand("sealed-auction")]
+        [Description("Bids are hidden. Winner pays the second highest bid.")]
+        public async Task CreateVickreyAuction(
+            [Description("Length of time the auction should run. (example: 7d or 1 week)")] TimeSpan duration,
+            [Description("Title of the item to be auctioned.")] ProductTitle title,
+            [Description("Price at which bidding should start at. Numbers only!")] decimal startingPrice,
+            [Description("Currency to use. Defaults to server default")] string currency = null,
+            [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
+            [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
+            [Description("Additional information about the item.")] ProductDescription description = null,
+            [Description("Limits the number of bids that can be submitted.")] uint maxParticipants = 0,
+            [Description("Do NOT sell unless bids exceed this price.")] decimal reservePrice = 0,
+            [Description("Min amount bids can be increased by. Defaults to 1")] decimal minBidIncrease = 1,
+            [Description("Max amount bids can be increased by.")] decimal maxBidIncrease = 0,
+            [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
+            [Description("Category the item is associated with")] AgoraCategory category = null,
+            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,
+            [Description("A hidden message to be sent to the winner.")] HiddenMessage message = null,
+            [Description("Item owner. Defaults to the command user.")] IMember owner = null,
+            [Description("True to hide the item owner.")] bool anonymous = false)
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            quantity ??= Stock.Create(1);
+            currency ??= Settings.DefaultCurrency.Symbol;
+            scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
+
+            var scheduledEnd = scheduledStart.Value.Add(duration);
+            var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
+            var item = new AuctionItemModel(title, currency, startingPrice, quantity)
+            {
+                ImageUrl = imageUrl,
+                Category = category.ToDomainObject(),
+                Subcategory = subcategory.ToDomainObject(),
+                Description = description,
+                ReservePrice = reservePrice,
+                MinBidIncrease = startingPrice + minBidIncrease,
+                MaxBidIncrease = maxBidIncrease
+            };
+
+            var ownerId = owner?.Id ?? Context.Author.Id;
+            var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+            var listing = new VickreyAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
+            {
+                MaxParticipants = maxParticipants,
+                HiddenMessage = message,
+                Anonymous = anonymous
+            };
+
+            await Deferral(isEphemeral: true);
+            await Base.ExecuteAsync(new CreateVickreyAuctionCommand(showroom, item, listing));
+
+            _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+            
+            await Response("Sealed-bid Auction successfully created!");
+        }
+
+        [SlashCommand("live-auction")]
+        [Description("Auction ends if no bids are made during the timeout period.")]
+        public async Task CreateLiveAuction(
+            [Description("Length of time the auction should run. (example: 7d or 1 week)")] TimeSpan duration,
+            [Description("Title of the item to be auctioned.")] ProductTitle title,
+            [Description("Price at which bidding should start at. Numbers only!")] decimal startingPrice,
+            [Description("Max time between bids. Auction ends if no new bids.")] TimeSpan timeout,
+            [Description("Currency to use. Defaults to server default")] string currency = null,
+            [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
+            [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
+            [Description("Additional information about the item.")] ProductDescription description = null,
+            [Description("Do NOT sell unless bids exceed this price.")] decimal reservePrice = 0,
+            [Description("Min amount bids can be increased by. Defaults to 1")] decimal minBidIncrease = 1,
+            [Description("Max amount bids can be increased by.")] decimal maxBidIncrease = 0,
+            [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
+            [Description("Category the item is associated with")] AgoraCategory category = null,
+            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,
+            [Description("A hidden message to be sent to the winner.")] HiddenMessage message = null,
+            [Description("Item owner. Defaults to the command user.")] IMember owner = null,
+            [Description("True to hide the item owner.")] bool anonymous = false)
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            quantity ??= Stock.Create(1);
+            currency ??= Settings.DefaultCurrency.Symbol;
+            scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
+
+            var scheduledEnd = scheduledStart.Value.Add(duration);
+            var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
+            var item = new AuctionItemModel(title, currency, startingPrice, quantity)
+            {
+                ImageUrl = imageUrl,
+                Category = category.ToDomainObject(),
+                Subcategory = subcategory.ToDomainObject(),
+                Description = description,
+                ReservePrice = reservePrice,
+                MinBidIncrease = startingPrice + minBidIncrease,
+                MaxBidIncrease = maxBidIncrease
+            };
+
+            var ownerId = owner?.Id ?? Context.Author.Id;
+            var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+            var listing = new LiveAuctionModel(scheduledStart.Value, scheduledEnd, timeout, new UserId(userDetails.UserId))
+            {
+                HiddenMessage = message,
+                Anonymous = anonymous
+            };
+
+            await Deferral(isEphemeral: true);
+            await Base.ExecuteAsync(new CreateLiveAuctionCommand(showroom, item, listing));
+
+            _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+            await Response("Live Auction successfully created!");
+        }
+
+        [AutoComplete("standard-auction")]
+        [AutoComplete("sealed-auction")]
+        [AutoComplete("live-auction")]
+        public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<AgoraCategory> category, AutoComplete<AgoraSubcategory> subcategory)
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            if (currency.IsFocused)
+            {
+                currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).ToArray());
+            }
+            else if (category.IsCurrentlyFocused(out var categoryValue)) 
+            {
+                if (emporium.Categories.Any())
+                    category.Choices.Add(new AgoraCategory("No Configured Server Categories Exist."));
+                else
+                    category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(categoryValue.ToString())).Select(x => new AgoraCategory(x.Title.Value)).ToArray());
+
+            }
+            else if (subcategory.IsCurrentlyFocused(out var subcategoryValue))
+            {
+                if (emporium.Categories.Any())
+                    subcategory.Choices.Add(new AgoraSubcategory("No Configured Server Subcategories Exist."));
+                else
+                    subcategory.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(subcategoryValue.ToString())).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
+
+            }
+        }
+    }
+}

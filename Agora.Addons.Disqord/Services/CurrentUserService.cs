@@ -1,7 +1,7 @@
 ﻿using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
-using Disqord.Bot;
+using Disqord.Bot.Commands;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;

@@ -1,9 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
-using Emporia.Application.Common;
-using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -14,7 +11,7 @@ namespace Agora.Addons.Disqord.Menus.View
     public class ResultChannelView : ChannelSelectionView
     {
         public ResultChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) 
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
+            : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
         {
             DefaultView = () => new MainSettingsView(context);
             CurrentChannelId = context.Settings.ResultLogChannelId;
@@ -30,7 +27,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
-            TemplateMessage.WithEmbeds(settings.ToEmbed("Result Logs", new LocalEmoji("📃")));
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Result Logs", new LocalEmoji("📃")));
 
             return;
         }

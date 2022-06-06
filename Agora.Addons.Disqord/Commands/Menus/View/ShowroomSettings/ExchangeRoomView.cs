@@ -1,8 +1,8 @@
 ﻿using Agora.Addons.Disqord.Extensions;
-using Agora.Shared.Models;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Emporia.Application.Common;
+using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
@@ -14,10 +14,10 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class ExchangeRoomView : ChannelSelectionView
     {
-        private readonly List<ShowroomModel> _showrooms;
+        private readonly List<Showroom> _showrooms;
 
-        public ExchangeRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<ShowroomModel> showrooms)
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(showrooms)))
+        public ExchangeRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<Showroom> showrooms)
+            : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(showrooms)))
         {
             DefaultView = () => new MainShowroomView(context, showrooms);
             _showrooms = showrooms;
@@ -26,26 +26,31 @@ namespace Agora.Addons.Disqord.Menus.View
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
-
-            if (settings.AvailableRooms.Add("Market"))
-            {
-                using var scope = Context.Services.CreateScope();
-                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+            
+            using var scope = Context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
                 
-                var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+            var room = _showrooms.FirstOrDefault(x => x.Id.Value.Equals(SelectedChannelId) && x.ListingType.Equals(ListingType.Exchange.ToString()));
+
+            if (room == null)
+            {
                 await data.BeginTransactionAsync(async () =>
                 {
-                    //TODO - enable exchange items
-                    //await mediator.Send(new CreateShowroomCommand<MarketItem>(new EmporiumId(Context.Guild.Id), new ShowroomId(selectedChannelId)));
-                    await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                    var showroom = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Exchange));
 
-                    _showrooms.Add(new ShowroomModel(SelectedChannelId) { ListingType = ListingType.Market, IsActive = true });
+                    if (settings.AvailableRooms.Add(ListingType.Exchange.ToString()))
+                        await mediator.Send(new UpdateGuildSettingsCommand(settings));
+
+                    _showrooms.Add(showroom);
                 });
             }
 
-            TemplateMessage.WithEmbeds(settings.ToEmbed(_showrooms));
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));
+            
+            ReportChanges();
 
             return;
         }

@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Bot;
+using Disqord.Bot.Commands;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using FluentValidation;
@@ -14,7 +15,7 @@ namespace Agora.Addons.Disqord
     {
         private readonly IHub _hub;
         
-        public UnhandledExceptionService(DiscordBotBase bot, CommandService commandService, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
+        public UnhandledExceptionService(DiscordBotBase bot, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
         {
             _hub = sentryHub;
             
@@ -22,26 +23,26 @@ namespace Agora.Addons.Disqord
             {
                 scope.AddEventProcessor(new SentryEventProcessor());
             });
-
-            commandService.CommandExecutionFailed += CommandExecutionFailed;
         }
 
-        private ValueTask CommandExecutionFailed(object sender, CommandExecutionFailedEventArgs args)
+        public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
         {
-            var context = (DiscordGuildCommandContext)args.Context;
+            var context = commandContext as IDiscordGuildCommandContext;
             var command = context.Command;
-            var result = args.Result;
+            var guild = Bot.GetGuild(context.GuildId);
+            var channel = Bot.GetChannel(context.GuildId, context.ChannelId);
+            var currentMember = Bot.GetMember(context.GuildId, context.Bot.CurrentUser.Id);
 
             _hub.CaptureEvent(new SentryEvent()
             {
-                Message = new SentryMessage() { Message = result.Exception.ToString() },
-                ServerName = context.Guild.Name,
-                Logger = $"{context.Guild.Name}.{context.Channel.Name}.{context.Command.Name}",
+                ServerName = guild.Name,
+                Logger = $"{guild.Name}.{channel.Name}.{context.Command.Name}",
+                Message = new SentryMessage() { Message = result is ExceptionResult exceptionResult ? exceptionResult.Exception.ToString() : result.FailureReason },
             }, scope =>
             {
                 scope.AddBreadcrumb(
                     message: $"Error occurred while executing {command.Name}",
-                    category: result.CommandExecutionStep.ToString(),
+                    category: context.ExecutionStep?.GetType().ToString(),
                     dataPair: ("reason", result.FailureReason),
                     type: "user");
 
@@ -51,10 +52,10 @@ namespace Agora.Addons.Disqord
                 scope.SetTag("GuildId", context.GuildId.ToString());
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
-                scope.SetExtra("Shard", context.Bot.GetShardId(context.GuildId));
-                scope.SetExtra("Arguments", $"{context.Command.FullAliases[0]} {context.RawArguments}");
-                scope.SetExtra("Guild Permissions", context.CurrentMember.GetPermissions(context.Guild).ToString());
-                scope.SetExtra("Channel Permissions", context.CurrentMember.GetPermissions(context.Channel).ToString());
+                scope.SetExtra("Shard", Bot.GetShardId(context.GuildId));
+                scope.SetExtra("Arguments", $"{context.Command.Name} {context.RawArguments}");
+                scope.SetExtra("Guild Permissions", currentMember.GetPermissions(guild).ToString());
+                scope.SetExtra("Channel Permissions", currentMember.GetPermissions(channel).ToString());
             });
 
             return default;
@@ -116,7 +117,7 @@ namespace Agora.Addons.Disqord
                 if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")
                     return null;
 
-                if (@event.Level == SentryLevel.Error) 
+                if (@event.Level == SentryLevel.Error)
                 {
                     switch (@event.Logger)
                     {
@@ -127,7 +128,7 @@ namespace Agora.Addons.Disqord
                         default:
                             break;
                     }
-                } 
+                }
 
                 return @event;
             }

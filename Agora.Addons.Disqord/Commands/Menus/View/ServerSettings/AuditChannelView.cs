@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Menus.View
     public class AuditChannelView : ChannelSelectionView
     {
         public AuditChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) 
-            : base(context, settingsOptions, new LocalMessage().AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
+            : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
         {
             DefaultView = () => new MainSettingsView(context);
             CurrentChannelId = context.Settings.AuditLogChannelId;
@@ -31,7 +31,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
-            TemplateMessage.WithEmbeds(settings.ToEmbed("Audit Logs", new LocalEmoji("📃")));
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Audit Logs", new LocalEmoji("📃")));
 
             return;
         }

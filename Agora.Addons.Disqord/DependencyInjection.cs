@@ -1,11 +1,8 @@
 ﻿using Agora.Addons.Disqord.Parsers;
-using Agora.Addons.Disqord.TypeParsers;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
-using Emporia.Domain.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Qmmands;
 using System.Collections.Immutable;
 using System.Reflection;
 
@@ -20,18 +17,6 @@ namespace Agora.Addons.Disqord
 
         public static IServiceCollection AddDisqordCommands(this IServiceCollection services)
         {
-            var commandService = new CommandService();
-
-            commandService.AddTypeParser(new IntValueTypeParser<Stock>());
-            commandService.AddTypeParser(new StringValueTypeParser<ProductTitle>(75));
-            commandService.AddTypeParser(new StringValueTypeParser<HiddenMessage>(250));
-            commandService.AddTypeParser(new StringValueTypeParser<CategoryTitle>(25));
-            commandService.AddTypeParser(new StringValueTypeParser<SubcategoryTitle>(25));
-            commandService.AddTypeParser(new StringValueTypeParser<ProductDescription>(500));
-            commandService.AddTypeParser(new DateTimeTypeParser());
-            commandService.AddTypeParser(new TimeSpanTypeParser());
-
-            services.AddSingleton(commandService);
             services.AddTransient<EmporiumTimeParser>();
             
             return services;

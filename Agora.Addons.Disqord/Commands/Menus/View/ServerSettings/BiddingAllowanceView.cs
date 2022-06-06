@@ -1,9 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
-using Emporia.Application.Common;
-using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -40,7 +37,7 @@ namespace Agora.Addons.Disqord.Menus.View
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = true;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = false;
 
-            TemplateMessage.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
 
             ReportChanges();
 
@@ -55,8 +52,8 @@ namespace Agora.Addons.Disqord.Menus.View
 
             Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = false;
             Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = true;
-            
-            TemplateMessage.WithEmbeds(_settings.ToEmbed("Absentee Bidding"));
+
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Absentee Bidding"));
 
             ReportChanges();
 
@@ -80,11 +77,11 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.ToEmbed());
+                MessageTemplate = message => message.WithEmbeds(settings.ToEmbed());
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())
-                button.IsDisabled = true;
+                if (button.Label != "Close") button.IsDisabled = true;
 
             ReportChanges();
 

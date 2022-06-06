@@ -3,6 +3,8 @@ using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
+using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -10,6 +12,7 @@ using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using static Disqord.Rest.Api.Route;
 
 namespace Agora.Addons.Disqord
 {
@@ -17,23 +20,24 @@ namespace Agora.Addons.Disqord
     public class MessageProcessingService : AgoraService, IProductListingService, IAuditLogService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
-        private readonly IInteractionContextAccessor _contextAccessor;
+        private readonly ICommandContextAccessor _commandAccessor;
+        private readonly IInteractionContextAccessor _interactionAccessor;
         
         public EmporiumId EmporiumId { get; set; }
         public ShowroomId ShowroomId { get; set; }        
 
-        public MessageProcessingService(DiscordBotBase bot, IInteractionContextAccessor contextAccessor, ILogger<MessageProcessingService> logger) : base(logger)
+        public MessageProcessingService(DiscordBotBase bot, ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor, ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
-            _contextAccessor = contextAccessor;
+            _commandAccessor = commandAccessor;
+            _interactionAccessor = interactionAccessor;
         }
-
+        
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
-            var productEmbed = productListing.ToEmbed();
-            var message = new LocalMessage().AddEmbed(productEmbed).WithComponents(productListing.Buttons());
+            var message = new LocalMessage().AddEmbed(productListing.ToEmbed()).WithComponents(productListing.Buttons());
             var response = await _agora.SendMessageAsync(ShowroomId.Value, message);
-            
+
             return ReferenceNumber.Create(response.Id);
         }
 
@@ -41,7 +45,7 @@ namespace Agora.Addons.Disqord
         {
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed() };
 
-            if (_contextAccessor.Context == null)
+            if (_interactionAccessor.Context == null)
                 await _agora.ModifyMessageAsync(ShowroomId.Value, 
                     productListing.Product.ReferenceNumber.Value,
                     x =>
@@ -50,7 +54,7 @@ namespace Agora.Addons.Disqord
                         x.Components = productListing.Buttons();
                     });
             else
-                await _contextAccessor.Context.Interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
+                await _interactionAccessor.Context.Interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
                 {
                     Embeds = productEmbeds,
                     Components = productListing.Buttons()
@@ -159,7 +163,7 @@ namespace Agora.Addons.Disqord
         {
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var submitter = offer.User.ReferenceNumber.Value;
+            var submitter = offer.UserReference.Value;
             var quantity = productListing.Product.Quantity.ToString();
             var user = string.Empty;
 
@@ -192,7 +196,7 @@ namespace Agora.Addons.Disqord
             var title = productListing.Product.Title.ToString();
             var value = productListing.CurrentOffer.Submission.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var buyer = productListing.CurrentOffer.User.ReferenceNumber.Value;
+            var buyer = productListing.CurrentOffer.UserReference.Value;
             var duration = DateTimeOffset.UtcNow.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
 
             var description = new StringBuilder()
@@ -233,17 +237,26 @@ namespace Agora.Addons.Disqord
 
             return ReferenceNumber.Create(message.Id);
         }
-        
+
         public async ValueTask<ReferenceNumber> PostListingSoldAsync(Listing productListing)
         {
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var buyer = productListing.CurrentOffer.User.ReferenceNumber.Value;
+            var buyer = productListing.CurrentOffer.UserReference.Value;
+            var participants = $"{Mention.User(owner)}\n{Mention.User(buyer)}";
             var embed = new LocalEmbed().WithTitle($"{productListing} Claimed")
                                         .AddField($"{productListing.Product.Title} (x{productListing.Product.Quantity})", productListing.CurrentOffer.Submission.ToString())
                                         .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer))
                                         .WithColor(Color.Teal);
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent($"{Mention.User(owner)}\n{Mention.User(buyer)}").AddEmbed(embed));
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(participants).AddEmbed(embed));
+            var delivered = await SendHiddenMessage(productListing, message);
+
+            if (!delivered)
+                await message.ModifyAsync(x =>
+                {
+                    x.Content = participants;
+                    x.Embeds = new[] { embed.WithFooter("The message attached to this listing failed to be delivered.") };
+                });
 
             return ReferenceNumber.Create(message.Id);
         }
@@ -260,6 +273,36 @@ namespace Agora.Addons.Disqord
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(Mention.User(owner)).AddEmbed(embed));
 
             return ReferenceNumber.Create(message.Id);
+        }
+
+        private async ValueTask<bool> SendHiddenMessage(Listing productListing, IUserMessage message)
+        {
+            if (productListing.HiddenMessage == null) return true;
+
+            var guildId = productListing.Owner.EmporiumId;
+            var embed = new LocalEmbed().WithDescription($"Attached message: {productListing.HiddenMessage}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithColor(Color.Teal);
+
+            try
+            {
+                var directChannel = await _agora.CreateDirectChannelAsync(productListing.CurrentOffer.UserReference.Value);
+                await directChannel.SendMessageAsync(
+                    new LocalMessage()
+                        .AddEmbed(embed)
+                        .AddComponent(
+                            new LocalRowComponent()
+                                .WithComponents(
+                                    new LocalLinkButtonComponent()
+                                        .WithLabel("View Results")
+                                        .WithUrl($"https://discordapp.com/channels/{guildId}/{message.ChannelId}/{message.Id}"))));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -9,6 +9,7 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using static Disqord.Discord.Limits.Components;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -65,12 +66,12 @@ namespace Agora.Addons.Disqord.Menus.View
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
                     await scope.ServiceProvider.GetRequiredService<IEmporiaCacheService>().AddEmporiumAsync(emporium);
 
-                    TemplateMessage.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
+                    MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
                 });
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())
-                button.IsDisabled = true;
+                if (button.Label != "Close") button.IsDisabled = true;
 
             ReportChanges();
 
@@ -81,8 +82,8 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             _emporium.WithLocalTime(Time.From(time));
             _settings.Offset = _emporium.TimeOffset;
-            
-            TemplateMessage.WithEmbeds(_settings.ToEmbed("Server Time"));
+
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Time"));
 
             ReportChanges();
             

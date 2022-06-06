@@ -1,7 +1,7 @@
 ﻿using Agora.Shared.Extensions;
-using Agora.Shared.Models;
 using Disqord;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Humanizer;
@@ -119,7 +119,7 @@ namespace Agora.Addons.Disqord.Extensions
             return embed;
         }
 
-        public static LocalEmbed ToEmbed(this IDiscordGuildSettings settings, IEnumerable<ShowroomModel> showrooms)
+        public static LocalEmbed ToEmbed(this IDiscordGuildSettings settings, IEnumerable<Showroom> showrooms)
         {
             var missing = settings.GetMissingRequirements();
             var description = missing.IsNull()
@@ -143,15 +143,16 @@ namespace Agora.Addons.Disqord.Extensions
             return embed;
         }
 
-        private static string GetRoomDetails(IEnumerable<ShowroomModel> showrooms, ListingType listingType)
+        private static string GetRoomDetails(IEnumerable<Showroom> showrooms, ListingType listingType)
         {
-            var rooms = showrooms.Where(x => x.ListingType == listingType);
+            var rooms = showrooms.Where(x => x.ListingType == listingType.ToString());
 
             if (rooms.Any())
                 return string.Join(Environment.NewLine, rooms.Select(s =>
                 {
                     var status = s.IsActive ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-                    var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.ShowroomId))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(s.BusinessHours())}";
+                    var businessHours = s.ActiveHours == null ? "24-hours" : s.ActiveHours.ToString();
+                    var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.Id.Value))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(businessHours)}";
 
                     return roomDetails.Length > LocalEmbedField.MaxFieldValueLength 
                             ? roomDetails[..LocalEmbedField.MaxFieldValueLength] 

@@ -16,16 +16,15 @@ namespace Agora.Addons.Disqord
             _jobs = new RecurringJob[] { activationJob, expirationJob };
         }
 
-        public override async Task StartAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            //await Bot.WaitUntilReadyAsync(stoppingToken);
-            
+            await Bot.WaitUntilReadyAsync(stoppingToken);
             _logger.LogInformation("Starting Product Listing Scheduler");
 
             foreach (var job in _jobs)
                 await EnqueueAsync(job, stoppingToken);
 
-            await base.StartAsync(stoppingToken);
+            await base.ExecuteAsync(stoppingToken);
         }
 
         public async Task EnqueueAsync(IJob job, CancellationToken stoppingToken)

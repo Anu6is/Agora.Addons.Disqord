@@ -42,7 +42,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
-                TemplateMessage.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));                
+                MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));                
             }
             
             e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;

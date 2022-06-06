@@ -72,7 +72,7 @@ namespace Agora.Addons.Disqord
                             authorizationError = await ValidateSubmissionAsync(currentUser, request);
                             break;
                         case AuthorizationPolicy.Manager:
-                            authorizationError = ValidateManager(currentUser, request);
+                            authorizationError = await ValidateManager(currentUser, request);
                             break;
                         case AuthorizationPolicy.StaffOnly:
                             authorizationError = ValidateStaff();
@@ -116,15 +116,15 @@ namespace Agora.Addons.Disqord
             return canSubmit ? string.Empty : "Unauthorized access: You cannot submit an offer for an item you own.";
         }
 
-        private static string ValidateManager<TRequest>(IEmporiumUser currentUser, TRequest request)
+        private async Task<string> ValidateManager<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
             var isManager = request switch
             {
-                WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || currentUser.Equals(command.Showroom.Listings.First().User),
+                WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
                 _ => true
             };
 
-            return isManager ? string.Empty : "Unauthorized access: Only the owner or users with the manager role can perform this action.";
+            return isManager ? string.Empty : "Unauthorized access: Only the OWNER or users with the MANAGER role can perform this action.";
         }
 
         private static string ValidateStaff()
@@ -140,7 +140,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return isOwner ? string.Empty : "Unauthorized access: Only the owner can perform this action.";
+            return isOwner ? string.Empty : "Unauthorized access: Only the OWNER can perform this action.";
         }
 
 

@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Rest;
 
 namespace Agora.Addons.Disqord.Menus
 {
@@ -11,8 +12,8 @@ namespace Agora.Addons.Disqord.Menus
         public SelectionViewComponent Selection { get; }
         public Func<ViewBase> DefaultView { get; init; }
         
-        public BaseSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, LocalMessage templateMessage)
-            : base(templateMessage)
+        public BaseSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, Action<LocalMessageBase> messageTemplate)
+            : base(messageTemplate)
         {
             _context = context;
             _settingsOptions = settingsOptions;
@@ -60,6 +61,14 @@ namespace Agora.Addons.Disqord.Menus
             }
 
             return default;
+        }
+
+        [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Row = 4)]
+        public async ValueTask CloseView(ButtonEventArgs e)
+        {
+            await (e.Interaction.Client as AgoraBot).DeleteMessageAsync(e.ChannelId, e.Interaction.Message.Id);
+            
+            return;
         }
     }
 }

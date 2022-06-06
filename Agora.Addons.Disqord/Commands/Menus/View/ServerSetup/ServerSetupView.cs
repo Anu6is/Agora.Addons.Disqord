@@ -1,6 +1,6 @@
-﻿using Agora.Shared.Models;
-using Disqord;
+﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Emporia.Domain.Entities;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -16,7 +16,7 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Continue", Style = LocalButtonComponentStyle.Success, Row = 2)]
         public ValueTask Continue(ButtonEventArgs e)
         {
-            Menu.View = new MainShowroomView(_context, new List<ShowroomModel>());
+            Menu.View = new MainShowroomView(_context, new List<Showroom>());
 
             return default;
         }

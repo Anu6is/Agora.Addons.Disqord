@@ -73,8 +73,8 @@ namespace Agora.Addons.Disqord.Menus.View
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
-                
-                TemplateMessage.WithEmbeds(settings.ToEmbed("Default Currency", new LocalEmoji("💰")));
+
+                MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Default Currency", new LocalEmoji("💰")));
             }
 
             ReportChanges();

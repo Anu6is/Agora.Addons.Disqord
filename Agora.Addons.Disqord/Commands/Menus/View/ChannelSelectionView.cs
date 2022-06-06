@@ -10,8 +10,8 @@ namespace Agora.Addons.Disqord.Menus.View
         public ulong CurrentChannelId { get; set; }
         public ulong SelectedChannelId { get; private set; }
 
-        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, LocalMessage templateMessage) 
-            : base(context, settingsOptions, templateMessage)
+        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, Action<LocalMessageBase> messageTemplate) 
+            : base(context, settingsOptions, messageTemplate)
         {
             Context = context;
 

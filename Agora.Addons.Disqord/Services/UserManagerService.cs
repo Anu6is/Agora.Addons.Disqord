@@ -2,6 +2,7 @@
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
+using Disqord.Bot.Commands;
 using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;

@@ -1,4 +1,4 @@
-﻿using Disqord.Bot;
+﻿using Disqord.Bot.Commands;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -9,10 +9,10 @@ namespace Agora.Addons.Disqord.Checks
 {
     public class SkipAuthenticationAttribute : DiscordGuildCheckAttribute
     {
-        public override ValueTask<CheckResult> CheckAsync(DiscordGuildCommandContext context)
+        public override ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
             context.Services.GetRequiredService<ICurrentUserService>().CurrentUser = EmporiumUser.Create(new EmporiumId(context.GuildId), ReferenceNumber.Create(context.Author.Id));
-            return Success();
+            return Results.Success;
         }
     }
 }

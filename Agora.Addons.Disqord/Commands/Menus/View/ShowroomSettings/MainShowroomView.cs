@@ -1,10 +1,10 @@
-﻿using Agora.Shared.Models;
+﻿using Emporia.Domain.Entities;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
     public class MainShowroomView : ShowroomSettingsView
     {
-        public MainShowroomView(GuildSettingsContext context, List<ShowroomModel> showrooms)
+        public MainShowroomView(GuildSettingsContext context, List<Showroom> showrooms)
             : base(context,
                   new List<GuildSettingsOption>
                   {

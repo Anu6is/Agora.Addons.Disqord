@@ -1,16 +1,17 @@
 ﻿using Disqord;
-using Disqord.Bot;
+using Disqord.Bot.Commands;
+using Disqord.Gateway;
 using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
     public class RequireBarterChannelAttribute : DiscordGuildCheckAttribute
     {
-        public override ValueTask<CheckResult> CheckAsync(DiscordGuildCommandContext context)
+        public override ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
-            if (context.Channel is IThreadChannel) return Success();
+            if (context.Bot.GetChannel(context.GuildId, context.ChannelId) is IThreadChannel) return Results.Success;
             
-            return Failure("This command can only be used in a barter channel.");
+            return Results.Failure("This command can only be used in a barter channel.");
         }
     }
 }

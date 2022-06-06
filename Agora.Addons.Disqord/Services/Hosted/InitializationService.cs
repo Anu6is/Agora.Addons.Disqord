@@ -1,5 +1,7 @@
-﻿using Disqord.Bot;
+﻿using Disqord;
+using Disqord.Bot;
 using Disqord.Bot.Hosting;
+using Disqord.Gateway;
 using Emporia.Application.Features.Queries;
 using Emporia.Extensions.Discord.Features.MessageBroker;
 using MediatR;
@@ -12,10 +14,8 @@ namespace Agora.Addons.Disqord
     {
         private readonly IMessageBroker _messageBroker;
 
-        public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger) : base(logger, bot)
-        {
-            _messageBroker = messageBroker;
-        }
+        public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger) 
+            : base(logger, bot) => _messageBroker = messageBroker;
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -26,6 +26,12 @@ namespace Agora.Addons.Disqord
             foreach (var emporiumId in emporiumList.Data)
                 await _messageBroker.TryRegisterAsync(emporiumId);
 
+            return;
+        }
+
+        protected override async ValueTask OnReady(ReadyEventArgs e)
+        {
+            await Client.SetPresenceAsync(UserStatus.Online);
             return;
         }
     }

@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("bid")]
         [RequireBarterChannel]
         [Description("Submit a bid for an auction item.")]
-        public async Task<IResult> AddBid([Description("The amount to bid on the listed item.")] [Minimum(0)] decimal amount)
+        public async Task<IResult> AddBid([Description("The amount to bid on the listed item.")][Minimum(0)] decimal amount)
         {
             var room = Channel as IThreadChannel;
 

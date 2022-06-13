@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Title = listing.Product.Title.Value,
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
-                ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,               
+                ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode}")
             }
             .WithProductDetails(listing)
@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Extensions
             var edit = new LocalButtonComponent().WithCustomId("edit").WithLabel("Edit").WithStyle(LocalButtonComponentStyle.Primary);
             var extend = new LocalButtonComponent().WithCustomId("extend").WithLabel("Extend").WithStyle(LocalButtonComponentStyle.Primary);
             var withdraw = new LocalButtonComponent().WithCustomId($"withdraw{type}").WithLabel("Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
-            var firstRowButtons = new LocalRowComponent().WithComponents(new LocalButtonComponent[] { withdraw, edit, extend});
+            var firstRowButtons = new LocalRowComponent().WithComponents(new LocalButtonComponent[] { withdraw, edit, extend });
 
             if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(new LocalButtonComponent() { CustomId = "buy", Label = "Buy", Style = LocalButtonComponentStyle.Success, IsDisabled = !listing.IsActive() });
@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord.Extensions
 
             if (!listing.IsActive() || listing.Product is MarketItem)
                 return new LocalRowComponent[] { firstRowButtons };
-            
+
             var secondRowButtons = ParticipantButtons(listing);
 
             return new LocalRowComponent[] { firstRowButtons, secondRowButtons };
@@ -50,23 +50,23 @@ namespace Agora.Addons.Disqord.Extensions
                 {
                     new LocalButtonComponent() { CustomId = "undobid", Label = "Undo Bid", Style = LocalButtonComponentStyle.Danger, IsDisabled = listing.CurrentOffer == null },
                     new LocalButtonComponent()
-                    { 
+                    {
                         CustomId = "minbid",
-                        Label = $"Min Bid [{auctionItem.FormatIncrement(auctionItem.BidIncrement.MinValue)}]", 
+                        Label = $"Min Bid [{auctionItem.FormatIncrement(auctionItem.BidIncrement.MinValue)}]",
                         Style = LocalButtonComponentStyle.Primary,
-                        IsDisabled = listing is VickreyAuction                        
+                        IsDisabled = listing is VickreyAuction
                     },
-                    new LocalButtonComponent() 
-                    { 
+                    new LocalButtonComponent()
+                    {
                         CustomId = "maxbid",
                         Label = $"Max Bid [{auctionItem.FormatIncrement(auctionItem.BidIncrement.MaxValue.GetValueOrDefault())}]",
-                        Style = LocalButtonComponentStyle.Primary, 
+                        Style = LocalButtonComponentStyle.Primary,
                         IsDisabled = !auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction
                     },
-                    new LocalButtonComponent() 
-                    { 
-                        CustomId = "autobid",  
-                        Label = "Auto Bid", 
+                    new LocalButtonComponent()
+                    {
+                        CustomId = "autobid",
+                        Label = "Auto Bid",
                         Style = LocalButtonComponentStyle.Success,
                         IsDisabled = listing is VickreyAuction
                     },
@@ -86,13 +86,13 @@ namespace Agora.Addons.Disqord.Extensions
             AuctionItem auction => embed.AddInlineField("Quantity", auction.Quantity.Amount.ToString())
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
                                         .AddInlineField("Current Bid", listing is VickreyAuction || auction.Offers.Count == 0
-                                                                     ? listing.ValueTag.ToString() 
+                                                                     ? listing.ValueTag.ToString()
                                                                      : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expires In", Markdown.Timestamp(listing.ExpirationDate, Markdown.TimestampFormat.RelativeTime))
-                                        .AddInlineField("Item Owner", listing.Anonymous 
-                                                                    ? Markdown.BoldItalics("Anonymous") 
+                                        .AddInlineField("Expires In", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Item Owner", listing.Anonymous
+                                                                    ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
             MarketItem marketItem => embed.AddInlineField("Quantity", marketItem.Quantity.Amount.ToString())
                                           .AddInlineField("Price", marketItem.CurrentPrice.ToString())
@@ -100,16 +100,16 @@ namespace Agora.Addons.Disqord.Extensions
                                           .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart)),
             _ => embed
         };
-        
+
         private static LocalEmbedAuthor UniqueTrait(this Listing listing) => listing switch
         {
             StandardAuction auction => auction.BuyNowPrice == null ? null : new LocalEmbedAuthor().WithName($"Instant Purchase Price: {auction.BuyNowPrice}"),
             VickreyAuction auction => auction.MaxParticipants == 0 ? null : new LocalEmbedAuthor().WithName($"Max Participants: {auction.MaxParticipants}"),
-            LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Humanize()}"),
+            LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Add(TimeSpan.FromSeconds(1)).Humanize()}"),
             StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {(market.Discount == Discount.Percent ? $"{market.DiscountValue}%" : market.ValueTag.ToString())}"),
             _ => null
         };
-        
+
         public static bool IsActive(this Listing listing)
         {
             return listing.Status == ListingStatus.Active
@@ -123,5 +123,12 @@ namespace Agora.Addons.Disqord.Extensions
             >= 10000 => decimal.ToDouble(value).ToMetric(),
             _ => Money.Create(value, auction.StartingPrice.Currency).ToString(),
         };
+
+        private static DateTimeOffset ExpiresAt(this Listing listing)
+        {
+            if (listing.CurrentOffer == null || listing is not LiveAuction live) return listing.ExpirationDate;
+
+            return DateTimeOffset.UtcNow.Add(live.Timeout);
+        }
     }
 }

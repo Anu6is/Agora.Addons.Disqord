@@ -4,7 +4,6 @@ using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Commands;
-using Disqord.Bot.Commands.Application;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -12,7 +11,6 @@ using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.Logging;
 using System.Text;
-using static Disqord.Rest.Api.Route;
 
 namespace Agora.Addons.Disqord
 {
@@ -22,9 +20,9 @@ namespace Agora.Addons.Disqord
         private readonly DiscordBotBase _agora;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
-        
+
         public EmporiumId EmporiumId { get; set; }
-        public ShowroomId ShowroomId { get; set; }        
+        public ShowroomId ShowroomId { get; set; }
 
         public MessageProcessingService(DiscordBotBase bot, ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor, ILogger<MessageProcessingService> logger) : base(logger)
         {
@@ -32,7 +30,7 @@ namespace Agora.Addons.Disqord
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
         }
-        
+
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed()).WithComponents(productListing.Buttons());
@@ -46,7 +44,7 @@ namespace Agora.Addons.Disqord
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed() };
 
             if (_interactionAccessor.Context == null)
-                await _agora.ModifyMessageAsync(ShowroomId.Value, 
+                await _agora.ModifyMessageAsync(ShowroomId.Value,
                     productListing.Product.ReferenceNumber.Value,
                     x =>
                     {
@@ -65,7 +63,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> OpenBarteringChannelAsync(Listing listing)
         {
-            var duration = listing.ScheduledPeriod.Duration switch 
+            var duration = listing.ScheduledPeriod.Duration switch
             {
                 var minutes when minutes < TimeSpan.FromMinutes(60) => TimeSpan.FromHours(1),
                 var hours when hours < TimeSpan.FromHours(24) => TimeSpan.FromDays(1),
@@ -102,10 +100,10 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask RemoveProductListingAsync(ReferenceNumber referenceNumber)
         {
-            await _agora.DeleteMessageAsync(ShowroomId.Value, referenceNumber.Value);            
+            await _agora.DeleteMessageAsync(ShowroomId.Value, referenceNumber.Value);
             return;
         }
-        
+
         public async ValueTask<ReferenceNumber> LogListingCreatedAsync(Listing productListing)
         {
             var intermediary = string.Empty;
@@ -114,20 +112,20 @@ namespace Agora.Addons.Disqord
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var host = Mention.User(productListing.User.ReferenceNumber.Value);
-            
-            if (owner != productListing.User.ReferenceNumber.Value) 
+
+            if (owner != productListing.User.ReferenceNumber.Value)
                 intermediary = $" on behalf of {(productListing.Anonymous ? Markdown.Italics("Anonymous") : Mention.User(owner))}";
             else
                 host = productListing.Anonymous ? Markdown.Italics("Anonymous") : host;
-            
+
             var embed = new LocalEmbed().WithDescription($"{host} listed {Markdown.Bold(title)} (x{quantity}){intermediary} for {Markdown.Bold(value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledEnd))
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
                                         .WithColor(Color.SteelBlue);
-            
+
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
-            
+
             return ReferenceNumber.Create(message.Id);
         }
 
@@ -184,7 +182,7 @@ namespace Agora.Addons.Disqord
 
             return ReferenceNumber.Create(message.Id);
         }
-               
+
         public ValueTask<ReferenceNumber> LogOfferAcceptedAsync(Listing productListing, Offer offer)
         {
             throw new NotImplementedException();
@@ -228,7 +226,7 @@ namespace Agora.Addons.Disqord
                 .Append("hosted by ").Append(Mention.User(owner))
                 .Append(" has ").Append(Markdown.Underline("expired"))
                 .Append(" after ").Append(duration.Humanize());
-            
+
             var embed = new LocalEmbed().WithDescription(description.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
                                         .WithColor(Color.SlateGray);

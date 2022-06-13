@@ -20,6 +20,7 @@
                       new ("Merchant Role", "Role that can create/purchase listings. Default: @everyone.", (ctx, opts) => new ServerTimeView(ctx, opts)),
 
                       new ("Allowed Listings", "Various listing types that users can create", (ctx, opts) => new ListingsOptionsView(ctx, opts))
-                    }) { }
+                    })
+        { }
     }
 }

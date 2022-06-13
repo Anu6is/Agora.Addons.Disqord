@@ -15,7 +15,7 @@ namespace Agora.Addons.Disqord.Parsers
             if (value.Length > _maxLength)
                 return Failure($"The value is too long. The maximum length is {_maxLength} characters.");
 
-            var result = (TValueObject) typeof(TValueObject).GetMethod("Create").Invoke(null, new object[] { value.ToString() });
+            var result = (TValueObject)typeof(TValueObject).GetMethod("Create").Invoke(null, new object[] { value.ToString() });
 
             return Success(result);
         }

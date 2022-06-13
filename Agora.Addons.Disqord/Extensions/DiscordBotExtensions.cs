@@ -11,14 +11,14 @@ namespace Agora.Addons.Disqord.Extensions
         {
             bot.CacheProvider.TryGetMembers(guildId, out var memberCache);
 
-            if (memberCache.TryGetValue(userId, out var cachedMember)) 
+            if (memberCache.TryGetValue(userId, out var cachedMember))
                 return cachedMember;
 
             if (bot.GetShard(guildId).RateLimiter.GetRemainingRequests() < 3)
                 return await bot.FetchMemberAsync(guildId, userId);
-                        
+
             var members = await bot.Chunker.QueryAsync(guildId, new[] { userId });
-            
+
             return members.GetValueOrDefault(userId);
         }
     }

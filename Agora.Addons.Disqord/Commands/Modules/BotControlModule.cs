@@ -5,7 +5,6 @@ using Disqord.Gateway;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
-using static Disqord.Bot.Commands.Application.Default.DefaultApplicationCommandCacheProvider;
 
 namespace Agora.Addons.Disqord.Commands
 {

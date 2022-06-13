@@ -1,5 +1,4 @@
-﻿using Agora.Shared.Extensions;
-using Disqord;
+﻿using Disqord;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
@@ -15,11 +14,11 @@ namespace Agora.Addons.Disqord.Extensions
         {
             new(settings => settings.ResultLogChannelId != 0ul, "A result log channel is required."),
             new(settings => settings.AllowedListings.Count > 0, "Allowed listings must be configured."),
-            new(settings => 
+            new(settings =>
             {
                 if (settings.AllowedListings.Any(listing => listing.Contains("Auction")))
                     return settings.AvailableRooms.Any(room => room.Equals("Auction"));
-                
+
                 return true;
             },  "An Auction room (channel) is required."),
             new(settings =>
@@ -47,33 +46,33 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static readonly List<(Func<IDiscordGuildSettings, bool> ValidationCriteria, string Result)> RoomValidations = new()
         {
-            new(settings => 
+            new(settings =>
             {
                 if (settings.AvailableRooms.Any(room => room.Equals("Auction")))
                         return settings.AllowedListings.Any(listing => listing.Contains("Auction"));
-                        
+
                 return true;
             },  "Auction room configured but auction listings are not allowed."),
-            new(settings => 
+            new(settings =>
             {
                 if (settings.AvailableRooms.Any(room => room.Equals("Market")))
                     return settings.AllowedListings.Any(listing => listing.Contains("Market"));
 
                 return true;
             }, "Market room configured but market listings are not allowed."),
-            new(settings => 
-            { 
-                if (settings.AvailableRooms.Any(room => room.Equals("Trade"))) 
+            new(settings =>
+            {
+                if (settings.AvailableRooms.Any(room => room.Equals("Trade")))
                     return settings.AllowedListings.Any(listing => listing.Contains("Trade"));
-                
-                return true; 
+
+                return true;
             },  "Trade room configured but trade listings are not allowed."),
-            new(settings => 
-            { 
-                if (settings.AvailableRooms.Any(room => room.Equals("Exchange"))) 
-                    return settings.AllowedListings.Any(listing => listing.Contains("Exchange")); 
-                
-                return true; 
+            new(settings =>
+            {
+                if (settings.AvailableRooms.Any(room => room.Equals("Exchange")))
+                    return settings.AllowedListings.Any(listing => listing.Contains("Exchange"));
+
+                return true;
             },  "Exchange room configured but exchange are listings not allowed.")
         };
 
@@ -89,12 +88,12 @@ namespace Agora.Addons.Disqord.Extensions
             var description = missing is null
                 ? Markdown.Italics("Select an option from the drop-down list to modify the selected setting.")
                 : Markdown.Bold($"💡{Markdown.CodeBlock(missing)}");
-            
+
             var embed = new LocalEmbed()
                 .WithDefaultColor()
                 .WithTitle("Server Settings")
                 .WithDescription(description)
-                .AddField("Server Time", $"{serverTime}{Environment.NewLine}{localTime} **[Local]**" )
+                .AddField("Server Time", $"{serverTime}{Environment.NewLine}{localTime} **[Local]**")
                 .AddField("Default Currency", $"Symbol: **{settings.DefaultCurrency.Symbol}** | Decimals: **{settings.DefaultCurrency.DecimalDigits}** | Format: **{settings.DefaultCurrency}**")
                 .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
@@ -154,8 +153,8 @@ namespace Agora.Addons.Disqord.Extensions
                     var businessHours = s.ActiveHours == null ? "24-hours" : s.ActiveHours.ToString();
                     var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.Id.Value))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(businessHours)}";
 
-                    return roomDetails.Length > LocalEmbedField.MaxFieldValueLength 
-                            ? roomDetails[..LocalEmbedField.MaxFieldValueLength] 
+                    return roomDetails.Length > LocalEmbedField.MaxFieldValueLength
+                            ? roomDetails[..LocalEmbedField.MaxFieldValueLength]
                             : roomDetails;
                 }));
             else
@@ -178,7 +177,7 @@ namespace Agora.Addons.Disqord.Extensions
             foreach (var (ValidationCriteria, Result) in RequiredSettings.Skip(2))
                 if (!ValidationCriteria(settings))
                     missing.Add(Result);
-            
+
             foreach (var (ValidationCriteria, Result) in RoomValidations)
                 if (!ValidationCriteria(settings))
                     missing.Add(Result);

@@ -14,11 +14,11 @@ namespace Agora.Addons.Disqord
     public class UnhandledExceptionService : DiscordBotService
     {
         private readonly IHub _hub;
-        
+
         public UnhandledExceptionService(DiscordBotBase bot, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
         {
             _hub = sentryHub;
-            
+
             SentrySdk.ConfigureScope(scope =>
             {
                 scope.AddEventProcessor(new SentryEventProcessor());

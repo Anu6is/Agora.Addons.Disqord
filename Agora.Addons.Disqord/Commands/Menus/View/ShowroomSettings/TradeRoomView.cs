@@ -29,7 +29,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             using var scope = Context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
             var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             var cache = scope.ServiceProvider.GetRequiredService<IEmporiaCacheService>();

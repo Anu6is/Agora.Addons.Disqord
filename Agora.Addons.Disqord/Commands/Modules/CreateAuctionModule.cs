@@ -32,8 +32,8 @@ namespace Agora.Addons.Disqord.Commands
             [Description("Min amount bids can be increased by. Defaults to 1")] decimal minBidIncrease = 1,
             [Description("Min amount bids can be increased by.")] decimal maxBidIncrease = 0,
             [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
-            [Description("Category the item is associated with")] AgoraCategory category = null,                            //TODO - auto-complete
-            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,    //TODO - auto-complete
+            [Description("Category the item is associated with")] AgoraCategory category = null,
+            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,
             [Description("A hidden message to be sent to the winner.")] HiddenMessage message = null,
             [Description("Item owner. Defaults to the command user.")] IMember owner = null,
             [Description("True to hide the item owner.")] bool anonymous = false)
@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 ImageUrl = imageUrl,
                 Category = category?.ToDomainObject(),
-                Subcategory = subcategory.ToDomainObject(),
+                Subcategory = subcategory?.ToDomainObject(),
                 Description = description,
                 ReservePrice = reservePrice,
                 MinBidIncrease = minBidIncrease,
@@ -71,7 +71,7 @@ namespace Agora.Addons.Disqord.Commands
             await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
 
             _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
-            
+
             await Response("Standard Auction successfully created!");
         }
 
@@ -107,11 +107,11 @@ namespace Agora.Addons.Disqord.Commands
             var item = new AuctionItemModel(title, currency, startingPrice, quantity)
             {
                 ImageUrl = imageUrl,
-                Category = category.ToDomainObject(),
-                Subcategory = subcategory.ToDomainObject(),
+                Category = category?.ToDomainObject(),
+                Subcategory = subcategory?.ToDomainObject(),
                 Description = description,
                 ReservePrice = reservePrice,
-                MinBidIncrease = startingPrice + minBidIncrease,
+                MinBidIncrease = minBidIncrease,
                 MaxBidIncrease = maxBidIncrease
             };
 
@@ -129,7 +129,7 @@ namespace Agora.Addons.Disqord.Commands
             await Base.ExecuteAsync(new CreateVickreyAuctionCommand(showroom, item, listing));
 
             _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
-            
+
             await Response("Sealed-bid Auction successfully created!");
         }
 
@@ -165,11 +165,11 @@ namespace Agora.Addons.Disqord.Commands
             var item = new AuctionItemModel(title, currency, startingPrice, quantity)
             {
                 ImageUrl = imageUrl,
-                Category = category.ToDomainObject(),
-                Subcategory = subcategory.ToDomainObject(),
+                Category = category?.ToDomainObject(),
+                Subcategory = subcategory?.ToDomainObject(),
                 Description = description,
                 ReservePrice = reservePrice,
-                MinBidIncrease = startingPrice + minBidIncrease,
+                MinBidIncrease = minBidIncrease,
                 MaxBidIncrease = maxBidIncrease
             };
 
@@ -201,7 +201,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).ToArray());
             }
-            else if (category.IsCurrentlyFocused(out var categoryValue)) 
+            else if (category.IsCurrentlyFocused(out var categoryValue))
             {
                 if (emporium.Categories.Any())
                     category.Choices.Add(new AgoraCategory("No Configured Server Categories Exist."));

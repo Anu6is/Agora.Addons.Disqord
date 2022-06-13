@@ -23,23 +23,23 @@ namespace Agora.Addons.Disqord
             _cache = cache;
             _scopeFactory = scopeFactory;
         }
-        
+
         protected override async ValueTask OnInteractionReceived(InteractionReceivedEventArgs e)
         {
             await Task.Yield();
-            
-            if (e.Interaction is IComponentInteraction interaction 
-                && interaction.ComponentType == ComponentType.Button 
-                && interaction.Message.Author.Id == Bot.CurrentUser.Id) 
+
+            if (e.Interaction is IComponentInteraction interaction
+                && interaction.ComponentType == ComponentType.Button
+                && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
                 await _cache.GetUserAsync(e.GuildId.Value, e.AuthorId);
 
                 using var scope = _scopeFactory.CreateScope();
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var command = HandleInteraction(interaction);
-                
+
                 try
                 {
                     if (command != null)

@@ -6,19 +6,19 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public abstract class ChannelSelectionView : BaseSettingsView
     {
-        public GuildSettingsContext Context { get; }        
+        public GuildSettingsContext Context { get; }
         public ulong CurrentChannelId { get; set; }
         public ulong SelectedChannelId { get; private set; }
 
-        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, Action<LocalMessageBase> messageTemplate) 
+        public ChannelSelectionView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, Action<LocalMessageBase> messageTemplate)
             : base(context, settingsOptions, messageTemplate)
         {
             Context = context;
 
             var categoryChannels = context.Guild.GetChannels().Values.OfType<CachedCategoryChannel>();
-            
+
             foreach (var selection in EnumerateComponents().OfType<SelectionViewComponent>())
-            {                
+            {
                 if (selection.Row == null) continue;
 
                 selection.Options.Clear();
@@ -42,23 +42,23 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("No available category channels", Value = "0")]
         public ValueTask SelectCategoryChannel(SelectionEventArgs e)
         {
-            if (e.SelectedOptions.Count > 0) 
+            if (e.SelectedOptions.Count > 0)
             {
                 if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
-                
+
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
-                
+
                 var category = ulong.Parse(e.SelectedOptions[0].Value.ToString());
                 var textChannels = Context.Guild.GetChannels().Values.OfType<CachedTextChannel>();
-                var textSelection = (SelectionViewComponent) EnumerateComponents().First(x => x.Row == 2);
-                
+                var textSelection = (SelectionViewComponent)EnumerateComponents().First(x => x.Row == 2);
+
                 textSelection.Options.Clear();
 
                 textChannels.Where(x => x.Id != CurrentChannelId && x.CategoryId == category).Take(25)
                     .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                     .ForEach(component => textSelection.Options.Add(component));
 
-                if (textSelection.Options.Count > 0) 
+                if (textSelection.Options.Count > 0)
                 {
                     textSelection.Placeholder = "Select a text channel";
                     textSelection.IsDisabled = false;
@@ -75,7 +75,7 @@ namespace Agora.Addons.Disqord.Menus.View
             if (e.SelectedOptions.Count > 0)
             {
                 SelectedChannelId = ulong.Parse(e.SelectedOptions[0].Value.ToString());
-                
+
                 if (SelectedChannelId == 0ul) return;
                 if (SelectedChannelId == CurrentChannelId) return;
 
@@ -85,7 +85,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await SaveChannelAsync(e);
                 await LockSelectionAsync();
-                
+
                 ReportChanges();
             }
 

@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Menus.View
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
 
-        public BiddingAllowanceView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions) 
+        public BiddingAllowanceView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
         {
             _context = context;
             _settings = context.Settings.DeepClone();

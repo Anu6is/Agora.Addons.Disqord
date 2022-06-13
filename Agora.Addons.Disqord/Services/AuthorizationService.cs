@@ -4,7 +4,6 @@ using Disqord.Bot;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.Logging;
@@ -24,7 +23,7 @@ namespace Agora.Addons.Disqord
             _userManager = userManager;
             _guildSettingsService = settingsService;
         }
-        
+
         public async ValueTask AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
         {
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
@@ -54,7 +53,7 @@ namespace Agora.Addons.Disqord
                         throw new UnauthorizedAccessException(authorizationError);
                 }
             }
-            
+
             var authorizeAttributesWithPolicies = authorizeAttributes.Where(a => a.Policy != AuthorizationPolicy.None);
 
             if (authorizeAttributesWithPolicies.Any())
@@ -144,7 +143,7 @@ namespace Agora.Addons.Disqord
         }
 
 
-        public ValueTask<bool> SkipAuthorizationAsync(IEmporiumUser currentUser) 
+        public ValueTask<bool> SkipAuthorizationAsync(IEmporiumUser currentUser)
             => ValueTask.FromResult(currentUser != null && currentUser.ReferenceNumber.Value == _agora.CurrentUser.Id.RawValue);
     }
 }

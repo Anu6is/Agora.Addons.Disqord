@@ -17,7 +17,7 @@ namespace Agora.Addons.Disqord
 
         public IMember CurrentMember { get; }
         public EmporiumUser CurrentUser { get; set; }
-        
+
         public CurrentUserService(ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor,
                                   IEmporiaCacheService emporiaCacheService, ILogger<CurrentUserService> logger) : base(logger)
         {

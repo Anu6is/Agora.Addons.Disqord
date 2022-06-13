@@ -18,8 +18,8 @@ namespace Agora.Addons.Disqord.Menus.View
         private readonly Emporium _emporium;
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
-        
-        public ServerTimeView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions) 
+
+        public ServerTimeView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
         {
             _context = context;
             _settings = context.Settings.DeepClone();
@@ -42,17 +42,17 @@ namespace Agora.Addons.Disqord.Menus.View
         public async ValueTask SetUpdatedTime(ButtonEventArgs e)
         {
             if (_settings.Offset == _context.Settings.Offset) return;
-            
+
             var time = TimeFromOffset(_settings.Offset);
 
             using (var scope = _context.Services.CreateScope())
             {
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
                 var dataAccessor = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
                 var emporiumId = new EmporiumId(_context.Guild.Id);
-                
+
 
                 await dataAccessor.BeginTransactionAsync(async () =>
                 {
@@ -86,11 +86,11 @@ namespace Agora.Addons.Disqord.Menus.View
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Time"));
 
             ReportChanges();
-            
+
             return default;
         }
 
-        private static string TimeFromOffset(TimeSpan offset, int shift = 0) 
+        private static string TimeFromOffset(TimeSpan offset, int shift = 0)
             => DateTimeOffset.UtcNow.ToOffset(offset).AddHours(shift).ToString("HH:mm");
     }
 }

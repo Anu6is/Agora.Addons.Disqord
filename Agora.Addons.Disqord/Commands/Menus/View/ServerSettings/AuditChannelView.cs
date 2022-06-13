@@ -1,9 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
-using Emporia.Application.Common;
-using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -13,7 +10,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class AuditChannelView : ChannelSelectionView
     {
-        public AuditChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) 
+        public AuditChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions)
             : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
         {
             DefaultView = () => new MainSettingsView(context);
@@ -23,7 +20,7 @@ namespace Agora.Addons.Disqord.Menus.View
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
-            
+
             settings.AuditLogChannelId = SelectedChannelId;
 
             using var scope = Context.Services.CreateScope();

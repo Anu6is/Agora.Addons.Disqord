@@ -1,5 +1,4 @@
-﻿using Disqord.Bot;
-using Disqord.Bot.Commands;
+﻿using Disqord.Bot.Commands;
 using Emporia.Domain.Common;
 using Qmmands;
 

@@ -1,9 +1,7 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
-using Emporia.Application.Common;
 using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -24,12 +22,12 @@ namespace Agora.Addons.Disqord.Menus.View
             var emporium = cacheService.GetCachedEmporium(context.Guild.Id);
 
             selection.Options.Clear();
-            
+
             if (emporium == null)
                 selection.Options.Add(new LocalSelectionComponentOption("Error loading currencies", "0"));
             else if (emporium.Currencies != null)
                 _currencies = emporium.Currencies.ToArray();
-            
+
             foreach (var currency in _currencies)
             {
                 var option = new LocalSelectionComponentOption($"Symbol: {currency.Symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
@@ -54,7 +52,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 var currency = _currencies.FirstOrDefault(x => x.Code == e.SelectedOptions[0].Value);
 
                 if (currency == null) return;
-                
+
                 await UpdateDefaultCurrency(currency, e);
 
                 e.Selection.IsDisabled = true;
@@ -63,7 +61,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
-        private async ValueTask UpdateDefaultCurrency(Currency currency, SelectionEventArgs e) 
+        private async ValueTask UpdateDefaultCurrency(Currency currency, SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
             settings.DefaultCurrency = currency;

@@ -17,14 +17,14 @@ namespace Agora.Addons.Disqord
     {
         private Snowflake? GuildId { get; }
         private DiscordBotBase Bot { get; }
-        
+
         private readonly IGuildSettingsService _guildSettingsService;
 
         public UserManagerService(ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor,
                                   IGuildSettingsService guildSettingsService, ILogger<UserManagerService> logger) : base(logger)
         {
             _guildSettingsService = guildSettingsService;
-         
+
             Bot = commandAccessor.Context?.Bot ?? interactionAccessor.Context?.Bot;
             GuildId = (commandAccessor.Context?.GuildId ?? interactionAccessor.Context?.GuildId);
         }

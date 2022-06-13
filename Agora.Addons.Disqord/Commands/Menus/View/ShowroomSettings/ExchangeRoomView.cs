@@ -26,10 +26,10 @@ namespace Agora.Addons.Disqord.Menus.View
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
-            
+
             using var scope = Context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
             var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -49,7 +49,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
 
             MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));
-            
+
             ReportChanges();
 
             return;

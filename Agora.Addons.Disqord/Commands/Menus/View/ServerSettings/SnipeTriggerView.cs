@@ -41,7 +41,7 @@ namespace Agora.Addons.Disqord.Menus.View
             using (var scope = _context.Services.CreateScope())
             {
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
                 MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Snipe Trigger", new LocalEmoji("⌛")));
@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord.Menus.View
             e.Selection.IsDisabled = true;
 
             ReportChanges();
-            
+
             return;
         }
     }

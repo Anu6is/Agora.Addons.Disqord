@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Checks
                                                  .GetEmporiumAsync(context.GuildId);
 
             if (emporium == null) return Results.Success;
-            
+
             return Results.Failure("Setup Previously Completed: Execute the command 'Server Settings' to edit or 'Server Reset' to delete.");
         }
     }

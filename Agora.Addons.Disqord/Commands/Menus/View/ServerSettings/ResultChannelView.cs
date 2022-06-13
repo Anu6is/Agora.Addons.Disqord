@@ -10,7 +10,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class ResultChannelView : ChannelSelectionView
     {
-        public ResultChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) 
+        public ResultChannelView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions)
             : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(settingsOptions.FirstOrDefault(s => s.IsDefault)?.Name)))
         {
             DefaultView = () => new MainSettingsView(context);
@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
-            var settings = (DefaultDiscordGuildSettings) Context.Settings;
+            var settings = (DefaultDiscordGuildSettings)Context.Settings;
             settings.ResultLogChannelId = SelectedChannelId;
 
             using var scope = Context.Services.CreateScope();

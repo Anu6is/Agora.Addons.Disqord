@@ -14,8 +14,8 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class AuctionRoomView : ChannelSelectionView
     {
-        private List<Showroom> _showrooms;
-        
+        private readonly List<Showroom> _showrooms;
+
         public AuctionRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<Showroom> showrooms)
             : base(context, settingsOptions, message => message.AddEmbed(context.Settings.ToEmbed(showrooms)))
         {
@@ -34,9 +34,9 @@ namespace Agora.Addons.Disqord.Menus.View
             await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
 
             _showrooms.RemoveAll(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
-            
+
             MessageTemplate = message => message.WithEmbeds(Context.Settings.ToEmbed(_showrooms));
-            
+
             ReportChanges();
 
             return;
@@ -52,7 +52,7 @@ namespace Agora.Addons.Disqord.Menus.View
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             if (_showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString())) return;
-            
+
             var settings = (DefaultDiscordGuildSettings)Context.Settings;
 
             using var scope = Context.Services.CreateScope();
@@ -74,14 +74,14 @@ namespace Agora.Addons.Disqord.Menus.View
                     _showrooms.Add(showroom);
                 });
             }
-            
+
             MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));
 
             ReportChanges();
 
             return;
         }
-        
+
         public override ValueTask UpdateAsync()
         {
             var exists = _showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());

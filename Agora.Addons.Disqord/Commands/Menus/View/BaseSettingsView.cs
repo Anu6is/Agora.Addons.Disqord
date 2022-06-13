@@ -8,21 +8,22 @@ namespace Agora.Addons.Disqord.Menus
     {
         private readonly GuildSettingsContext _context;
         private readonly List<GuildSettingsOption> _settingsOptions;
-        
+
         public SelectionViewComponent Selection { get; }
         public Func<ViewBase> DefaultView { get; init; }
-        
+
         public BaseSettingsView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, Action<LocalMessageBase> messageTemplate)
             : base(messageTemplate)
         {
             _context = context;
             _settingsOptions = settingsOptions;
 
-            Selection = new SelectionViewComponent(HandleSelection) 
-            { 
-                MinimumSelectedOptions = 0, 
-                MaximumSelectedOptions = 1, 
-                Placeholder = "Select an option to modify" };
+            Selection = new SelectionViewComponent(HandleSelection)
+            {
+                MinimumSelectedOptions = 0,
+                MaximumSelectedOptions = 1,
+                Placeholder = "Select an option to modify"
+            };
 
             for (var i = 0; i < settingsOptions.Count; i++)
             {
@@ -43,16 +44,16 @@ namespace Agora.Addons.Disqord.Menus
                 if (!int.TryParse(e.SelectedOptions[0].Value.ToString(), out var value)) //e.SelectedOptions[0].Value
                     throw new InvalidOperationException("All the values of the selection's options must be page indexes");
 
-                if (Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) 
-                { 
-                    defaultOption.IsDefault = false; 
+                if (Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
+                {
+                    defaultOption.IsDefault = false;
                     _settingsOptions[int.Parse(defaultOption.Value.ToString())].IsDefault = false;
 
                 }
 
                 Selection.Options.FirstOrDefault(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
                 _settingsOptions[value].IsDefault = true;
-                
+
                 Menu.View = _settingsOptions[value].GetView(_context, _settingsOptions);
             }
             else
@@ -67,7 +68,7 @@ namespace Agora.Addons.Disqord.Menus
         public async ValueTask CloseView(ButtonEventArgs e)
         {
             await (e.Interaction.Client as AgoraBot).DeleteMessageAsync(e.ChannelId, e.Interaction.Message.Id);
-            
+
             return;
         }
     }

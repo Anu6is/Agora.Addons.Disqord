@@ -1,8 +1,6 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
-using Agora.Shared.Cache;
-using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
@@ -16,20 +14,22 @@ using Qmmands;
 namespace Agora.Addons.Disqord.Commands
 {
     [SlashGroup("server")]
+    [RequireAuthorPermissions(Permission.ManageGuild)]
     public sealed class ServerSettingsModule : AgoraModuleBase
     {
         [SkipAuthentication]
         [SlashCommand("setup")]
         [RequireUnregisteredServer]
-        [RequireAuthorPermissions(Permission.ManageGuild)]
         [Description("Setup the bot for use in your server.")]
         public async Task<IResult> ServerSetup(
-            [Description("Log all sold/expired items to this channel.")] [ChannelTypes(ChannelType.Text)] ITextChannel resultLog,
-            [Description("Log all item activity to this channel.")] [ChannelTypes(ChannelType.Text)] ITextChannel auditLog = null,
+            [Description("Log all sold/expired items to this channel.")][ChannelTypes(ChannelType.Text)] IChannel resultLog,
+            [Description("Log all item activity to this channel.")][ChannelTypes(ChannelType.Text)] IChannel auditLog = null,
             [Description("Default currency symbol.")] string symbol = "$",
             [Description("Number of decimal places to show for prices.")] int decimalPlaces = 2,
             [Description("Current server time (24-Hour format). Defaults to UTC")] Time serverTime = null)
         {
+            await Deferral();
+
             DefaultDiscordGuildSettings settings = null;
 
             await Data.BeginTransactionAsync(async () =>
@@ -79,38 +79,39 @@ namespace Agora.Addons.Disqord.Commands
             return View(new MainShowroomView(settingsContext, emporium.Showrooms));
         }
 
-        ////categories | add remove
-        //[RequireSetup]
-        //[SlashCommand("categories")]
-        //[Description("Add/Remove category options for this server.")]
-        //public async Task<IResult> ServerCategories()
-        //{
-        //    var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-        //    var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+        [RequireSetup]
+        [SlashCommand("categories")]
+        [Description("Add/Remove category options for this server.")]
+        public async Task<IResult> ServerCategories()
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
-        //    return View(new GuildCategoriesView(settingsContext, emporium.Categories));
-        //}
-
-        //[RequireSetup]
-        //[SlashCommand("currencies")]
-        //[Description("Add/Remove currency options for this server.")]
-        //public async Task<IResult> ServerCurrencies()
-        //{
-        //    var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-        //    var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
-
-        //    return View(new GuildCurrenciesView(settingsContext, emporium.Categories));
-        //}
+            return View(new GuildCategoriesView(emporium.Categories, settingsContext));
+        }
 
         [RequireSetup]
+        [SlashCommand("currencies")]
+        [Description("Add/Remove currency options for this server.")]
+        public async Task<IResult> ServerCurrencies()
+        {
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+
+            return View(new GuildCurrenciesView(emporium.Currencies, settingsContext));
+        }
+
+        [RequireSetup]
+        [SkipAuthentication]
         [SlashCommand("reset")]
         [Description("Clear all current settings for the bot.")]
         public async Task<IResult> ServerReset()
         {
             await Base.ExecuteAsync(new DeleteEmporiumCommand(new EmporiumId(Context.GuildId)));
 
-            (Cache as EporiaCacheService).Clear(Context.GuildId);
-            
+            Cache.Clear(Context.GuildId);
+            SettingsService.Clear(Context.GuildId);
+
             return Response(new LocalInteractionMessageResponse().WithContent("Server reset successful!").WithIsEphemeral(true));
         }
     }

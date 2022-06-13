@@ -42,7 +42,7 @@ namespace Agora.Addons.Disqord
 
             foreach (var job in _jobs)
                 job.Dispose();
-            
+
             return base.StopAsync(stoppingToken);
         }
     }

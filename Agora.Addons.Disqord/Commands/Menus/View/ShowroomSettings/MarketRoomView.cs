@@ -30,7 +30,7 @@ namespace Agora.Addons.Disqord.Menus.View
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            
+
             await mediator.Send(new DeleteShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Market));
 
             _showrooms.RemoveAll(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Market.ToString());
@@ -39,7 +39,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             ReportChanges();
         }
-        
+
         [Button(Label = "Update Hours", Style = LocalButtonComponentStyle.Primary, Row = 4)]
         public ValueTask UpdateHours(ButtonEventArgs e)
         {
@@ -55,7 +55,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             using var scope = Context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-        
+
             var data = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 

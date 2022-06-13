@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord
     {
         private readonly IMessageBroker _messageBroker;
 
-        public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger) 
+        public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger)
             : base(logger, bot) => _messageBroker = messageBroker;
 
         public override async Task StartAsync(CancellationToken cancellationToken)

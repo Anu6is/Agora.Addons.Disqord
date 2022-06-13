@@ -20,7 +20,7 @@ namespace Agora.Addons.Disqord
         public AgoraBot(IOptions<DiscordBotSharderConfiguration> options, ILogger<DiscordBotSharder> logger, IServiceProvider services, DiscordClientSharder client)
             : base(options, logger, services, client) { }
 
-        protected override IEnumerable<Assembly> GetModuleAssemblies() 
+        protected override IEnumerable<Assembly> GetModuleAssemblies()
             => new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
 
         protected async override ValueTask OnFailedResult(IDiscordCommandContext context, IResult result)

@@ -33,23 +33,23 @@ namespace Agora.Addons.Disqord.Menus.View
                 duration = TimeSpan.FromSeconds(int.Parse(e.SelectedOptions[0].Value.ToString()));
 
             if (duration == settings.SnipeExtension) return;
-            
+
             settings.SnipeExtension = duration;
 
             using (var scope = _context.Services.CreateScope())
             {
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
-                
+
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
 
-                MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));                
+                MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Snipe Extension", new LocalEmoji("⏳")));
             }
-            
+
             e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             e.Selection.IsDisabled = true;
 
             ReportChanges();
-            
+
             return;
         }
     }

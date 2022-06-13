@@ -18,7 +18,7 @@ namespace Agora.Addons.Disqord
         public static IServiceCollection AddDisqordCommands(this IServiceCollection services)
         {
             services.AddTransient<EmporiumTimeParser>();
-            
+
             return services;
         }
 

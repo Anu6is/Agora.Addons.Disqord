@@ -3,7 +3,7 @@
     public class GuildSettingsOption
     {
         private readonly Func<GuildSettingsContext, List<GuildSettingsOption>, BaseSettingsView> _func;
-        
+
         public string Name { get; init; }
         public string Description { get; init; }
         public bool IsDefault { get; set; }
@@ -12,7 +12,7 @@
         {
             Name = name;
             Description = description;
-            
+
             _func = func;
         }
 

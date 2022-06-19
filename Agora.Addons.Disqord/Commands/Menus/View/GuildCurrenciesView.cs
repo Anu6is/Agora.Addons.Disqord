@@ -91,6 +91,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     MaximumInputLength = 25,
                     IsRequired = true
                 }));
+
             await e.Interaction.Response().SendModalAsync(response);
 
             var reply = await Menu.Interactivity.WaitForInteractionAsync(e.ChannelId, x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, TimeSpan.FromMinutes(10));
@@ -148,24 +149,24 @@ namespace Agora.Addons.Disqord.Menus.View
                 .WithCustomId(e.Interaction.Message.Id.ToString())
                 .WithTitle($"Create a Currency")
                 .WithComponents(
-                    LocalComponent.Row(new LocalTextInputComponent()
-                    {
-                        Style = TextInputComponentStyle.Short,
-                        CustomId = "symbol",
-                        Label = "Enter Currency Symbol",
-                        Placeholder = "symbol",
-                        MaximumInputLength = 25,
-                        IsRequired = true
-                    }),
-                    LocalComponent.Row(new LocalTextInputComponent()
-                    {
-                        Style = TextInputComponentStyle.Short,
-                        CustomId = "decimals",
-                        Label = "Enter the Number of Decimal Places",
-                        Placeholder = "0",
-                        MaximumInputLength = 2,
-                        MinimumInputLength = 0
-                    }));
+                LocalComponent.Row(new LocalTextInputComponent()
+                {
+                    Style = TextInputComponentStyle.Short,
+                    CustomId = "symbol",
+                    Label = "Enter Currency Symbol",
+                    Placeholder = "symbol",
+                    MaximumInputLength = 25,
+                    IsRequired = true
+                }),
+                LocalComponent.Row(new LocalTextInputComponent()
+                {
+                    Style = TextInputComponentStyle.Short,
+                    CustomId = "decimals",
+                    Label = "Enter the Number of Decimal Places",
+                    Placeholder = "0",
+                    MaximumInputLength = 2,
+                    MinimumInputLength = 0
+                }));
 
             await e.Interaction.Response().SendModalAsync(response);
 

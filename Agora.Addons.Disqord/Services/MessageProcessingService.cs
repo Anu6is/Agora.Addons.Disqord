@@ -44,6 +44,7 @@ namespace Agora.Addons.Disqord
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed() };
 
             if (_interactionAccessor.Context == null)
+            {
                 await _agora.ModifyMessageAsync(ShowroomId.Value,
                     productListing.Product.ReferenceNumber.Value,
                     x =>
@@ -51,12 +52,25 @@ namespace Agora.Addons.Disqord
                         x.Embeds = productEmbeds;
                         x.Components = productListing.Buttons();
                     });
+            }
             else
-                await _interactionAccessor.Context.Interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
-                {
-                    Embeds = productEmbeds,
-                    Components = productListing.Buttons()
-                });
+            {
+                var interaction = _interactionAccessor.Context.Interaction;
+
+                if (interaction.Response().HasResponded)
+                    await interaction.Followup().ModifyResponseAsync(x =>
+                    {
+                        x.Embeds = productEmbeds;
+                        x.Components = productListing.Buttons();
+                    });
+                else
+                    await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
+                    {
+                        Embeds = productEmbeds,
+                        Components = productListing.Buttons()
+                    });
+            }
+
 
             return productListing.Product.ReferenceNumber;
         }

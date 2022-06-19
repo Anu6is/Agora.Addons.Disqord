@@ -31,8 +31,8 @@ namespace Agora.Addons.Disqord.Commands
             [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
             [Description("The type of discount to aplly.")] Discount discountType = Discount.None,
             [Description("The amount of discount to apply.")] decimal discountAmount = 0,
-            [Description("Category the item is associated with")] CategoryTitle category = null,
-            [Description("Subcategory to list the item under. Requires category.")] SubcategoryTitle subcategory = null,
+            [Description("Category the item is associated with")] AgoraCategory category = null,
+            [Description("Subcategory to list the item under. Requires category.")] AgoraSubcategory subcategory = null,
             [Description("A hidden message to be sent to the buyer.")] HiddenMessage message = null,
             [Description("Item owner. Defaults to the command user.")] IMember owner = null,
             [Description("True to hide the item owner.")] bool anonymous = false)
@@ -48,8 +48,8 @@ namespace Agora.Addons.Disqord.Commands
             var item = new MarketItemModel(title, currency, price, quantity)
             {
                 ImageUrl = imageUrl,
-                Category = category,
-                Subcategory = subcategory,
+                Category = category?.ToDomainObject(),
+                Subcategory = subcategory?.ToDomainObject(),
                 Description = description
             };
 

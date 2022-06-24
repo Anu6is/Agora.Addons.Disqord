@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Qmmands;
 using Qmmands.Default;
+using Qmmands.Text;
 using System.Reflection;
 
 namespace Agora.Addons.Disqord
@@ -50,6 +51,57 @@ namespace Agora.Addons.Disqord
                 };
 
             return base.FormatFailureReason(context, result);
+        }
+
+        protected override bool FormatFailureMessage(IDiscordCommandContext context, LocalMessageBase message, IResult result)
+        {
+            static string FormatParameter(IParameter parameter)
+            {
+                var typeInformation = parameter.GetTypeInformation();
+                var format = "{0}";
+                if (typeInformation.IsEnumerable)
+                {
+                    format = "{0}[]";
+                }
+                else if (parameter is IPositionalParameter positionalParameter && positionalParameter.IsRemainder)
+                {
+                    format = "{0}…";
+                }
+
+                format = typeInformation.IsOptional
+                    ? $"[{format}]"
+                    : $"<{format}>";
+
+                return string.Format(format, parameter.Name);
+            }
+
+            var reason = FormatFailureReason(context, result);
+            if (reason == null)
+                return false;
+
+            var embed = new LocalEmbed()
+                .WithDescription(reason)
+                .WithColor(0x2F3136);
+
+            if (result is OverloadsFailedResult overloadsFailedResult)
+            {
+                foreach (var (overload, overloadResult) in overloadsFailedResult.FailedOverloads)
+                {
+                    var overloadReason = FormatFailureReason(context, overloadResult);
+                    if (overloadReason == null)
+                        continue;
+
+                    embed.AddField($"Overload: {overload.Name} {string.Join(' ', overload.Parameters.Select(FormatParameter))}", overloadReason);
+                }
+            }
+            else if (context.Command != null)
+            {
+                embed.WithTitle($"Command: {context.Command.Name} ");
+            }
+
+            message.AddEmbed(embed);
+            message.WithAllowedMentions(LocalAllowedMentions.None);
+            return true;
         }
 
         protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)

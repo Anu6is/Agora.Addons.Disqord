@@ -3,7 +3,6 @@ using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
-using Disqord.Bot.Commands;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -18,16 +17,14 @@ namespace Agora.Addons.Disqord
     public class MessageProcessingService : AgoraService, IProductListingService, IAuditLogService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
-        private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
         public EmporiumId EmporiumId { get; set; }
         public ShowroomId ShowroomId { get; set; }
 
-        public MessageProcessingService(DiscordBotBase bot, ICommandContextAccessor commandAccessor, IInteractionContextAccessor interactionAccessor, ILogger<MessageProcessingService> logger) : base(logger)
+        public MessageProcessingService(DiscordBotBase bot, IInteractionContextAccessor interactionAccessor, ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
-            _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
         }
 
@@ -292,7 +289,8 @@ namespace Agora.Addons.Disqord
             if (productListing.HiddenMessage == null) return true;
 
             var guildId = productListing.Owner.EmporiumId;
-            var embed = new LocalEmbed().WithDescription($"Attached message: {productListing.HiddenMessage}")
+            var embed = new LocalEmbed().WithTitle("Acquisition includes a message!")
+                                        .WithDescription(productListing.HiddenMessage.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
                                         .WithColor(Color.Teal);
 

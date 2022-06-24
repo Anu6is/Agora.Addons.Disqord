@@ -96,6 +96,7 @@ namespace Agora.Addons.Disqord
             var canModify = request switch
             {
                 UpdateAuctionItemCommand command => command.Showroom.Listings.First().CurrentOffer == null,
+                //TODO - when can a market item be modified
                 _ => true
             };
 

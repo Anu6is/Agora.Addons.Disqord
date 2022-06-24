@@ -36,3 +36,4 @@ namespace Agora.Addons.Disqord
         }
     }
 }
+// TODO - what to do about live auction in restart situations?

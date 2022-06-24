@@ -61,14 +61,19 @@ namespace Agora.Addons.Disqord.Extensions
                                                                      : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expires In", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                         .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
             MarketItem marketItem => embed.AddInlineField("Quantity", marketItem.Quantity.Amount.ToString())
-                                          .AddInlineField("Price", marketItem.CurrentPrice.ToString())
-                                          .AddInlineField("Scheduled Start", 0)
-                                          .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart)),
+                                          .AddInlineField("Price", listing.FormatMarketPrice())
+                                          .AddPriceDetailField(listing)
+                                          .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
+                                          .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
+                                          .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                          .AddInlineField("Item Owner", listing.Anonymous
+                                                                    ? Markdown.BoldItalics("Anonymous")
+                                                                    : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
         };
 
@@ -77,7 +82,8 @@ namespace Agora.Addons.Disqord.Extensions
             StandardAuction auction => auction.BuyNowPrice == null ? null : new LocalEmbedAuthor().WithName($"Instant Purchase Price: {auction.BuyNowPrice}"),
             VickreyAuction auction => auction.MaxParticipants == 0 ? null : new LocalEmbedAuthor().WithName($"Max Participants: {auction.MaxParticipants}"),
             LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Add(TimeSpan.FromSeconds(1)).Humanize()}"),
-            StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {(market.Discount == Discount.Percent ? $"{market.DiscountValue}%" : market.ValueTag.ToString())}"),
+            StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {market.FormatDiscount()}"),
+            FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
             _ => null
         };
 
@@ -96,6 +102,68 @@ namespace Agora.Addons.Disqord.Extensions
             0 => "Unlimited",
             >= 10000 => decimal.ToDouble(value).ToMetric(),
             _ => Money.Create(value, auction.StartingPrice.Currency).ToString(),
+        };
+
+        private static string FormatMarketPrice(this Listing listing)
+        {
+            var product = listing.Product as MarketItem;
+
+            switch (listing)
+            {
+                case StandardMarket: 
+                    return product.Price.ToString();
+                case FlashMarket market:
+                    if (market.DiscountEndDate.ToUniversalTime() < SystemClock.Now)
+                        return product.CurrentPrice.ToString();
+                    else
+                        return $"{Markdown.Strikethrough(product.Price)}{Environment.NewLine}{Markdown.Bold(product.CurrentPrice)}";
+                case MassMarket:
+                    if (listing.CurrentOffer == null)
+                        return product.Price.ToString();
+                    else
+                        return Markdown.Strikethrough(product.Price.ToString());
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string FormatDiscount(this Listing market)
+        {
+            if (market.Type != ListingType.Market) return string.Empty;
+            if (market is MassMarket) return string.Empty;
+
+            Discount discount = Discount.None;
+            decimal discountValue = 0;
+
+            if (market is StandardMarket standardMarket)
+            {
+                discount = standardMarket.Discount;
+                discountValue = standardMarket.DiscountValue;
+            }
+            else if (market is FlashMarket flashMarket)
+            {
+                discount = flashMarket.Discount;
+                discountValue = flashMarket.DiscountValue;
+            }
+
+            if (discount == Discount.Percent) return $"{discountValue}%";
+
+            var item = market.Product as MarketItem;
+            var percent = 100 * (item.Price.Value - discountValue) / item.Price.Value;
+
+            return percent % 1 == 0 ? percent.ToString("F0") : percent.ToString("F2");
+        }
+
+        private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
+        {
+            StandardMarket market => embed.AddInlineField("Discounted Price", market.DiscountValue == 0 
+                ? Markdown.Italics("No Disount Applied")
+                : (market.Product as MarketItem).CurrentPrice.ToString()),
+            FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now 
+                ? Markdown.Italics("Expired") 
+                : market.IsActive() ? Markdown.Timestamp(market.DiscountEndDate, Markdown.TimestampFormat.RelativeTime) : Markdown.Bold("||To be announced...||")),
+            MassMarket market => embed.AddInlineField("Total Per Item", (market.Product as MarketItem).CurrentPrice.ToString()),
+            _ => null
         };
 
         private static DateTimeOffset ExpiresAt(this Listing listing)

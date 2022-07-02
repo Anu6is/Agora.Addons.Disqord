@@ -13,12 +13,13 @@ namespace Agora.Addons.Disqord
             { "extendAuction", ExtendListingModal },
             { "extendMarket", ExtendListingModal },
             { "editAuction", EditAuctionListingModal },
-            { "editMarket", EditMarketListingModal }
+            { "editMarket", EditMarketListingModal },
+            { "claim", PartialPurchaseModal }
         };
 
         private static IBaseRequest HandleInteraction(IComponentInteraction interaction) => interaction.CustomId switch
         {
-            "buy" => new ClaimListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), "Market"),
+            "buy" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), "Market"),
             "undobid" => new UndoBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id)),
             "minbid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), 0) { UseMinimum = true },
             "maxbid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(interaction.ChannelId), ReferenceNumber.Create(interaction.Message.Id), 0) { UseMaximum = true },
@@ -75,13 +76,13 @@ namespace Agora.Addons.Disqord
                     LocalComponent.Row(LocalComponent.TextInput("image", "Update Image", TextInputComponentStyle.Short).WithPlaceholder("Insert image url").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("description", "Update Description", TextInputComponentStyle.Paragraph).WithPlaceholder("Item description").WithMaximumInputLength(500).WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("message", "Update Buyer's Note", TextInputComponentStyle.Paragraph).WithPlaceholder("Hidden message").WithMaximumInputLength(250).WithIsRequired(false)));
-                    //LocalComponent.Row(LocalComponent.Selection("discount", 
-                    //    new LocalSelectionComponentOption("Percentage", "percent").WithDescription("Apply a percentage discount from 1 to 100"), 
-                    //    new LocalSelectionComponentOption("Fixed Amount", "fixed").WithDescription("Apply a fixed amount discount from 1 to item value"))
-                    //.WithMinimumSelectedOptions(0)
-                    //.WithMaximumSelectedOptions(1)
-                    //.WithPlaceholder("Select the type of discount to apply")),
-                    //LocalComponent.Row(LocalComponent.TextInput("discountValue", "Discount Value", TextInputComponentStyle.Short).WithPlaceholder("0").WithIsRequired(false)));
+        }
+
+        private static LocalInteractionModalResponse PartialPurchaseModal(IComponentInteraction interaction)
+        {
+            return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
+                .WithTitle("Purchase Items")
+                .WithComponents(LocalComponent.Row(LocalComponent.TextInput("amount", "Amount to Claim", TextInputComponentStyle.Short).WithPlaceholder("0").WithIsRequired()));
         }
     }
 }

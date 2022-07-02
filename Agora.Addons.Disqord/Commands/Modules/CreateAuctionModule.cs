@@ -8,6 +8,7 @@ using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
+using Qommon;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -19,7 +20,7 @@ namespace Agora.Addons.Disqord.Commands
     public sealed class CreateAuctionModule : AgoraModuleBase
     {
         [SlashGroup("add")]
-        public sealed class CommandGroup : AgoraModuleBase
+        public sealed class AuctionCommandGroup : AgoraModuleBase
         {
             [SlashCommand("standard")]
             [Description("User with the highest bid wins when the auction ends.")]
@@ -206,24 +207,46 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (currency.IsFocused)
                 {
-                    currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).ToArray());
-                }
-                else if (category.IsCurrentlyFocused(out var categoryValue))
-                {
-                    if (emporium.Categories.Any())
-                        category.Choices.Add(new AgoraCategory("No Configured Server Categories Exist."));
+                    if (currency.RawArgument == string.Empty)
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).ToArray());
                     else
-                        category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(categoryValue.ToString())).Select(x => new AgoraCategory(x.Title.Value)).ToArray());
-
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
                 }
-                else if (subcategory.IsCurrentlyFocused(out var subcategoryValue))
+                else if (category.IsFocused)
                 {
-                    if (emporium.Categories.Any())
-                        subcategory.Choices.Add(new AgoraSubcategory("No Configured Server Subcategories Exist."));
+                    if (!emporium.Categories.Any())
+                        category.Choices.Add(new AgoraCategory("No configured server categories exist."));
                     else
-                        subcategory.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(subcategoryValue.ToString())).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
-
+                    {
+                        if (category.RawArgument == string.Empty)
+                            category.Choices.AddRange(emporium.Categories.Select(x => new AgoraCategory(x.Title.Value)).ToArray());
+                        else
+                            category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(category.RawArgument)).Select(x => new AgoraCategory(x.Title.Value)).ToArray());
+                    }
                 }
+                else if (subcategory.IsFocused)
+                {
+                    if (!category.Argument.TryGetValue(out var agoraCategory))
+                        subcategory.Choices.Add(new AgoraSubcategory("Select a category to populate suggestions."));
+                    else
+                    {
+                        var currentCategory = emporium.Categories.FirstOrDefault(x => x.Title.Equals(agoraCategory.Value.ToString()));
+
+                        if (currentCategory?.SubCategories.Count > 1)
+                        {
+                            if (subcategory.RawArgument == string.Empty)
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Skip(1).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
+                            else
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.StartsWith(subcategory.RawArgument)).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
+                        }
+                        else
+                        {
+                            subcategory.Choices.Add(new AgoraSubcategory($"No configured subcategories exist for {currentCategory}"));
+                        }
+                    }
+                }
+
+                return;
             }
         }        
     }

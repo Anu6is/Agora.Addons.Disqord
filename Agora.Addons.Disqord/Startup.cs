@@ -14,6 +14,7 @@ namespace Agora.Addons.Disqord
     {
         public static IHostBuilder CreateHostBuilder(string[] args)
             => Host.CreateDefaultBuilder(args)
+                   .UseSystemd()
 #if DEBUG
                    .UseEnvironment("Development")
 #endif

@@ -15,8 +15,8 @@ namespace Agora.Addons.Disqord.Commands
     {
         private static int _activeCommands;
 
-        public bool RebootInProgress { get; set; }
-        public bool ShutdownInProgress { get; set; }
+        public static bool RebootInProgress { get; set; }
+        public static bool ShutdownInProgress { get; set; }
 
         ILogger ICommandModuleBase.Logger => Logger;
 

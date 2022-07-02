@@ -68,7 +68,6 @@ namespace Agora.Addons.Disqord
                     });
             }
 
-
             return productListing.Product.ReferenceNumber;
         }
 
@@ -118,18 +117,18 @@ namespace Agora.Addons.Disqord
         public async ValueTask<ReferenceNumber> LogListingCreatedAsync(Listing productListing)
         {
             var intermediary = string.Empty;
-            var quantity = productListing.Product.Quantity;
             var value = productListing.ValueTag.ToString();
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var host = Mention.User(productListing.User.ReferenceNumber.Value);
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             if (owner != productListing.User.ReferenceNumber.Value)
                 intermediary = $" on behalf of {(productListing.Anonymous ? Markdown.Italics("Anonymous") : Mention.User(owner))}";
             else
                 host = productListing.Anonymous ? Markdown.Italics("Anonymous") : host;
 
-            var embed = new LocalEmbed().WithDescription($"{host} listed {Markdown.Bold(title)} (x{quantity}){intermediary} for {Markdown.Bold(value)}")
+            var embed = new LocalEmbed().WithDescription($"{host} {Markdown.Underline("listed")} {Markdown.Bold($"{quantity}{title}")}{intermediary} for {Markdown.Bold(value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledEnd))
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
@@ -142,19 +141,19 @@ namespace Agora.Addons.Disqord
 
         public ValueTask<ReferenceNumber> LogListingUpdatedAsync(Listing productListing)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); //TODO
         }
 
         public async ValueTask<ReferenceNumber> LogListingWithdrawnAsync(Listing productListing)
         {
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var quantity = productListing.Product.Quantity.ToString();
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
             var user = string.Empty;
 
             if (owner != productListing.User.ReferenceNumber.Value) user = $"by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
-            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold(title)} (x{quantity}) hosted by {Mention.User(owner)} has been {Markdown.Underline("withrawn")} {user}")
+            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold($"{quantity}{title}")} hosted by {Mention.User(owner)} has been {Markdown.Underline("withrawn")} {user}")
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
                                         .WithColor(Color.OrangeRed);
 
@@ -170,18 +169,18 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)
         {
+            var user = string.Empty;
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var submitter = offer.UserReference.Value;
-            var quantity = productListing.Product.Quantity.ToString();
-            var user = string.Empty;
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             if (submitter != productListing.User.ReferenceNumber.Value) user = $" by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
             var description = new StringBuilder()
                 .Append("An offer of ").Append(Markdown.Bold(offer.Submission))
                 .Append(" made by ").Append(Mention.User(submitter))
-                .Append(" for ").Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
+                .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
                 .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
 
@@ -201,16 +200,19 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingSoldAsync(Listing productListing)
         {
-            var quantity = productListing.Product.Quantity;
             var title = productListing.Product.Title.ToString();
             var value = productListing.CurrentOffer.Submission.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
             var duration = DateTimeOffset.UtcNow.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
+            var stock = productListing is MassMarket
+                ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
+                : productListing.Product.Quantity.Amount;
+            var quantity = stock == 1 ? string.Empty : $"{stock} ";
 
             var description = new StringBuilder()
-                .Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
-                .Append("hosted by ").Append(Mention.User(owner))
+                .Append(Markdown.Bold($"{quantity}{title}"))
+                .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" was ").Append(Markdown.Underline("claimed"))
                 .Append(" after ").Append(duration.Humanize())
                 .Append(" for ").Append(Markdown.Bold(value))
@@ -229,12 +231,12 @@ namespace Agora.Addons.Disqord
         {
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var quantity = productListing.Product.Quantity.ToString();
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             var description = new StringBuilder()
-                .Append(Markdown.Bold(title)).Append(" (x").Append(quantity).Append(") ")
-                .Append("hosted by ").Append(Mention.User(owner))
+                .Append(Markdown.Bold($"{quantity}{title}"))
+                .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" has ").Append(Markdown.Underline("expired"))
                 .Append(" after ").Append(duration.Humanize());
 
@@ -251,9 +253,14 @@ namespace Agora.Addons.Disqord
         {
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
-            var participants = $"{Mention.User(owner)}\n{Mention.User(buyer)}";
+            var participants = $"{Mention.User(owner)} | {Mention.User(buyer)}";
+            var stock = productListing is MassMarket 
+                ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
+                : productListing.Product.Quantity.Amount;
+
+            var quantity = stock == 1 ? string.Empty : $"{stock} ";
             var embed = new LocalEmbed().WithTitle($"{productListing} Claimed")
-                                        .AddField($"{productListing.Product.Title} (x{productListing.Product.Quantity})", productListing.CurrentOffer.Submission.ToString())
+                                        .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} for {Markdown.Bold(productListing.CurrentOffer.Submission)}")
                                         .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer))
                                         .WithColor(Color.Teal);
 
@@ -274,8 +281,10 @@ namespace Agora.Addons.Disqord
         {
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
+
             var embed = new LocalEmbed().WithTitle($"{productListing} Expired")
-                                        .AddField(productListing.Product.Title.ToString(), productListing.ValueTag.ToString())
+                                        .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} @ {Markdown.Bold(productListing.ValueTag)}")
                                         .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Duration", duration.Humanize())
                                         .WithColor(Color.SlateGray);
 

@@ -31,7 +31,7 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("Sealed Auction", Value = "3", Description = "Bids are hidden (sealed). Winner pays the second highest bid.")]
         [SelectionOption("Standard Market", Value = "4", Description = "List items at a fixed price.")]
         [SelectionOption("Flash Market", Value = "5", Description = "List items at a fixed price with a timed discount period.")]
-        [SelectionOption("Mass Market", Value = "6", Description = "List a large quantity of items. Buyers select their quantity.")]
+        [SelectionOption("Bulk Market", Value = "6", Description = "List a large quantity of items. Buyers select their quantity.")]
         [SelectionOption("Trade", Value = "7", Description = "List an item for trade, and accept an incoming trade offer.")]
         [SelectionOption("Exchange", Value = "8", Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)
@@ -63,7 +63,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 2)]
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 4)]
         public async ValueTask SaveSelectedOptions(ButtonEventArgs e)
         {
             if (_settings.AllowedListings.Count == 0) return;
@@ -80,14 +80,17 @@ namespace Agora.Addons.Disqord.Menus.View
                 MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Allowed Listings", new LocalEmoji("📖")));
             }
 
-            foreach (var component in EnumerateComponents().OfType<SelectionViewComponent>())
+            if (settings.FindMissingRequirement().Contains("room (channel)"))
             {
-                if (component.Row == null) continue;
+                var cache = _context.Services.GetRequiredService<IEmporiaCacheService>();
+                var emporium = await cache.GetEmporiumAsync(_context.Guild.Id);
 
-                component.IsDisabled = true;
+                Menu.View = new MainShowroomView(_context, emporium.Showrooms);
             }
-
-            e.Button.IsDisabled = true;
+            else
+            {
+                e.Button.IsDisabled = true;
+            }
 
             return;
         }

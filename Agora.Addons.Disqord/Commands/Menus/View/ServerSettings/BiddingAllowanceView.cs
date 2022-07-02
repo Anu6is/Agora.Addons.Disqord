@@ -28,7 +28,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
         }
 
-        [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 1)]
+        [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask ShillBidding(ButtonEventArgs e)
         {
             _settings.AllowShillBidding = !_settings.AllowShillBidding;
@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default; ;
         }
 
-        [Button(Label = "Absentee Bidding", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 1)]
+        [Button(Label = "Absentee Bidding", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 4)]
         public ValueTask AbsenteeBidding(ButtonEventArgs e)
         {
             _settings.AllowAbsenteeBidding = !_settings.AllowAbsenteeBidding;
@@ -60,7 +60,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 1, Emoji = "💾")]
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
         public async ValueTask SaveBidingOptions(ButtonEventArgs e)
         {
             if (_settings.AllowShillBidding == _context.Settings.AllowShillBidding

@@ -30,6 +30,8 @@ namespace Agora.Addons.Disqord
                     return EditAuctionListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editMarket":
                     return EditMarketListing(modalInteraction, emporiumId, showroomId, keys);
+                case "claim":
+                    return ClaimListing(modalInteraction, emporiumId, showroomId, keys);
                 default:
                     break;
             }
@@ -43,6 +45,8 @@ namespace Agora.Addons.Disqord
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing extended!").WithIsEphemeral(true)),
             { } when interaction.CustomId.StartsWith("edit")
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing successfully updated!").WithIsEphemeral(true)),
+            { } when interaction.CustomId.StartsWith("claim")
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
             _ => Task.CompletedTask
         };
 
@@ -103,7 +107,7 @@ namespace Agora.Addons.Disqord
         {
             var rows = modalInteraction.Components
                 .OfType<IRowComponent>()
-                .Select(row => row.Components.OfType<ITextInputComponent>().FirstOrDefault())
+                .Select(row => row.Components.OfType<ITextInputComponent>().First())
                 .Where(component => component is not null)
                 .ToDictionary(key => key.CustomId, value => value.Value);
 
@@ -113,6 +117,18 @@ namespace Agora.Addons.Disqord
                 Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
                 Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),
             };
+        }
+
+        private static IBaseRequest ClaimListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var input = modalInteraction.Components
+                .OfType<IRowComponent>().First()
+                .Components.OfType<ITextInputComponent>().First().Value;
+
+            if (int.TryParse(input, out var items))
+                return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), "Market") { ItemCount = items };
+            else
+                throw new ValidationException("Claim amount must be a number!");
         }
     }
 }

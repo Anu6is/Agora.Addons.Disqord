@@ -118,6 +118,14 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
+        [Button(Label = "View Settings", Style = LocalButtonComponentStyle.Success, Row = 4)]
+        public ValueTask ViewSettings(ButtonEventArgs e)
+        {
+            Menu.View = new MainSettingsView(Context);
+
+            return default;
+        }
+
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             if (_showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString())) return;

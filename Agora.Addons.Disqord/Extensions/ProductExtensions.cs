@@ -29,6 +29,9 @@ namespace Agora.Addons.Disqord.Extensions
             var withdraw = LocalComponent.Button($"withdraw{type}", "Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
             var firstRowButtons = LocalComponent.Row(withdraw, edit, extend);
 
+            if (listing is MassMarket)
+                firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
+
             if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else
@@ -84,6 +87,7 @@ namespace Agora.Addons.Disqord.Extensions
             LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Add(TimeSpan.FromSeconds(1)).Humanize()}"),
             StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {market.FormatDiscount()}"),
             FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
+            MassMarket market => new LocalEmbedAuthor().WithName($"Cost per Item: {market.CostPerItem}"),
             _ => null
         };
 
@@ -111,17 +115,14 @@ namespace Agora.Addons.Disqord.Extensions
             switch (listing)
             {
                 case StandardMarket: 
-                    return product.Price.ToString();
+                    return product.CurrentPrice.ToString();
                 case FlashMarket market:
                     if (market.DiscountEndDate.ToUniversalTime() < SystemClock.Now)
                         return product.CurrentPrice.ToString();
                     else
                         return $"{Markdown.Strikethrough(product.Price)}{Environment.NewLine}{Markdown.Bold(product.CurrentPrice)}";
                 case MassMarket:
-                    if (listing.CurrentOffer == null)
-                        return product.Price.ToString();
-                    else
-                        return Markdown.Strikethrough(product.Price.ToString());
+                    return product.CurrentPrice.ToString();
                 default:
                     return string.Empty;
             }
@@ -151,7 +152,7 @@ namespace Agora.Addons.Disqord.Extensions
             var item = market.Product as MarketItem;
             var percent = 100 * (item.Price.Value - discountValue) / item.Price.Value;
 
-            return percent % 1 == 0 ? percent.ToString("F0") : percent.ToString("F2");
+            return percent % 1 == 0 ? $"{percent:F0}%" : $"{percent:F2}%";
         }
 
         private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
@@ -162,7 +163,9 @@ namespace Agora.Addons.Disqord.Extensions
             FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now 
                 ? Markdown.Italics("Expired") 
                 : market.IsActive() ? Markdown.Timestamp(market.DiscountEndDate, Markdown.TimestampFormat.RelativeTime) : Markdown.Bold("||To be announced...||")),
-            MassMarket market => embed.AddInlineField("Total Per Item", (market.Product as MarketItem).CurrentPrice.ToString()),
+            MassMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
+                ? Markdown.Italics("No Bundles Defined")
+                : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
             _ => null
         };
 

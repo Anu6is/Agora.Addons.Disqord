@@ -26,19 +26,19 @@ namespace Agora.Addons.Disqord.Menus.View
             _emporium = Emporium.Create(new EmporiumId(context.Guild.Id)).WithLocalTime(Time.From(TimeFromOffset(context.Settings.Offset)));
         }
 
-        [Button(Label = "Decrease", Style = LocalButtonComponentStyle.Primary, Emoji = "⬇️", Row = 1)]
+        [Button(Label = "Decrease", Style = LocalButtonComponentStyle.Primary, Emoji = "⬇️", Row = 4)]
         public ValueTask DecreaseTime(ButtonEventArgs e)
         {
             return UpdateTemplateTime(TimeFromOffset(_settings.Offset, -1));
         }
 
-        [Button(Label = "Increase", Style = LocalButtonComponentStyle.Primary, Emoji = "⬆️", Row = 1)]
+        [Button(Label = "Increase", Style = LocalButtonComponentStyle.Primary, Emoji = "⬆️", Row = 4)]
         public ValueTask IncreaseTime(ButtonEventArgs e)
         {
             return UpdateTemplateTime(TimeFromOffset(_settings.Offset, 1));
         }
 
-        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 1)]
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Emoji = "💾", Row = 4)]
         public async ValueTask SetUpdatedTime(ButtonEventArgs e)
         {
             if (_settings.Offset == _context.Settings.Offset) return;

@@ -41,7 +41,7 @@ namespace Agora.Addons.Disqord.Menus
         {
             if (e.SelectedOptions.Count > 0)
             {
-                if (!int.TryParse(e.SelectedOptions[0].Value.ToString(), out var value)) //e.SelectedOptions[0].Value
+                if (!int.TryParse(e.SelectedOptions[0].Value.ToString(), out var value))
                     throw new InvalidOperationException("All the values of the selection's options must be page indexes");
 
                 if (Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
@@ -64,8 +64,8 @@ namespace Agora.Addons.Disqord.Menus
             return default;
         }
 
-        [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Row = 4)]
-        public async ValueTask CloseView(ButtonEventArgs e)
+        [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Position = 4, Row = 4)]
+        public static async ValueTask CloseView(ButtonEventArgs e)
         {
             await (e.Interaction.Client as AgoraBot).DeleteMessageAsync(e.ChannelId, e.Interaction.Message.Id);
 

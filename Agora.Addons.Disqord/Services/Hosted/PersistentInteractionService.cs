@@ -29,8 +29,6 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                //TODO - validate interaction author
-
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
 
                 await _cache.GetUserAsync(e.GuildId.Value, e.AuthorId);
@@ -65,7 +63,7 @@ namespace Agora.Addons.Disqord
             {
                 ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
-                _ => "An error occured while processing this action."
+                _ => "An error occured while processing this action: " + ex.Message
             };
             
             await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral(true));
@@ -78,7 +76,7 @@ namespace Agora.Addons.Disqord
         {
             if (_modalRedirect.ContainsKey(interaction.CustomId))
             {
-                var timeout = TimeSpan.FromMinutes(10);
+                var timeout = TimeSpan.FromMinutes(14);
                 var response = _modalRedirect[interaction.CustomId].Invoke(interaction);
 
                 await interaction.Response().SendModalAsync(response);

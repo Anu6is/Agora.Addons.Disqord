@@ -50,10 +50,10 @@ namespace Agora.Addons.Disqord.Commands
 
             await Base.ExecuteAsync(new CreateEmporiumUserCommand(EmporiumId, ReferenceNumber.Create(Context.Author.Id)));
 
-            var settingsContext = new GuildSettingsContext(Guild, settings, Context.Services.CreateScope().ServiceProvider);
+            var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, settings, Context.Services.CreateScope().ServiceProvider);
             var options = new List<GuildSettingsOption>() { };
 
-            return View(new ServerSetupView(settingsContext, options));
+            return View(new ListingsOptionsView(settingsContext, options));
         }
 
         [RequireSetup]
@@ -63,7 +63,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             await Cache.GetEmporiumAsync(Context.GuildId);
 
-            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+            var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
             return View(new MainSettingsView(settingsContext));
         }
@@ -74,7 +74,7 @@ namespace Agora.Addons.Disqord.Commands
         public async Task<IResult> ServerRooms()
         {
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+            var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
             return View(new MainShowroomView(settingsContext, emporium.Showrooms));
         }
@@ -85,7 +85,7 @@ namespace Agora.Addons.Disqord.Commands
         public async Task<IResult> ServerCategories()
         {
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+            var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
             return View(new GuildCategoriesView(emporium.Categories, settingsContext));
         }
@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord.Commands
         public async Task<IResult> ServerCurrencies()
         {
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-            var settingsContext = new GuildSettingsContext(Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+            var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
             return View(new GuildCurrenciesView(emporium.Currencies, settingsContext));
         }

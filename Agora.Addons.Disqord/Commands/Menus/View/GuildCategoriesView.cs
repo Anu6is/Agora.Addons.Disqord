@@ -336,7 +336,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Row = 4)]
+        [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Position = 4, Row = 4)]
         public async ValueTask CloseView(ButtonEventArgs e)
         {
             await (e.Interaction.Client as AgoraBot).DeleteMessageAsync(e.ChannelId, e.Interaction.Message.Id);

@@ -1,4 +1,5 @@
-﻿using Agora.Addons.Disqord.Parsers;
+﻿using Agora.Addons.Disqord.Commands;
+using Agora.Addons.Disqord.Parsers;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Interaction;
@@ -24,9 +25,19 @@ namespace Agora.Addons.Disqord
         protected override IEnumerable<Assembly> GetModuleAssemblies()
             => new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
 
+        protected override ValueTask<IResult> OnBeforeExecuted(IDiscordCommandContext context)
+        {
+            if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress) 
+                return Results.Failure("Services are presently unavailable, while entering maintenance mode.");
+
+            return base.OnBeforeExecuted(context);
+        }
+
         protected async override ValueTask OnFailedResult(IDiscordCommandContext context, IResult result)
         {
-            await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
+            if (result is not CommandNotFoundResult)
+                await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
+
             await base.OnFailedResult(context, result);
 
             return;

@@ -8,6 +8,7 @@ using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Agora.Addons.Disqord
@@ -67,9 +68,16 @@ namespace Agora.Addons.Disqord
             return member.RoleIds.Contains(hostRole);
         }
 
-        public ValueTask<bool> ValidateBuyer(IEmporiumUser user)
+        public async ValueTask<bool> ValidateBuyer(IEmporiumUser user, IBaseRequest command, Func<IEmporiumUser, IBaseRequest, bool> criteria = null)
         {
-            throw new NotImplementedException();
+            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
+            var buyerRole = guildSettings.BuyerRole;
+
+            if (buyerRole == 0ul) buyerRole = GuildId.Value;
+
+            var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
+
+            return member.RoleIds.Contains(buyerRole) && criteria == null || criteria(user, command);
         }
 
         public ValueTask<bool> ValidateUser(IEmporiumUser user) => ValueTask.FromResult(true);

@@ -53,7 +53,7 @@ namespace Agora.Addons.Disqord
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
                 scope.SetExtra("Shard", Bot.GetShardId(context.GuildId));
-                scope.SetExtra("Arguments", $"{context.Command.Name} {context.RawArguments}");
+                scope.SetExtra("Arguments", $"{context.Command.Name} {string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}"))}");
                 scope.SetExtra("Guild Permissions", currentMember.GetPermissions(guild).ToString());
                 scope.SetExtra("Channel Permissions", currentMember.GetPermissions(channel).ToString());
             });

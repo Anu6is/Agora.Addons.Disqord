@@ -56,6 +56,7 @@ namespace Agora.Addons.Disqord
                     case AuthorizationRole.Host:
                         if (!await _userManager.IsHost(currentUser)) authorizationError = "Unauthorized access: Merchant role reqired.";
                         break;
+                    case AuthorizationRole.Buyer:
                     //TODO - check for buyer role
                     default:
                         break;
@@ -112,7 +113,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return canModify ? string.Empty : "Unauthorized Access: Listing can no longer be changed. Only Manager override is possible.";
+            return canModify ? string.Empty : "Invalid Operation: This action is no longer available.";
         }
 
         private async Task<string> ValidateSubmissionAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
@@ -126,7 +127,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return canSubmit ? string.Empty : "Unauthorized access: You cannot submit an offer for an item you own.";
+            return canSubmit ? string.Empty : "Unauthorized access: You cannot submit an offer for this item.";
         }
 
         private async Task<string> ValidateManagerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
@@ -135,7 +136,7 @@ namespace Agora.Addons.Disqord
             {
                 WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
                 ExtendListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
-                UndoBidCommand command => await _userManager.IsHost(currentUser) || await _userManager.ValidateBuyer(currentUser),
+                UndoBidCommand command => await _userManager.IsHost(currentUser) || await _userManager.ValidateBuyer(currentUser, command), //TODO - add economy check
                 _ => true
             };
 

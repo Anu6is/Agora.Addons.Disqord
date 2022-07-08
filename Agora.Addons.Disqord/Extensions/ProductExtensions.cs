@@ -114,7 +114,7 @@ namespace Agora.Addons.Disqord.Extensions
 
             switch (listing)
             {
-                case StandardMarket: 
+                case StandardMarket:
                     return product.CurrentPrice.ToString();
                 case FlashMarket market:
                     if (market.DiscountEndDate.ToUniversalTime() < SystemClock.Now)
@@ -157,11 +157,11 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
         {
-            StandardMarket market => embed.AddInlineField("Discounted Price", market.DiscountValue == 0 
+            StandardMarket market => embed.AddInlineField("Discounted Price", market.DiscountValue == 0
                 ? Markdown.Italics("No Disount Applied")
                 : (market.Product as MarketItem).CurrentPrice.ToString()),
-            FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now 
-                ? Markdown.Italics("Expired") 
+            FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now
+                ? Markdown.Italics("Expired")
                 : market.IsActive() ? Markdown.Timestamp(market.DiscountEndDate, Markdown.TimestampFormat.RelativeTime) : Markdown.Bold("||To be announced...||")),
             MassMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
                 ? Markdown.Italics("No Bundles Defined")

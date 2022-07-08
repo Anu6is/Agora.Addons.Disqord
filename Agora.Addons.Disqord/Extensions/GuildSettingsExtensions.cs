@@ -112,6 +112,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineBlankField()
                 .AddInlineField("Merchant Role", settings.MerchantRole == 0 ? Mention.Everyone : Mention.Role(new Snowflake(settings.MerchantRole)))
                 .AddInlineField("Buyer Role", settings.BuyerRole == 0 ? Mention.Everyone : Mention.Role(new Snowflake(settings.BuyerRole)))
+                .AddInlineBlankField()
                 .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
 
             if (highlightField != null)

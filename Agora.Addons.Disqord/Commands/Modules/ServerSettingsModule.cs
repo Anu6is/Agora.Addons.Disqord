@@ -1,6 +1,7 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
+using Agora.Shared.Services.EconomyFactory;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
@@ -41,6 +42,7 @@ namespace Agora.Addons.Disqord.Commands
                 settings = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currency, resultLog.Id)
                 {
                     AuditLogChannelId = auditLog?.Id ?? 0ul,
+                    Economy = EconomyType.None.ToString(),
                     TimeOffset = emporium.TimeOffset
                 });
 

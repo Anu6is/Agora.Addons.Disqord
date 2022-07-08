@@ -1,11 +1,14 @@
 ﻿using Agora.Shared.Attributes;
 using Agora.Shared.Services;
+using Agora.Shared.Services.EconomyFactory;
 using Disqord.Bot;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Agora.Addons.Disqord
@@ -57,7 +60,8 @@ namespace Agora.Addons.Disqord
                         if (!await _userManager.IsHost(currentUser)) authorizationError = "Unauthorized access: Merchant role reqired.";
                         break;
                     case AuthorizationRole.Buyer:
-                    //TODO - check for buyer role
+                        if (!await _userManager.ValidateBuyerAsync(currentUser)) authorizationError = "Unathorized access: Buyer role required.";
+                        break;
                     default:
                         break;
                 }
@@ -122,8 +126,33 @@ namespace Agora.Addons.Disqord
 
             var canSubmit = request switch
             {
-                CreateBidCommand command => settings.AllowShillBidding || !currentUser.Equals(command.Showroom.Listings.First().Owner),
-                CreatePaymentCommand command => !currentUser.Equals(command.Showroom.Listings.First().Owner),
+                CreateBidCommand command => (settings.AllowShillBidding
+                || !currentUser.Equals(command.Showroom.Listings.First().Owner))
+                && await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                {
+                    var cmd = command as CreateBidCommand;
+                    var item = cmd.Showroom.Listings.First().Product as AuctionItem;
+                    var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                    var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
+
+                    if (cmd.UseMinimum)
+                        return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MinValue;
+
+                    if (cmd.UseMaximum)
+                        return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value;
+
+                    return userBalance >= cmd.Amount;
+                }),
+                CreatePaymentCommand command => !currentUser.Equals(command.Showroom.Listings.First().Owner)
+                && await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                {
+                    var cmd = command as CreatePaymentCommand;
+                    var item = cmd.Showroom.Listings.First().Product as MarketItem;
+                    var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                    var userBalance = await economy.GetBalanceAsync(currentUser, item.Price.Currency);
+
+                    return userBalance >= cmd.PaymentAmount;
+                }),
                 _ => true
             };
 
@@ -136,7 +165,7 @@ namespace Agora.Addons.Disqord
             {
                 WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
                 ExtendListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
-                UndoBidCommand command => await _userManager.IsHost(currentUser) || await _userManager.ValidateBuyer(currentUser, command), //TODO - add economy check
+                UndoBidCommand command => await _userManager.IsHost(currentUser),
                 _ => true
             };
 
@@ -158,7 +187,6 @@ namespace Agora.Addons.Disqord
 
             return isOwner ? string.Empty : "Unauthorized access: Only the OWNER can perform this action.";
         }
-
 
         public ValueTask<bool> SkipAuthorizationAsync(IEmporiumUser currentUser)
             => ValueTask.FromResult(currentUser != null && currentUser.ReferenceNumber.Value == _agora.CurrentUser.Id.RawValue);

@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Checks
 
         public RestrictDurationAttribute() { }
 
-        public RestrictDurationAttribute(double  minSeconds, double maxSeconds)
+        public RestrictDurationAttribute(double minSeconds, double maxSeconds)
         {
             _minDuration = minSeconds;
             _maxDuration = maxSeconds;

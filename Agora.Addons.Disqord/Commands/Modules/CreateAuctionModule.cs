@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireMerchant]
-    [SlashGroup("auction")] 
+    [SlashGroup("auction")]
     [RequireShowroom("Auction")]
     [RequireBotPermissions(Permission.SendMessages | Permission.SendEmbeds | Permission.ManageThreads)]
     public sealed class CreateAuctionModule : AgoraModuleBase
@@ -248,6 +248,6 @@ namespace Agora.Addons.Disqord.Commands
 
                 return;
             }
-        }        
+        }
     }
 }

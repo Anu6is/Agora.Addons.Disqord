@@ -28,9 +28,9 @@ namespace Agora.Addons.Disqord.Commands
         public async Task Shutdown()
         {
             Logger.LogInformation("Shutdown requested");
-            
+
             await Deferral();
-            
+
             ShutdownInProgress = true;
 
             await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb);
@@ -42,7 +42,7 @@ namespace Agora.Addons.Disqord.Commands
             Logger.LogInformation("Commands completed...");
 
             await Response("Gooodbye...");
-            
+
             await ApplicationHost.StopAsync(Context.Bot.StoppingToken);
         }
 
@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("reboot")]
         [RequireGuild(551567205461131305)]
         [Description("Shutdown and restart the application.")]
-        public async Task Reboot([Description("The name of the systemd service")]string serviceName)
+        public async Task Reboot([Description("The name of the systemd service")] string serviceName)
         {
             Logger.LogInformation("Reboot requested");
 
@@ -83,7 +83,7 @@ namespace Agora.Addons.Disqord.Commands
         public async Task Status([Description("The name of the systemd service")] string serviceName)
         {
             var status = await Systemd.GetServiceStatusAsync($"{serviceName}.service");
-            
+
             await Response(status);
         }
     }

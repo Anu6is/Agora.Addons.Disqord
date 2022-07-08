@@ -43,7 +43,7 @@ namespace Agora.Addons.Disqord
                 {
                     if (command != null) await mediator.Send(command);
 
-                    if (modalInteraction != null) 
+                    if (modalInteraction != null)
                         await HandleResponse(modalInteraction);
                     else
                         await HandleResponse(interaction);
@@ -65,7 +65,7 @@ namespace Agora.Addons.Disqord
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
                 _ => "An error occured while processing this action: " + ex.Message
             };
-            
+
             await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral(true));
             await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
 
@@ -80,7 +80,7 @@ namespace Agora.Addons.Disqord
                 var response = _modalRedirect[interaction.CustomId].Invoke(interaction);
 
                 await interaction.Response().SendModalAsync(response);
-                
+
                 var reply = await Client.WaitForInteractionAsync(interaction.ChannelId, x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, timeout, Client.StoppingToken);
 
                 return reply?.Interaction as IModalSubmitInteraction;

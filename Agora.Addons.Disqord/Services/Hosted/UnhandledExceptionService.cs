@@ -19,10 +19,7 @@ namespace Agora.Addons.Disqord
         {
             _hub = sentryHub;
 
-            SentrySdk.ConfigureScope(scope =>
-            {
-                scope.AddEventProcessor(new SentryEventProcessor());
-            });
+            SentrySdk.ConfigureScope(scope => scope.AddEventProcessor(new SentryEventProcessor()));
         }
 
         public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
@@ -53,7 +50,7 @@ namespace Agora.Addons.Disqord
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
                 scope.SetExtra("Shard", Bot.GetShardId(context.GuildId));
-                scope.SetExtra("Arguments", $"{context.Command.Name} {string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}"))}");
+                scope.SetExtra("Arguments", $"{context.Command.Name} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
                 scope.SetExtra("Guild Permissions", currentMember.GetPermissions(guild).ToString());
                 scope.SetExtra("Channel Permissions", currentMember.GetPermissions(channel).ToString());
             });

@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord
 
         protected override ValueTask<IResult> OnBeforeExecuted(IDiscordCommandContext context)
         {
-            if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress) 
+            if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress)
                 return Results.Failure("Services are presently unavailable, while entering maintenance mode.");
 
             return base.OnBeforeExecuted(context);

@@ -68,7 +68,7 @@ namespace Agora.Addons.Disqord
             return member.RoleIds.Contains(hostRole);
         }
 
-        public async ValueTask<bool> ValidateBuyer(IEmporiumUser user, IBaseRequest command, Func<IEmporiumUser, IBaseRequest, bool> criteria = null)
+        public async ValueTask<bool> ValidateBuyerAsync(IEmporiumUser user, IBaseRequest command = null, Func<IEmporiumUser, IBaseRequest, Task<bool>> criteria = null)
         {
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var buyerRole = guildSettings.BuyerRole;
@@ -76,8 +76,9 @@ namespace Agora.Addons.Disqord
             if (buyerRole == 0ul) buyerRole = GuildId.Value;
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
+            var hasRole = member.RoleIds.Contains(buyerRole) || await IsAdministrator(user);
 
-            return member.RoleIds.Contains(buyerRole) && criteria == null || criteria(user, command);
+            return hasRole && criteria == null || await criteria(user, command);
         }
 
         public ValueTask<bool> ValidateUser(IEmporiumUser user) => ValueTask.FromResult(true);

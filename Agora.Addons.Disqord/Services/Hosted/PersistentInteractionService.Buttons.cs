@@ -31,7 +31,9 @@ namespace Agora.Addons.Disqord
         private static Task HandleResponse(IComponentInteraction interaction) => interaction.CustomId switch
         {
             { } when interaction.CustomId.StartsWith("withdraw") => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Listing successfully withdrawn!").WithIsEphemeral(true)),
-            "buy" => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
+            "buy" => interaction.Response().HasResponded 
+                   ? interaction.Followup().SendAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)) 
+                   : interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
             _ => Task.CompletedTask
         };
 

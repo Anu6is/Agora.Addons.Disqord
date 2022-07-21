@@ -5,7 +5,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
-    public class RequireSetupAttribute : DiscordGuildCheckAttribute
+    internal class RequireSetupAttribute : DiscordGuildCheckAttribute
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {

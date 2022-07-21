@@ -8,6 +8,7 @@ using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Humanizer;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text;
 
@@ -30,7 +31,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
-            var message = new LocalMessage().AddEmbed(productListing.ToEmbed()).WithComponents(productListing.Buttons());
+            var categorization = await GetCategoryAsync(productListing);
+            var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization)).WithComponents(productListing.Buttons());
             var response = await _agora.SendMessageAsync(ShowroomId.Value, message);
 
             return ReferenceNumber.Create(response.Id);
@@ -38,7 +40,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> UpdateProductListingAsync(Listing productListing)
         {
-            var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed() };
+            var categorization = await GetCategoryAsync(productListing);
+            var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed().WithCategory(categorization) };
 
             if (_interactionAccessor.Context == null)
             {
@@ -84,7 +87,10 @@ namespace Agora.Addons.Disqord
             try
             {
                 var product = listing.Product;
-                var thread = await _agora.CreatePublicThreadAsync(ShowroomId.Value, $"[{listing.ReferenceCode}] {product.Title}", product.ReferenceNumber.Value, duration);
+                var thread = await _agora.CreatePublicThreadAsync(ShowroomId.Value, $"[{listing.ReferenceCode}] {product.Title}", product.ReferenceNumber.Value, x => x.AutomaticArchiveDuration = duration);
+                
+                await thread.SendMessageAsync(new LocalMessage().WithContent("Execute commands for this item HERE!"));
+                
                 return ReferenceNumber.Create(thread.Id);
             }
             catch (Exception ex)
@@ -122,13 +128,22 @@ namespace Agora.Addons.Disqord
             var owner = productListing.Owner.ReferenceNumber.Value;
             var host = Mention.User(productListing.User.ReferenceNumber.Value);
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
+            var original = productListing switch
+            {
+                StandardMarket { Discount: > 0, Product: MarketItem item } => $"{Markdown.Strikethrough(item.Price.ToString())} ",
+                FlashMarket { Discount: > 0, Product: MarketItem item } market => $"{Markdown.Strikethrough(item.Price.ToString())} ",
+                MassMarket { Product: MarketItem item } market => market.CostPerItem.Value * item.Quantity.Amount > item.CurrentPrice 
+                                                                ? $"{Markdown.Strikethrough(Money.Create(market.CostPerItem.Value * item.Quantity.Amount, item.Price.Currency))} " 
+                                                                : string.Empty,
+                _ => string.Empty
+            };
 
             if (owner != productListing.User.ReferenceNumber.Value)
                 intermediary = $" on behalf of {(productListing.Anonymous ? Markdown.Italics("Anonymous") : Mention.User(owner))}";
             else
                 host = productListing.Anonymous ? Markdown.Italics("Anonymous") : host;
 
-            var embed = new LocalEmbed().WithDescription($"{host} {Markdown.Underline("listed")} {Markdown.Bold($"{quantity}{title}")}{intermediary} for {Markdown.Bold(value)}")
+            var embed = new LocalEmbed().WithDescription($"{host} {Markdown.Underline("listed")} {Markdown.Bold($"{quantity}{title}")}{intermediary} for {original}{Markdown.Bold(value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledEnd))
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode}")
@@ -141,7 +156,7 @@ namespace Agora.Addons.Disqord
 
         public ValueTask<ReferenceNumber> LogListingUpdatedAsync(Listing productListing)
         {
-            throw new NotImplementedException(); //TODO
+            throw new NotImplementedException(); //TODO log updates
         }
 
         public async ValueTask<ReferenceNumber> LogListingWithdrawnAsync(Listing productListing)
@@ -322,6 +337,23 @@ namespace Agora.Addons.Disqord
             }
 
             return true;
+        }
+
+        private async Task<string> GetCategoryAsync(Listing productListing)
+        {
+            string categorization = string.Empty;
+            var subcategoryId = productListing.Product.SubCategoryId;
+
+            if (subcategoryId != null)
+            {
+                var emporium = await _agora.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(productListing.Owner.EmporiumId.Value);
+                var category = emporium.Categories.FirstOrDefault(c => c.SubCategories.Any(s => s.Id.Equals(subcategoryId)));
+                var subcategory = category.SubCategories.FirstOrDefault(s => s.Id.Equals(subcategoryId));
+
+                categorization = $"{category.Title}{(subcategory.Title.Equals(category.Title.Value)  ? "" : $": {subcategory.Title}")}";
+            }
+
+            return categorization;
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using Agora.Addons.Disqord.Checks;
+using Agora.Addons.Disqord.Commands.Checks;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
+using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
@@ -17,7 +19,7 @@ namespace Agora.Addons.Disqord.Commands
     [RequireMerchant]
     [SlashGroup("market")]
     [RequireShowroom("Market")]
-    [RequireBotPermissions(Permission.SendMessages | Permission.SendEmbeds | Permission.ManageThreads)]
+    [RequireBotPermissions(Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ManageThreads)]
     public sealed class CreateMarketModule : AgoraModuleBase
     {
         [SlashGroup("add")]
@@ -26,21 +28,21 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [Description("List an item(s) for sale at a fixed price.")]
             public async Task CreateStandarMarket(
-                        [Description("Length of time the item is available.")] TimeSpan duration,
-                        [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
-                        [Description("Price at which the item is being sold."), Minimum(0)] double price,
-                        [Description("Currency to use. Defaults to server default")] string currency = null,
-                        [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
-                        [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
-                        [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                        [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
-                        [Description("The type of discount to aplly.")] Discount discountType = Discount.None,
-                        [Description("The amount of discount to apply."), Minimum(0)] double discountAmount = 0,
-                        [Description("Category the item is associated with"), Maximum(25)] AgoraCategory category = null,
-                        [Description("Subcategory to list the item under. Requires category."), Maximum(25)] AgoraSubcategory subcategory = null,
-                        [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                        [Description("Item owner. Defaults to the command user.")] IMember owner = null,
-                        [Description("True to hide the item owner.")] bool anonymous = false)
+                [Description("Length of time the item is available.")] TimeSpan duration,
+                [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
+                [Description("Price at which the item is being sold."), Minimum(0)] double price,
+                [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("The type of discount to aplly.")] Discount discountType = Discount.None,
+                [Description("The amount of discount to apply."), Minimum(0)] double discountAmount = 0,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
+                [Description("Item owner. Defaults to the command user."), RequireRoleAttribute(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
 
@@ -52,11 +54,14 @@ namespace Agora.Addons.Disqord.Commands
 
                 var scheduledEnd = scheduledStart.Value.Add(duration);
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
                 var item = new MarketItemModel(title, currency, (decimal)price, quantity)
                 {
-                    ImageUrl = imageUrl == null ? null : new[] { imageUrl },
-                    Category = category?.ToDomainObject(),
-                    Subcategory = subcategory?.ToDomainObject(),
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
                     Description = description
                 };
 
@@ -89,13 +94,13 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Length of time the discount is available.")] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
-                [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
-                [Description("Category the item is associated with"), Maximum(25)] AgoraCategory category = null,
-                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] AgoraSubcategory subcategory = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user.")] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRoleAttribute(AuthorizationRole.Broker)] IMember owner = null,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -110,11 +115,14 @@ namespace Agora.Addons.Disqord.Commands
 
                 var scheduledEnd = scheduledStart.Value.Add(duration);
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
                 var item = new MarketItemModel(title, currency, (decimal)price, quantity)
                 {
-                    ImageUrl = imageUrl == null ? null : new[] { imageUrl },
-                    Category = category?.ToDomainObject(),
-                    Subcategory = subcategory?.ToDomainObject(),
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
                     Description = description
                 };
 
@@ -147,13 +155,13 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Buying this number of items at once, applies a special price."), Minimum(2)] int amountInBundle = 0,
                 [Description("Price applied when purchaing a set number of items at once."), Minimum(0)] double pricePerBundle = 0,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
-                [Description("Url of image to include. Can also be attached.")] string imageUrl = null,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
-                [Description("Category the item is associated with"), Maximum(25)] AgoraCategory category = null,
-                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] AgoraSubcategory subcategory = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user.")] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRoleAttribute(AuthorizationRole.Broker)] IMember owner = null,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -166,11 +174,14 @@ namespace Agora.Addons.Disqord.Commands
 
                 var scheduledEnd = scheduledStart.Value.Add(duration);
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
                 var item = new MarketItemModel(title, currency, (decimal)totalPrice, quantity)
                 {
-                    ImageUrl = imageUrl == null ? null : new[] { imageUrl },
-                    Category = category?.ToDomainObject(),
-                    Subcategory = subcategory?.ToDomainObject(),
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
                     Description = description
                 };
 
@@ -195,7 +206,7 @@ namespace Agora.Addons.Disqord.Commands
             [AutoComplete("standard")]
             [AutoComplete("flash")]
             [AutoComplete("bulk")]
-            public async Task AutoCompleteMarket(AutoComplete<string> currency, AutoComplete<AgoraCategory> category, AutoComplete<AgoraSubcategory> subcategory)
+            public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 
@@ -209,33 +220,37 @@ namespace Agora.Addons.Disqord.Commands
                 else if (category.IsFocused)
                 {
                     if (!emporium.Categories.Any())
-                        category.Choices.Add(new AgoraCategory("No configured server categories exist."));
+                        category.Choices.Add("No configured server categories exist.");
                     else
                     {
                         if (category.RawArgument == string.Empty)
-                            category.Choices.AddRange(emporium.Categories.Select(x => new AgoraCategory(x.Title.Value)).ToArray());
+                            category.Choices.AddRange(emporium.Categories.Select(x => x.Title.Value).ToArray());
                         else
-                            category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.StartsWith(category.RawArgument)).Select(x => new AgoraCategory(x.Title.Value)).ToArray());
+                            category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.Contains(category.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                         .Select(x => x.Title.Value)
+                                                                         .ToArray());
                     }
                 }
                 else if (subcategory.IsFocused)
                 {
                     if (!category.Argument.TryGetValue(out var agoraCategory))
-                        subcategory.Choices.Add(new AgoraSubcategory("Select a category to populate suggestions."));
+                        subcategory.Choices.Add("Select a category to populate suggestions.");
                     else
                     {
-                        var currentCategory = emporium.Categories.FirstOrDefault(x => x.Title.Equals(agoraCategory.Value.ToString()));
+                        var currentCategory = emporium.Categories.FirstOrDefault(x => x.Title.Equals(agoraCategory));
 
                         if (currentCategory?.SubCategories.Count > 1)
                         {
                             if (subcategory.RawArgument == string.Empty)
-                                subcategory.Choices.AddRange(currentCategory.SubCategories.Skip(1).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Skip(1).Select(x => x.Title.Value).ToArray());
                             else
-                                subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.StartsWith(subcategory.RawArgument)).Select(x => new AgoraSubcategory(x.Title.Value)).ToArray());
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.Contains(subcategory.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                                          .Select(x => x.Title.Value)
+                                                                                          .ToArray());
                         }
                         else
                         {
-                            subcategory.Choices.Add(new AgoraSubcategory($"No configured subcategories exist for {currentCategory}"));
+                            subcategory.Choices.Add($"No configured subcategories exist for {currentCategory}");
                         }
                     }
                 }

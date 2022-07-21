@@ -11,14 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+    <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha" />
     <PackageReference Include="HumanTimeParser.English" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
-    <ProjectReference Include="..\..\Disqord\src\Disqord.Bot\Disqord.Bot.csproj" />
   </ItemGroup>
 
 </Project>

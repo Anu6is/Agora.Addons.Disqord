@@ -81,6 +81,7 @@ namespace Agora.Addons.Disqord.Extensions
             var serverTime = Markdown.Bold(DateTimeOffset.UtcNow.ToOffset(settings.Offset).ToString("MMMM d, yyyy HH:mm  [zzz] "));
             var snipeExtension = settings.SnipeExtension == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
+            var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var absenteeBid = settings.AllowAbsenteeBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
@@ -94,6 +95,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .WithTitle("Server Settings")
                 .WithDescription(description)
                 .AddField("Server Time", $"{serverTime}{Environment.NewLine}{localTime} **[Local]**")
+                .AddField($"{economy} Server Economy", settings.EconomyType)
                 .AddField("Default Currency", $"Symbol: **{settings.DefaultCurrency.Symbol}** | Decimals: **{settings.DefaultCurrency.DecimalDigits}** | Format: **{settings.DefaultCurrency}**")
                 .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
@@ -116,7 +118,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
 
             if (highlightField != null)
-                embed.Fields.FirstOrDefault(x => x.Name == highlightField)?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");
+                embed.Fields.Value.FirstOrDefault(x => x.Name == highlightField)?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");
 
             return embed;
         }
@@ -156,8 +158,8 @@ namespace Agora.Addons.Disqord.Extensions
                     var businessHours = s.ActiveHours == null ? "24-hours" : s.ActiveHours.ToString();
                     var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.Id.Value))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(businessHours)}";
 
-                    return roomDetails.Length > LocalEmbedField.MaxFieldValueLength
-                            ? roomDetails[..LocalEmbedField.MaxFieldValueLength]
+                    return roomDetails.Length > Discord.Limits.Message.Embed.Field.MaxValueLength
+                            ? roomDetails[..Discord.Limits.Message.Embed.Field.MaxValueLength]
                             : roomDetails;
                 }));
             else

@@ -35,7 +35,7 @@ namespace Agora.Addons.Disqord
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
             if (member == null) return false;
-            if (member.GetPermissions().ManageGuild) return true;
+            if (member.CalculateGuildPermissions().HasFlag(Permissions.ManageGuild)) return true;
 
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var adminRole = guildSettings.AdminRole;
@@ -72,13 +72,10 @@ namespace Agora.Addons.Disqord
         {
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var buyerRole = guildSettings.BuyerRole;
-
-            if (buyerRole == 0ul) buyerRole = GuildId.Value;
-
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
-            var hasRole = member.RoleIds.Contains(buyerRole) || await IsAdministrator(user);
+            var hasRole = buyerRole == 0ul || member.RoleIds.Contains(buyerRole) || await IsAdministrator(user);
 
-            return hasRole && criteria == null || await criteria(user, command);
+            return hasRole && (criteria == null || await criteria(user, command));
         }
 
         public ValueTask<bool> ValidateUser(IEmporiumUser user) => ValueTask.FromResult(true);

@@ -117,7 +117,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return canModify ? string.Empty : "Invalid Operation: This action is no longer available.";
+            return canModify ? string.Empty : "Invalid operation: This action is no longer available.";
         }
 
         private async Task<string> ValidateSubmissionAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
@@ -156,7 +156,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return canSubmit ? string.Empty : "Unauthorized access: You cannot submit an offer for this item.";
+            return canSubmit ? string.Empty : "Transaction Denied: Unable to complete this action.";
         }
 
         private async Task<string> ValidateManagerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
@@ -169,7 +169,7 @@ namespace Agora.Addons.Disqord
                 _ => true
             };
 
-            return isManager ? string.Empty : "Unauthorized access: Only the OWNER or users with the MANAGER role can perform this action.";
+            return isManager ? string.Empty : "Unauthorized Access: You cannot perform this action.";
         }
 
         private static string ValidateStaff()

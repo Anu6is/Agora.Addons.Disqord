@@ -3,6 +3,8 @@ using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
+using Humanizer.Localisation;
+using Humanizer;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
@@ -19,7 +21,18 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("ping")]
         [Description("Test application responsiveness.")]
         [RateLimit(1, 5, RateLimitMeasure.Seconds, RateLimitBucketType.Guild)]
-        public IResult Ping() => Response("pong");
+        public async Task<IResult> Ping() => await GetStatsAsync();
+
+        private async Task<IResult> GetStatsAsync()
+        {
+            if (!await Context.Bot.IsOwnerAsync(Context.AuthorId)) return Response("pong");
+
+            var process = Process.GetCurrentProcess();
+            var memory = $"{Math.Round((double)process.WorkingSet64 / (1024 * 1024))} MB | {Math.Round((double)process.PagedMemorySize64 / (1024 * 1024))} MB";
+            var uptime = (DateTimeOffset.UtcNow - Process.GetCurrentProcess().StartTime).Humanize(5, true, maxUnit: TimeUnit.Month, minUnit: TimeUnit.Second);
+
+            return Response($"{memory} | {uptime}");
+        }
 
         //TODO - require bot owner
         [SlashCommand("shutdown")]

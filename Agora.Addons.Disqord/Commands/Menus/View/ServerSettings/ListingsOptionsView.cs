@@ -32,8 +32,8 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("Standard Market", Value = "4", Description = "List items at a fixed price.")]
         [SelectionOption("Flash Market", Value = "5", Description = "List items at a fixed price with a timed discount period.")]
         [SelectionOption("Bulk Market", Value = "6", Description = "List a large quantity of items. Buyers select their quantity.")]
-        [SelectionOption("Trade", Value = "7", Description = "List an item for trade, and accept an incoming trade offer.")]
-        [SelectionOption("Exchange", Value = "8", Description = "Post an item you want, and agree to a submitted exchange offer.")]
+        //[SelectionOption("Trade", Value = "7", Description = "List an item for trade, and accept an incoming trade offer.")]
+        //[SelectionOption("Exchange", Value = "8", Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)
         {
             _settings.AllowedListings.Clear();
@@ -80,7 +80,9 @@ namespace Agora.Addons.Disqord.Menus.View
                 MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Allowed Listings", new LocalEmoji("📖")));
             }
 
-            if (settings.FindMissingRequirement().Contains("room (channel)"))
+            var requirements = settings.FindMissingRequirement();
+
+            if (requirements != null && requirements.Contains("room (channel)"))
             {
                 var cache = _context.Services.GetRequiredService<IEmporiaCacheService>();
                 var emporium = await cache.GetEmporiumAsync(_context.Guild.Id);

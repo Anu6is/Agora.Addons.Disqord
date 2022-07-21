@@ -4,6 +4,7 @@ using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
 using Disqord.Gateway;
 using Disqord.Rest;
+using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;
@@ -63,7 +64,7 @@ namespace Agora.Addons.Disqord
             {
                 ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
-                _ => "An error occured while processing this action: " + ex.Message
+                _ => "An error occured while processing this action. If this persists, please contact support."
             };
 
             await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral(true));

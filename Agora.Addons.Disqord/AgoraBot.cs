@@ -117,8 +117,6 @@ namespace Agora.Addons.Disqord
 
         protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)
         {
-            typeParserProvider.AddParser(new JsonValueTypeParser<AgoraCategory>(25));
-            typeParserProvider.AddParser(new JsonValueTypeParser<AgoraSubcategory>(25));
             typeParserProvider.AddParser(new StringValueTypeParser<ProductTitle>(75));
             typeParserProvider.AddParser(new StringValueTypeParser<HiddenMessage>(250));
             typeParserProvider.AddParser(new StringValueTypeParser<ProductDescription>(500));

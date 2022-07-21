@@ -28,11 +28,9 @@ namespace Agora.Addons.Disqord
                    {
                        bot.UseMentionPrefix = true;
                        bot.Status = UserStatus.Offline;
-                       bot.Token = context.Configuration["Discord:Token"];
+                       bot.Token = context.Configuration["Token:Discord"];
                        bot.ServiceAssemblies.Add(Assembly.GetExecutingAssembly());
-                       bot.Intents = GatewayIntent.Guilds | GatewayIntent.Integrations
-                                   | GatewayIntent.GuildMessages | GatewayIntent.GuildReactions
-                                   | GatewayIntent.DirectMessages | GatewayIntent.DirectReactions;
+                       bot.Intents = GatewayIntent.Guilds | GatewayIntent.Integrations;
                    })
                     .UseDefaultServiceProvider(x =>
                     {

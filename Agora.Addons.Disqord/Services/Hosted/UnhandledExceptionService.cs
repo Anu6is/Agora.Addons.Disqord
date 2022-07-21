@@ -51,8 +51,8 @@ namespace Agora.Addons.Disqord
 
                 scope.SetExtra("Shard", Bot.GetShardId(context.GuildId));
                 scope.SetExtra("Arguments", $"{context.Command.Name} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
-                scope.SetExtra("Guild Permissions", currentMember.GetPermissions(guild).ToString());
-                scope.SetExtra("Channel Permissions", currentMember.GetPermissions(channel).ToString());
+                scope.SetExtra("Guild Permissions", currentMember.CalculateGuildPermissions(guild).ToString());
+                scope.SetExtra("Channel Permissions", currentMember.CalculateChannelPermissions(channel).ToString());
             });
 
             return default;
@@ -98,10 +98,14 @@ namespace Agora.Addons.Disqord
                 scope.SetTag("GuildId", interaction.GuildId.ToString());
                 scope.SetTag("ChannelId", interaction.ChannelId.ToString());
 
-                scope.SetExtra("Shard", (interaction.Client as AgoraBot)?.GetShardId(interaction.GuildId));
+                var client = interaction.Client as AgoraBot;
+                var member = interaction.Author as IMember;
+                var channel = client.GetChannel(interaction.GuildId.Value, interaction.ChannelId);
+
+                scope.SetExtra("Shard", client.GetShardId(interaction.GuildId));
                 scope.SetExtra("Arguments", interaction.CustomId);
-                scope.SetExtra("Guild Permissions", (interaction.Author as IMember)?.GetPermissions().ToString());
-                scope.SetExtra("Channel Permissions", (interaction.Author as IMember)?.GetPermissions().ToString());
+                scope.SetExtra("Guild Permissions", member?.CalculateGuildPermissions().ToString());
+                scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());
             });
 
             return default;

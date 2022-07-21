@@ -9,7 +9,6 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using static Disqord.Discord.Limits.Components;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -64,7 +63,6 @@ namespace Agora.Addons.Disqord.Menus.View
                     settings.Offset = emporium.TimeOffset;
 
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
-                    await scope.ServiceProvider.GetRequiredService<IEmporiaCacheService>().AddEmporiumAsync(emporium);
 
                     MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
                 });

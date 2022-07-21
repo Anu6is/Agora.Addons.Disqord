@@ -9,13 +9,14 @@ using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
+using Emporia.Extensions.Discord.Features.MessageBroker;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands
 {
     [SlashGroup("server")]
-    [RequireAuthorPermissions(Permission.ManageGuild)]
+    [RequireAuthorPermissions(Permissions.ManageGuild)]
     public sealed class ServerSettingsModule : AgoraModuleBase
     {
         [SkipAuthentication]
@@ -27,7 +28,7 @@ namespace Agora.Addons.Disqord.Commands
             [Description("Log all item activity to this channel.")][ChannelTypes(ChannelType.Text)] IChannel auditLog = null,
             [Description("Default currency symbol.")] string symbol = "$",
             [Description("Number of decimal places to show for prices.")] int decimalPlaces = 2,
-            [Description("Current server time (24-Hour format). Defaults to UTC")] Time serverTime = null)
+            [Description("Current server time (24-Hour format | 15:30). Defaults to UTC")] Time serverTime = null)
         {
             await Deferral();
 
@@ -42,10 +43,11 @@ namespace Agora.Addons.Disqord.Commands
                 settings = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currency, resultLog.Id)
                 {
                     AuditLogChannelId = auditLog?.Id ?? 0ul,
-                    Economy = EconomyType.None.ToString(),
+                    Economy = EconomyType.Disabled.ToString(),
                     TimeOffset = emporium.TimeOffset
                 });
 
+                await Context.Services.GetRequiredService<IMessageBroker>().TryRegisterAsync(emporium.Id);
                 await SettingsService.AddGuildSettingsAsync(settings);
                 await Cache.AddEmporiumAsync(emporium);
             });

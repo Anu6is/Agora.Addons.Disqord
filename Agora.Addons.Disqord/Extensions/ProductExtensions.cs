@@ -1,6 +1,7 @@
 ﻿using Disqord;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Extension;
 using Humanizer;
 
 namespace Agora.Addons.Disqord.Extensions
@@ -45,13 +46,23 @@ namespace Agora.Addons.Disqord.Extensions
             return new LocalRowComponent[] { firstRowButtons, secondRowButtons };
         }
 
+        public static LocalEmbed WithCategory(this LocalEmbed embed, string category)
+        {
+            if (category.IsNull()) return embed;
+
+            embed.AddField("Category", category);
+
+            return embed;
+        }
+
         private static LocalRowComponent ParticipantButtons(Listing listing) => listing switch
         {
             { Product: AuctionItem auctionItem } => LocalComponent.Row(
                     LocalComponent.Button("undobid", "Undo Bid").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null),
                     LocalComponent.Button("minbid", $"Min Bid [{auctionItem.MinIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(listing is VickreyAuction),
-                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction),
-                    LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)),
+                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
+                    //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
+                ),
             _ => LocalComponent.Row(LocalComponent.Button("undo", "Undo Offer").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null))
         };
 
@@ -115,7 +126,7 @@ namespace Agora.Addons.Disqord.Extensions
             switch (listing)
             {
                 case StandardMarket:
-                    return product.CurrentPrice.ToString();
+                    return product.Price.ToString();
                 case FlashMarket market:
                     if (market.DiscountEndDate.ToUniversalTime() < SystemClock.Now)
                         return product.CurrentPrice.ToString();
@@ -150,7 +161,7 @@ namespace Agora.Addons.Disqord.Extensions
             if (discount == Discount.Percent) return $"{discountValue}%";
 
             var item = market.Product as MarketItem;
-            var percent = 100 * (item.Price.Value - discountValue) / item.Price.Value;
+            var percent = (discountValue / item.Price.Value) * 100;
 
             return percent % 1 == 0 ? $"{percent:F0}%" : $"{percent:F2}%";
         }

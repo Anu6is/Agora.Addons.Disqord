@@ -8,7 +8,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
-    public class RequireShowroomAttribute : DiscordGuildCheckAttribute
+    internal class RequireShowroomAttribute : DiscordGuildCheckAttribute
     {
         private readonly string _roomType;
 

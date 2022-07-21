@@ -8,7 +8,6 @@ using Emporia.Domain.Entities;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using static Disqord.Discord.Limits.Components;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -163,7 +162,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
             else
             {
-                _selectedCategory = String.Empty;
+                _selectedCategory = string.Empty;
             }
 
             return default;
@@ -187,7 +186,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
             else
             {
-                _selectedSubcategory = String.Empty;
+                _selectedSubcategory = string.Empty;
             }
 
             return default;
@@ -288,7 +287,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
 
             selection.IsDisabled = _categories.Count == 0;
-            removeCategory.IsDisabled = _selectedCategory != String.Empty;
+            removeCategory.IsDisabled = _selectedCategory == string.Empty;
 
             AddComponent(new ButtonViewComponent(AddCategory) { Label = "Add Category", Style = LocalButtonComponentStyle.Success, Row = 0, Position = 1 });
             AddComponent(removeCategory);
@@ -316,7 +315,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
 
             selection.IsDisabled = subcategories.Length == 0;
-            removeSubcategory.IsDisabled = _selectedSubcategory != String.Empty;
+            removeSubcategory.IsDisabled = _selectedSubcategory == string.Empty;
 
             AddComponent(new ButtonViewComponent(RemoveCategory) { Label = $"Remove Category", Style = LocalButtonComponentStyle.Danger, Row = 0, Position = 0 });
             AddComponent(new ButtonViewComponent(CategoryView) { Label = $"Back to Categories", Style = LocalButtonComponentStyle.Primary, Row = 0, Position = 1 });

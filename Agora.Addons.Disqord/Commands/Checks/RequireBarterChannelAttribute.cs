@@ -5,7 +5,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
-    public class RequireBarterChannelAttribute : DiscordGuildCheckAttribute
+    internal class RequireBarterChannelAttribute : DiscordGuildCheckAttribute
     {
         public override ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {

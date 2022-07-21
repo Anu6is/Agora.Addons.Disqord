@@ -7,7 +7,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
-    public class SkipAuthenticationAttribute : DiscordGuildCheckAttribute
+    internal class SkipAuthenticationAttribute : DiscordGuildCheckAttribute
     {
         public override ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {

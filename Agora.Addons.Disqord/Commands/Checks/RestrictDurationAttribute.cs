@@ -6,7 +6,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Checks
 {
-    public class RestrictDurationAttribute : DiscordParameterCheckAttribute
+    internal class RestrictDurationAttribute : DiscordParameterCheckAttribute
     {
         private double? _minDuration;
         private double? _maxDuration;

@@ -48,7 +48,6 @@ namespace Agora.Addons.Disqord.Menus
                 {
                     defaultOption.IsDefault = false;
                     _settingsOptions[int.Parse(defaultOption.Value.ToString())].IsDefault = false;
-
                 }
 
                 Selection.Options.FirstOrDefault(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;

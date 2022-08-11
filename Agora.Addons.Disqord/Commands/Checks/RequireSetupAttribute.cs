@@ -9,8 +9,7 @@ namespace Agora.Addons.Disqord.Checks
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
-            var settings = await context.Services.GetRequiredService<IGuildSettingsService>()
-                                                 .GetGuildSettingsAsync(context.GuildId);
+            var settings = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
 
             if (settings == null) return Results.Failure("Setup Required: Please execute the Server Setup command.");
 

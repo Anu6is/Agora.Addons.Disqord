@@ -1,6 +1,6 @@
 ﻿using Agora.Shared.Attributes;
 using Agora.Shared.Services;
-using Agora.Shared.Services.EconomyFactory;
+using Agora.Shared.EconomyFactory;
 using Disqord.Bot;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;

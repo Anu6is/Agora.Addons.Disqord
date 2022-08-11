@@ -89,6 +89,7 @@ namespace Agora.Addons.Disqord.Extensions
             var description = missing is null
                 ? Markdown.Italics("Select an option from the drop-down list to modify the selected setting.")
                 : Markdown.Bold($"💡{Markdown.CodeBlock(missing)}");
+            var defaultBalance = Money.Create(settings.DefaultBalance == 0 ? settings.DefaultCurrency.MinAmount : settings.DefaultBalance, settings.DefaultCurrency);
 
             var embed = new LocalEmbed()
                 .WithDefaultColor()
@@ -96,7 +97,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .WithDescription(description)
                 .AddField("Server Time", $"{serverTime}{Environment.NewLine}{localTime} **[Local]**")
                 .AddField($"{economy} Server Economy", settings.EconomyType)
-                .AddField("Default Currency", $"Symbol: **{settings.DefaultCurrency.Symbol}** | Decimals: **{settings.DefaultCurrency.DecimalDigits}** | Format: **{settings.DefaultCurrency}**")
+                .AddField("Default Currency", $"Symbol: **{settings.DefaultCurrency.Symbol}** | Decimals: **{settings.DefaultCurrency.DecimalDigits}** | Format: **{defaultBalance}**")
                 .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
                 .AddInlineBlankField()

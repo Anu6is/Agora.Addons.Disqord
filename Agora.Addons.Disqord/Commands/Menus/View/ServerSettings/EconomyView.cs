@@ -2,15 +2,12 @@
 using Believe.Net;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Rest;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
-using Microsoft.Data.SqlClient.Server;
-using Microsoft.Extensions.DependencyInjection;
-using static System.Net.Mime.MediaTypeNames;
-using System;
 using Microsoft.Extensions.Configuration;
-using Disqord.Rest;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -33,7 +30,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
         [Selection(MinimumSelectedOptions = 1, MaximumSelectedOptions = 1, Row = 1)]
         [SelectionOption("Disable", Value = "Disabled", Description = "Users do not require a balance to purchase items.")]
-        //[SelectionOption("Basic", Value = "AuctionBot", Description = "Users require a server balance to purchase items.")] TODO - add agora economy
+        [SelectionOption("Basic", Value = "AuctionBot", Description = "Users require a server balance to purchase items.")]
         [SelectionOption("UnbelievaBoat", Value = "UnbelievaBoat", Description = "Users require an UnbelievaBoat balance to purchase items.")]
         public async ValueTask ListingsSelection(SelectionEventArgs e)
         {

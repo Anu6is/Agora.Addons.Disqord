@@ -26,7 +26,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             [SlashCommand("standard")]
             [Description("User with the highest bid wins when the auction ends.")]
-            public async Task CreateStandarAuction(
+            public async Task CreateStandardAuction(
                 [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,

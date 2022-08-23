@@ -49,7 +49,7 @@ namespace Agora.Addons.Disqord
                 scope.SetTag("GuildId", context.GuildId.ToString());
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
-                scope.SetExtra("Shard", Bot.GetShardId(context.GuildId));
+                scope.SetExtra("Shard", Bot.ApiClient.GetShardId(context.GuildId));
                 scope.SetExtra("Arguments", $"{context.Command.Name} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
                 scope.SetExtra("Guild Permissions", currentMember.CalculateGuildPermissions(guild).ToString());
                 scope.SetExtra("Channel Permissions", currentMember.CalculateChannelPermissions(channel).ToString());
@@ -102,7 +102,7 @@ namespace Agora.Addons.Disqord
                 var member = interaction.Author as IMember;
                 var channel = client.GetChannel(interaction.GuildId.Value, interaction.ChannelId);
 
-                scope.SetExtra("Shard", client.GetShardId(interaction.GuildId));
+                scope.SetExtra("Shard", client.ApiClient.GetShardId(interaction.GuildId));
                 scope.SetExtra("Arguments", interaction.CustomId);
                 scope.SetExtra("Guild Permissions", member?.CalculateGuildPermissions().ToString());
                 scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());

@@ -1,10 +1,9 @@
 ﻿using Agora.Addons.Disqord.Commands;
 using Agora.Addons.Disqord.Parsers;
 using Disqord;
+using Disqord.Bot;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Interaction;
-using Disqord.Bot.Sharding;
-using Disqord.Sharding;
 using Emporia.Domain.Common;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,9 +16,9 @@ using System.Reflection;
 
 namespace Agora.Addons.Disqord
 {
-    internal class AgoraBot : DiscordBotSharder
+    internal class AgoraBot : DiscordBot
     {
-        public AgoraBot(IOptions<DiscordBotSharderConfiguration> options, ILogger<DiscordBotSharder> logger, IServiceProvider services, DiscordClientSharder client)
+        public AgoraBot(IOptions<DiscordBotConfiguration> options, ILogger<DiscordBot> logger, IServiceProvider services, DiscordClient client)
             : base(options, logger, services, client) { }
 
         protected override IEnumerable<Assembly> GetModuleAssemblies()

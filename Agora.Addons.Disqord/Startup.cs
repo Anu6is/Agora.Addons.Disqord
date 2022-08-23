@@ -24,13 +24,13 @@ namespace Agora.Addons.Disqord
                    .ConfigureDisqordCommands()
                    .UseEmporiaDiscordExtension()
                    .ConfigureCustomAgoraServices()
-                   .ConfigureDiscordBotSharder<AgoraBot>((context, bot) =>
+                   .ConfigureDiscordBot<AgoraBot>((context, bot) =>
                    {
                        bot.UseMentionPrefix = true;
                        bot.Status = UserStatus.Offline;
                        bot.Token = context.Configuration["Token:Discord"];
                        bot.ServiceAssemblies.Add(Assembly.GetExecutingAssembly());
-                       bot.Intents = GatewayIntent.Guilds | GatewayIntent.Integrations;
+                       bot.Intents = GatewayIntents.Guilds | GatewayIntents.Integrations;
                    })
                     .UseDefaultServiceProvider(x =>
                     {

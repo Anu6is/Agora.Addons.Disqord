@@ -43,7 +43,7 @@ namespace Agora.Addons.Disqord.Commands
             Cache = Context.Services.GetRequiredService<IEmporiaCacheService>();
             SettingsService = Context.Services.GetRequiredService<IGuildSettingsService>();
 
-            Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"Shard#{Context.Bot.GetShardId(Context.GuildId).Id}");
+            Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"{Context.Bot.ApiClient.GetShardId(Context.GuildId)}");
             Transaction.User = new User() { Id = Context.Author.Id.ToString(), Username = Context.Author.Tag };
             Transaction.SetTag("guild", Context.GuildId.ToString());
             Transaction.SetTag("channel", Context.ChannelId.ToString());

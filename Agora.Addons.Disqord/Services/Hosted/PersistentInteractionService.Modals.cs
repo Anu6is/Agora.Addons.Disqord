@@ -126,7 +126,7 @@ namespace Agora.Addons.Disqord
                 .Components.OfType<ITextInputComponent>().First().Value;
 
             if (int.TryParse(input, out var items))
-                return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), "Market") { ItemCount = items };
+                return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1]))) { ItemCount = items };
             else
                 throw new ValidationException("Claim amount must be a number!");
         }

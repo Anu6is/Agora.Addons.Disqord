@@ -12,7 +12,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             return new LocalEmbed
             {
-                Title = listing.Product.Title.Value,
+                Title = $"{listing.Type}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
@@ -35,15 +35,17 @@ namespace Agora.Addons.Disqord.Extensions
 
             if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
+            if (listing.Product is TradeItem)
+                firstRowButtons.AddComponent(LocalComponent.Button("trade", "Claim").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else
                 firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing.CurrentOffer == null));
 
-            if (!listing.IsActive() || listing.Product is MarketItem)
-                return new LocalRowComponent[] { firstRowButtons };
-
             var secondRowButtons = ParticipantButtons(listing);
 
-            return new LocalRowComponent[] { firstRowButtons, secondRowButtons };
+            if (!listing.IsActive() || secondRowButtons == null)
+                return new LocalRowComponent[] { firstRowButtons };
+            else
+                return new LocalRowComponent[] { firstRowButtons, secondRowButtons };
         }
 
         public static LocalEmbed WithCategory(this LocalEmbed embed, string category)
@@ -61,8 +63,12 @@ namespace Agora.Addons.Disqord.Extensions
                     LocalComponent.Button("undobid", "Undo Bid").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null),
                     LocalComponent.Button("minbid", $"Min Bid [{auctionItem.MinIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(listing is VickreyAuction),
                     LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
-                    //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
+                //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
                 ),
+            { Product: MarketItem } => null,
+            StandardTrade trade => trade.AllowOffers
+                                ? null // add buttons for bartering 
+                                : null,
             _ => LocalComponent.Row(LocalComponent.Button("undo", "Undo Offer").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null))
         };
 
@@ -88,6 +94,13 @@ namespace Agora.Addons.Disqord.Extensions
                                           .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
+            TradeItem tradeItem => embed.AddField("Trading For", tradeItem.SuggestedOffer)
+                                        .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
+                                        .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
+                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Item Owner", listing.Anonymous
+                                                                ? Markdown.BoldItalics("Anonymous")
+                                                                : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
         };
 

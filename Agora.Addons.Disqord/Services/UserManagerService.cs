@@ -88,7 +88,7 @@ namespace Agora.Addons.Disqord
 
             IMember member;
 
-            if (Bot.GetShard(GuildId).RateLimiter.GetRemainingRequests() < 3)
+            if (Bot.ApiClient.GetShard(GuildId).RateLimiter.GetRemainingRequests() < 3)
             {
                 member = await Bot.FetchMemberAsync(GuildId.GetValueOrDefault(), id);
             }

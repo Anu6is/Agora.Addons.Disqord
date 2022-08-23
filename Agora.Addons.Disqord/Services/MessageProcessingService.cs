@@ -88,9 +88,9 @@ namespace Agora.Addons.Disqord
             {
                 var product = listing.Product;
                 var thread = await _agora.CreatePublicThreadAsync(ShowroomId.Value, $"[{listing.ReferenceCode}] {product.Title}", product.ReferenceNumber.Value, x => x.AutomaticArchiveDuration = duration);
-                
+
                 await thread.SendMessageAsync(new LocalMessage().WithContent("Execute commands for this item HERE!"));
-                
+
                 return ReferenceNumber.Create(thread.Id);
             }
             catch (Exception ex)
@@ -132,8 +132,8 @@ namespace Agora.Addons.Disqord
             {
                 StandardMarket { Discount: > 0, Product: MarketItem item } => $"{Markdown.Strikethrough(item.Price.ToString())} ",
                 FlashMarket { Discount: > 0, Product: MarketItem item } market => $"{Markdown.Strikethrough(item.Price.ToString())} ",
-                MassMarket { Product: MarketItem item } market => market.CostPerItem.Value * item.Quantity.Amount > item.CurrentPrice 
-                                                                ? $"{Markdown.Strikethrough(Money.Create(market.CostPerItem.Value * item.Quantity.Amount, item.Price.Currency))} " 
+                MassMarket { Product: MarketItem item } market => market.CostPerItem.Value * item.Quantity.Amount > item.CurrentPrice
+                                                                ? $"{Markdown.Strikethrough(Money.Create(market.CostPerItem.Value * item.Quantity.Amount, item.Price.Currency))} "
                                                                 : string.Empty,
                 _ => string.Empty
             };
@@ -350,7 +350,7 @@ namespace Agora.Addons.Disqord
                 var category = emporium.Categories.FirstOrDefault(c => c.SubCategories.Any(s => s.Id.Equals(subcategoryId)));
                 var subcategory = category.SubCategories.FirstOrDefault(s => s.Id.Equals(subcategoryId));
 
-                categorization = $"{category.Title}{(subcategory.Title.Equals(category.Title.Value)  ? "" : $": {subcategory.Title}")}";
+                categorization = $"{category.Title}{(subcategory.Title.Equals(category.Title.Value) ? "" : $": {subcategory.Title}")}";
             }
 
             return categorization;

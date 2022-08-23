@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Extensions
             if (memberCache.TryGetValue(userId, out var cachedMember))
                 return cachedMember;
 
-            if (bot.GetShard(guildId).RateLimiter.GetRemainingRequests() < 3)
+            if (bot.ApiClient.GetShard(guildId).RateLimiter.GetRemainingRequests() < 3)
                 return await bot.FetchMemberAsync(guildId, userId);
 
             var members = await bot.Chunker.QueryAsync(guildId, new[] { userId });

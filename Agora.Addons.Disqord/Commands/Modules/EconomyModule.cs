@@ -37,12 +37,12 @@ namespace Agora.Addons.Disqord.Commands
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"Balance: {userBalance}")).WithIsEphemeral());
         }
 
-        
+
         [SlashCommand("give")]
         [Description("Give a portion of your moeny to another member")]
         public async Task<IResult> Donate(
-            [Description("The amount of money to give"), RequireBalance(), Minimum(0)] double amount, 
-            [Description("The user to give money to"), RequireRole(AuthorizationRole.Buyer, author:false) ]IMember user)
+            [Description("The amount of money to give"), RequireBalance(), Minimum(0)] double amount,
+            [Description("The user to give money to"), RequireRole(AuthorizationRole.Buyer, author: false)] IMember user)
         {
             var donation = Money.Create((decimal)amount, Settings.DefaultCurrency);
             var donator = await Cache.GetUserAsync(Context.GuildId, Context.AuthorId);

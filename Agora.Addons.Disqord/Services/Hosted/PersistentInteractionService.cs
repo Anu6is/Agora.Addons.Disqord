@@ -4,7 +4,6 @@ using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
 using Disqord.Gateway;
 using Disqord.Rest;
-using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;

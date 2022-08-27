@@ -11,6 +11,7 @@ using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Qommon;
 
 namespace Agora.Addons.Disqord
 {
@@ -30,6 +31,8 @@ namespace Agora.Addons.Disqord
                     return EditAuctionListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editMarket":
                     return EditMarketListing(modalInteraction, emporiumId, showroomId, keys);
+                case "editTrade":
+                    return EditTradeListing(modalInteraction, emporiumId, showroomId, keys);
                 case "claim":
                     return ClaimListing(modalInteraction, emporiumId, showroomId, keys);
                 default:
@@ -54,7 +57,7 @@ namespace Agora.Addons.Disqord
         {
             var rows = modalInteraction.Components.OfType<IRowComponent>();
             var selection = rows.First().Components.OfType<ISelectionComponent>().First() as ITransientEntity<ComponentJsonModel>;
-            var option = selection.Model["values"].ToType<DefaultJsonArray>()[0].ToString();
+            var option = selection.Model.Values.GetValueOrDefault()[0]; //["values"].ToType<DefaultJsonArray>()[0].ToString();
             var text = rows.Last().Components.OfType<ITextInputComponent>().First().Value;
 
             var emporium = await Client.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(emporiumId.Value);
@@ -112,6 +115,22 @@ namespace Agora.Addons.Disqord
                 .ToDictionary(key => key.CustomId, value => value.Value);
 
             return new UpdateMarketItemCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])))
+            {
+                ImageUrls = rows["image"].IsNull() ? null : new[] { rows["image"] },
+                Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
+                Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),
+            };
+        }
+
+        private static IBaseRequest EditTradeListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var rows = modalInteraction.Components
+                .OfType<IRowComponent>()
+                .Select(row => row.Components.OfType<ITextInputComponent>().First())
+                .Where(component => component is not null)
+                .ToDictionary(key => key.CustomId, value => value.Value);
+
+            return new UpdateTradeItemCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])))
             {
                 ImageUrls = rows["image"].IsNull() ? null : new[] { rows["image"] },
                 Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),

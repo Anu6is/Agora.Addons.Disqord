@@ -1,10 +1,12 @@
-﻿using Agora.Shared;
+﻿using Agora.Addons.Conversion;
+using Agora.Shared;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Humanizer;
 using Humanizer.Localisation;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
@@ -23,18 +25,7 @@ namespace Agora.Addons.Disqord.Commands
         [RateLimit(1, 5, RateLimitMeasure.Seconds, RateLimitBucketType.Guild)]
         public async Task<IResult> Ping() => await GetStatsAsync();
 
-        private async Task<IResult> GetStatsAsync()
-        {
-            if (!await Context.Bot.IsOwnerAsync(Context.AuthorId)) return Response("pong");
-
-            var process = Process.GetCurrentProcess();
-            var memory = $"{Math.Round((double)process.WorkingSet64 / (1024 * 1024))} MB | {Math.Round((double)process.PagedMemorySize64 / (1024 * 1024))} MB";
-            var uptime = (DateTimeOffset.UtcNow - Process.GetCurrentProcess().StartTime).Humanize(5, true, maxUnit: TimeUnit.Month, minUnit: TimeUnit.Second);
-
-            return Response($"{memory} | {uptime}");
-        }
-
-        //TODO - require bot owner
+        [RequireBotOwner]
         [SlashCommand("shutdown")]
         [RequireGuild(551567205461131305)]
         [Description("Shutdown the application.")]
@@ -59,7 +50,7 @@ namespace Agora.Addons.Disqord.Commands
             await ApplicationHost.StopAsync(Context.Bot.StoppingToken);
         }
 
-        //TODO - require bot owner
+        [RequireBotOwner]
         [SlashCommand("reboot")]
         [RequireGuild(551567205461131305)]
         [Description("Shutdown and restart the application.")]
@@ -81,15 +72,10 @@ namespace Agora.Addons.Disqord.Commands
 
             await Response("Goodbye...");
 
-            var psi = new ProcessStartInfo("sudo") //TODO - add to config file
-            {
-                Arguments = $"systemctl restart {serviceName}.service"
-            };
-
-            Process.Start(psi);
+            Restart(serviceName);
         }
 
-        //TODO - require bot owner
+        [RequireBotOwner]
         [SlashCommand("get-status")]
         [RequireGuild(551567205461131305)]
         [Description("Return the status of the systmd service")]
@@ -98,6 +84,59 @@ namespace Agora.Addons.Disqord.Commands
             var status = await Systemd.GetServiceStatusAsync($"{serviceName}.service");
 
             await Response(status);
+        }
+
+        [RequireBotOwner]
+        [SlashCommand("convert")]
+        [RequireGuild(551567205461131305)]
+        [Description("Run the conversion process")]
+        public async Task RunConversion([Description("The name of the service to convert to")] string serviceName) 
+        {
+            RebootInProgress = true;
+
+            Logger.LogInformation("Starting conversion");
+
+            await Deferral();
+            await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
+            
+            var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync();
+
+            Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);
+
+            Restart(serviceName);
+        }
+
+        private async Task<IResult> GetStatsAsync()
+        {
+            if (!await Context.Bot.IsOwnerAsync(Context.AuthorId)) return Response("pong");
+
+            var process = Process.GetCurrentProcess();
+            var memory = $"{Math.Round((double)process.WorkingSet64 / (1024 * 1024))} MB | {Math.Round((double)process.PagedMemorySize64 / (1024 * 1024))} MB";
+            var uptime = (DateTimeOffset.UtcNow - Process.GetCurrentProcess().StartTime).Humanize(5, true, maxUnit: TimeUnit.Month, minUnit: TimeUnit.Second);
+
+            return Response($"{memory} | {uptime}");
+        }
+
+        private async void Restart(string serviceName)
+        {
+            var psi = new ProcessStartInfo("sudo")
+            {
+                Arguments = $"systemctl restart {serviceName}.service"
+            };
+
+            try
+            {
+                Process.Start(psi);
+            }
+            catch (Exception)
+            {
+                RebootInProgress = false;
+
+                Logger.LogWarning("Failed to restart service");
+
+            }
+
+            await Response("Conversion complete!");
         }
     }
 }

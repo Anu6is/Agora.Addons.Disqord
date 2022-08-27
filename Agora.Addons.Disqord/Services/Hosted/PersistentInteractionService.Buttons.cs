@@ -12,8 +12,10 @@ namespace Agora.Addons.Disqord
         {
             { "extendAuction", ExtendListingModal },
             { "extendMarket", ExtendListingModal },
+            { "extendTrade", ExtendListingModal },
             { "editAuction", EditAuctionListingModal },
             { "editMarket", EditMarketListingModal },
+            { "editTrade", EditTradeListingModal },
             { "claim", PartialPurchaseModal }
         };
 
@@ -75,6 +77,16 @@ namespace Agora.Addons.Disqord
         {
             return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
                 .WithTitle("Edit Market Listing")
+                .WithComponents(
+                    LocalComponent.Row(LocalComponent.TextInput("image", "Update Image", TextInputComponentStyle.Short).WithPlaceholder("Insert image url").WithIsRequired(false)),
+                    LocalComponent.Row(LocalComponent.TextInput("description", "Update Description", TextInputComponentStyle.Paragraph).WithPlaceholder("Item description").WithMaximumInputLength(500).WithIsRequired(false)),
+                    LocalComponent.Row(LocalComponent.TextInput("message", "Update Buyer's Note", TextInputComponentStyle.Paragraph).WithPlaceholder("Hidden message").WithMaximumInputLength(250).WithIsRequired(false)));
+        }
+
+        private static LocalInteractionModalResponse EditTradeListingModal(IComponentInteraction interaction)
+        {
+            return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
+                .WithTitle("Edit Trade Listing")
                 .WithComponents(
                     LocalComponent.Row(LocalComponent.TextInput("image", "Update Image", TextInputComponentStyle.Short).WithPlaceholder("Insert image url").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("description", "Update Description", TextInputComponentStyle.Paragraph).WithPlaceholder("Item description").WithMaximumInputLength(500).WithIsRequired(false)),

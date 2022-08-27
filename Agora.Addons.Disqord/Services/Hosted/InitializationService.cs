@@ -31,9 +31,8 @@ namespace Agora.Addons.Disqord
 
         protected override async ValueTask OnReady(ReadyEventArgs e)
         {
-            await Client.SetPresenceAsync(UserStatus.Online);
+            await Client.SetPresenceAsync(UserStatus.Online, new LocalActivity("/Server Setup", ActivityType.Watching));
             return;
         }
     }
 }
-// TODO - what to do about live auction in restart situations?

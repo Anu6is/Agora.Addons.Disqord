@@ -113,7 +113,8 @@ namespace Agora.Addons.Disqord
             {
                 UpdateAuctionItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
                 UpdateMarketItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
-                UndoBidCommand command => command.Showroom.Listings.First().CurrentOffer != null && command.Showroom.Listings.First().CurrentOffer.SubmittedOn.ToUniversalTime().AddSeconds(30) <= SystemClock.Now,
+                UpdateTradeItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
+                UndoBidCommand command => command.Showroom.Listings.First().CurrentOffer != null && command.Showroom.Listings.First().CurrentOffer.SubmittedOn.ToUniversalTime().AddSeconds(30) >= SystemClock.Now,
                 _ => true
             };
 
@@ -163,10 +164,9 @@ namespace Agora.Addons.Disqord
         {
             var isManager = request switch
             {
-                WithdrawListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
-                ExtendListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser),
-                UndoBidCommand command => await _userManager.IsHost(currentUser),
-                _ => true
+                UndoBidCommand command => await _userManager.IsHost(currentUser) || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
+                IProductListingBinder binder => currentUser.Equals(binder.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser), 
+                _ => false
             };
 
             return isManager ? string.Empty : "Unauthorized Access: You cannot perform this action.";

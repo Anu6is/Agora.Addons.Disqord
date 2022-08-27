@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (context.Settings.AllowedListings.Any(listing => listing == option.Label)) option.IsDefault = true;
         }
 
-        [Selection(MaximumSelectedOptions = 6, Row = 1, Placeholder = "Select the listing types to allow")]
+        [Selection(MaximumSelectedOptions = 8, Row = 1, Placeholder = "Select the listing types to allow")]
         [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
         [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction ends/expires.")]
         [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]

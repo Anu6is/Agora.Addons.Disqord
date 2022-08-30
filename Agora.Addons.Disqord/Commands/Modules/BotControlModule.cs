@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Conversion;
+using Agora.Addons.Disqord.Checks;
 using Agora.Shared;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -87,6 +88,7 @@ namespace Agora.Addons.Disqord.Commands
         }
 
         [RequireBotOwner]
+        [SkipAuthentication]
         [SlashCommand("convert")]
         [RequireGuild(551567205461131305)]
         [Description("Run the conversion process")]
@@ -99,7 +101,7 @@ namespace Agora.Addons.Disqord.Commands
             await Deferral();
             await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
             
-            var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync();
+            var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync(Context);
 
             Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);
 

@@ -9,8 +9,7 @@ namespace Agora.Addons.Disqord.Checks
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
-            var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>()
-                                                 .GetEmporiumAsync(context.GuildId);
+            var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);
 
             if (emporium == null) return Results.Success;
 

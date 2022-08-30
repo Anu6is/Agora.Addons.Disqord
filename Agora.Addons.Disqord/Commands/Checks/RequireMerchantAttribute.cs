@@ -19,6 +19,8 @@ namespace Agora.Addons.Disqord.Checks
 
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
 
+            if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+
             return Results.Failure($"Only users with the {Mention.Role(settings.MerchantRole)} role can execute this command.");
         }
     }

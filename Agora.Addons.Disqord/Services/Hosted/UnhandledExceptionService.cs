@@ -1,6 +1,7 @@
 ﻿using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using FluentValidation;
@@ -25,32 +26,39 @@ namespace Agora.Addons.Disqord
         public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
         {
             var context = commandContext as IDiscordGuildCommandContext;
-            var command = context.Command;
+            var command = context.Command as ApplicationCommand;
             var guild = Bot.GetGuild(context.GuildId);
             var channel = Bot.GetChannel(context.GuildId, context.ChannelId);
             var currentMember = Bot.GetMember(context.GuildId, context.Bot.CurrentUser.Id);
+            var module = context.Command.Module as ApplicationModule;
+            var parent = module?.Parent;
+            var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
+            var failureReason = result.FailureReason;
+
+            if (result is ChecksFailedResult checksFailedResult)
+                failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
 
             _hub.CaptureEvent(new SentryEvent()
             {
                 ServerName = guild.Name,
-                Logger = $"{guild.Name}.{channel.Name}.{context.Command.Name}",
-                Message = new SentryMessage() { Message = result is ExceptionResult exceptionResult ? exceptionResult.Exception.ToString() : result.FailureReason },
+                Logger = $"{guild.Name}.{channel.Name}.{alias}",
+                Message = new SentryMessage() { Message = result is ExceptionResult exceptionResult ? exceptionResult.Exception.ToString() : failureReason },
             }, scope =>
             {
                 scope.AddBreadcrumb(
-                    message: $"Error occurred while executing {command.Name}",
+                    message: $"Error occurred while executing {alias}",
                     category: context.ExecutionStep?.GetType().ToString(),
-                    dataPair: ("reason", result.FailureReason),
+                    dataPair: ("reason", failureReason),
                     type: "user");
 
-                scope.TransactionName = command.Name;
+                scope.TransactionName = alias;
                 scope.User = new User() { Id = context.Author.Id.ToString(), Username = context.Author.Tag };
 
                 scope.SetTag("GuildId", context.GuildId.ToString());
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
                 scope.SetExtra("Shard", Bot.ApiClient.GetShardId(context.GuildId));
-                scope.SetExtra("Arguments", $"{context.Command.Name} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
+                scope.SetExtra("Arguments", $"{alias} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
                 scope.SetExtra("Guild Permissions", currentMember.CalculateGuildPermissions(guild).ToString());
                 scope.SetExtra("Channel Permissions", currentMember.CalculateChannelPermissions(channel).ToString());
             });
@@ -97,6 +105,7 @@ namespace Agora.Addons.Disqord
 
                 scope.SetTag("GuildId", interaction.GuildId.ToString());
                 scope.SetTag("ChannelId", interaction.ChannelId.ToString());
+                scope.SetTag("MessageId", interaction.Message.Id.ToString());
 
                 var client = interaction.Client as AgoraBot;
                 var member = interaction.Author as IMember;
@@ -122,7 +131,7 @@ namespace Agora.Addons.Disqord
                 {
                     switch (@event.Logger)
                     {
-                        case "Disqord.Bot.Sharding.DiscordBotSharder":
+                        case "Disqord.Bot.DiscordBot":
                             return null;
                         case "Disqord.Hosting.DiscordClientMasterService":
                             return null;

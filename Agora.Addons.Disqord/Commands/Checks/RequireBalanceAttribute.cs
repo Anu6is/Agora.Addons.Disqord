@@ -14,8 +14,11 @@ namespace Agora.Addons.Disqord.Commands.Checks
 
         public override async ValueTask<IResult> CheckAsync(IDiscordCommandContext context, IParameter parameter, object amount)
         {
-            var economy = context.Services.GetRequiredService<EconomyFactoryService>().Create(nameof(EconomyType.AuctionBot));
             var settings = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId.Value);
+
+            if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+
+            var economy = context.Services.GetRequiredService<EconomyFactoryService>().Create(nameof(EconomyType.AuctionBot));
             var userBalance = await economy.GetBalanceAsync(EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(context.AuthorId)), settings.DefaultCurrency);
 
             if (userBalance.Value >= (decimal)amount)

@@ -50,9 +50,6 @@ namespace Agora.Addons.Disqord.Commands
             Transaction.SetExtra("active_commands", _activeCommands);
 
             Settings = await SettingsService.GetGuildSettingsAsync(Context.GuildId);
-            Cache = Context.Services.GetRequiredService<IEmporiaCacheService>();
-            Data = Context.Services.GetRequiredService<IDataAccessor>();
-            Mediator = Context.Services.GetRequiredService<IMediator>();
 
             await base.OnBeforeExecuted();
 

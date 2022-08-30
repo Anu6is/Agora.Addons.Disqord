@@ -13,25 +13,32 @@ namespace Agora.Addons.Disqord
     public class InitializationService : DiscordBotService
     {
         private readonly IMessageBroker _messageBroker;
+        private readonly ILogger<InitializationService> _logger;
 
         public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger)
-            : base(logger, bot) => _messageBroker = messageBroker;
+            : base(logger, bot)
+        {
+            _logger = logger;
+            _messageBroker = messageBroker;
+        }
 
-        public override async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             using var scope = Bot.Services.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            var emporiumList = await mediator.Send(new GetEmporiumListQuery(), cancellationToken);
+            var emporiumList = await mediator.Send(new GetEmporiumListQuery(), stoppingToken);
 
             foreach (var emporiumId in emporiumList.Data)
                 await _messageBroker.TryRegisterAsync(emporiumId);
 
-            return;
-        }
+            await Bot.WaitUntilReadyAsync(stoppingToken);
 
-        protected override async ValueTask OnReady(ReadyEventArgs e)
-        {
-            await Client.SetPresenceAsync(UserStatus.Online, new LocalActivity("/Server Setup", ActivityType.Watching));
+            _logger.LogInformation("Initialized...updating status");
+
+            await Client.SetPresenceAsync(UserStatus.Online, new LocalActivity("/Server Setup", ActivityType.Watching), cancellationToken: stoppingToken);
+
+            await base.ExecuteAsync(stoppingToken);
+
             return;
         }
     }

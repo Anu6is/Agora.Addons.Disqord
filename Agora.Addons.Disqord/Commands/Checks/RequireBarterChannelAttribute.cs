@@ -11,7 +11,7 @@ namespace Agora.Addons.Disqord.Checks
         {
             if (context.Bot.GetChannel(context.GuildId, context.ChannelId) is IThreadChannel) return Results.Success;
 
-            return Results.Failure("This command can only be used in a barter channel.");
+            return Results.Failure("This command can only be used in a thread linked to the item.");
         }
     }
 }

@@ -3,6 +3,7 @@ using Agora.Addons.Disqord.Parsers;
 using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
 using Emporia.Domain.Common;
 using FluentValidation;
@@ -34,10 +35,11 @@ namespace Agora.Addons.Disqord
 
         protected async override ValueTask OnFailedResult(IDiscordCommandContext context, IResult result)
         {
-            if (result is not CommandNotFoundResult)
-                await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
+            if (result is CommandNotFoundResult) return;
 
             await base.OnFailedResult(context, result);
+
+            await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
 
             return;
         }
@@ -47,7 +49,7 @@ namespace Agora.Addons.Disqord
             if (context is IDiscordInteractionCommandContext)
                 return new LocalInteractionMessageResponse() { IsEphemeral = true };
 
-            return new LocalMessage();
+            return new LocalMessage().WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G","Support Server")));
         }
 
         protected override string FormatFailureReason(IDiscordCommandContext context, IResult result)
@@ -89,10 +91,11 @@ namespace Agora.Addons.Disqord
             if (reason == null)
                 return false;
 
-            var embed = new LocalEmbed()
-                .WithDescription(reason)
-                .WithColor(0x2F3136);
-
+            var embed = new LocalEmbed().WithDescription(reason).WithColor(0x2F3136);
+            var module = context.Command.Module as ApplicationModule;
+            var parent = module?.Parent as ApplicationModule;
+            var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
+            
             if (result is OverloadsFailedResult overloadsFailedResult)
             {
                 foreach (var (overload, overloadResult) in overloadsFailedResult.FailedOverloads)
@@ -101,12 +104,12 @@ namespace Agora.Addons.Disqord
                     if (overloadReason == null)
                         continue;
 
-                    embed.AddField($"Overload: {overload.Name} {string.Join(' ', overload.Parameters.Select(FormatParameter))}", overloadReason);
+                    embed.AddField($"Overload: {alias} {string.Join(' ', overload.Parameters.Select(FormatParameter))}", overloadReason);
                 }
             }
             else if (context.Command != null)
             {
-                embed.WithTitle($"Command: {context.Command.Name} ");
+                embed.WithTitle($"Command: {alias} ");
             }
 
             message.AddEmbed(embed);

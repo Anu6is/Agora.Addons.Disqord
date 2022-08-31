@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Disqord.Checks;
+using Agora.Addons.Disqord.Commands.Checks;
 using Disqord;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Features.Commands;
@@ -8,7 +9,7 @@ using Qmmands;
 namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
-    [RequireMerchant]
+    [RequireBuyer]
     public sealed class CreateOfferModule : AgoraModuleBase
     {
         [SlashCommand("bid")]

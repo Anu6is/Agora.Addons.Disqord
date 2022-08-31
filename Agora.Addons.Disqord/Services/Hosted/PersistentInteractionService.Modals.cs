@@ -11,6 +11,7 @@ using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Qmmands;
 using Qommon;
 
 namespace Agora.Addons.Disqord
@@ -55,19 +56,33 @@ namespace Agora.Addons.Disqord
 
         private async Task<IBaseRequest> ExtendListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
         {
-            var rows = modalInteraction.Components.OfType<IRowComponent>();
-            var selection = rows.First().Components.OfType<ISelectionComponent>().First() as ITransientEntity<ComponentJsonModel>;
-            var option = selection.Model.Values.GetValueOrDefault()[0]; //["values"].ToType<DefaultJsonArray>()[0].ToString();
-            var text = rows.Last().Components.OfType<ITextInputComponent>().First().Value;
+            var rows = modalInteraction.Components.OfType<IRowComponent>().ToArray();
+            var extendTo = rows[0].Components.OfType<ITextInputComponent>().First().Value;
+            var extendBy = rows[1].Components.OfType<ITextInputComponent>().First().Value;
 
             var emporium = await Client.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(emporiumId.Value);
             var settings = await Client.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(emporiumId.Value);
-            var result = Client.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(text);
 
-            if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult) throw new ValidationException("Invalid extension format.");
+            if (extendBy.IsNotNull() && extendTo.IsNotNull()) throw new ValidationException("Invalid Input: Provide only one extension end option.");
 
-            if (option == "duration")
+            if (extendTo.IsNotNull())
             {
+                var result = Client.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(extendTo);
+
+                if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult) throw new ValidationException("Invalid extension format.");
+
+                return new ExtendListingCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), keys[0].Replace("extend", ""))
+                {
+                    Limit = settings.MaximumDuration,
+                    ExpirationDate = successfulResult.Value
+                };
+            }
+            else if (extendBy.IsNotNull())
+            {
+                var result = Client.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(extendBy);
+
+                if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult) throw new ValidationException("Invalid extension format.");
+
                 var extension = successfulResult.Value - emporium.LocalTime.DateTime;
 
                 return new ExtendListingCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), keys[0].Replace("extend", ""))
@@ -76,14 +91,8 @@ namespace Agora.Addons.Disqord
                     Duration = extension
                 };
             }
-            else
-            {
-                return new ExtendListingCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), keys[0].Replace("extend", ""))
-                {
-                    Limit = settings.MaximumDuration,
-                    ExpirationDate = successfulResult.Value
-                };
-            }
+
+            return null;
         }
 
         private static IBaseRequest EditAuctionListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)

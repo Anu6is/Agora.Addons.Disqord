@@ -46,19 +46,15 @@ namespace Agora.Addons.Disqord
                 .WithTitle($"Extend Expiration")
                 .WithComponents(
                     LocalComponent.Row(
-                        LocalComponent.Selection("option")
-                            .WithMinimumSelectedOptions(1)
-                            .WithMaximumSelectedOptions(1)
-                            .WithPlaceholder("Select an extension option")
-                            .WithOptions(
-                                new LocalSelectionComponentOption("Extend By", "duration").WithDescription("Extend the product listing by a specified duration."),
-                                new LocalSelectionComponentOption("Extend To", "datetime").WithDescription("Extend the product listing to a specified date and time."))
-                            ),
-                    LocalComponent.Row(
-                        LocalComponent.TextInput("extension", "Input Extension", TextInputComponentStyle.Short)
+                        LocalComponent.TextInput("extendTo", "Extend End To (date - yyyy-mm-dd 15:00)", TextInputComponentStyle.Short)
                             .WithMinimumInputLength(2)
                             .WithMaximumInputLength(16)
-                            .WithIsRequired()));
+                            .WithIsRequired(false)),
+                    LocalComponent.Row(
+                        LocalComponent.TextInput("extendBy", "Extend End By (duration - 5d)", TextInputComponentStyle.Short)
+                            .WithMinimumInputLength(2)
+                            .WithMaximumInputLength(16)
+                            .WithIsRequired(false)));
         }
 
         private static LocalInteractionModalResponse EditAuctionListingModal(IComponentInteraction interaction)

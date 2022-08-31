@@ -13,6 +13,7 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {
@@ -210,9 +211,29 @@ namespace Agora.Addons.Disqord
             return ReferenceNumber.Create(message.Id);
         }
 
-        public ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
+        public async ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
         {
-            throw new NotImplementedException();
+            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, productListing.ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
+            var title = productListing.Product.Title.ToString();
+            var owner = productListing.Owner.ReferenceNumber.Value;
+            var submitter = offer.UserReference.Value;
+            var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
+
+            var description = new StringBuilder()
+                .Append(Mention.User(submitter))
+                .Append(" offered ").Append(Markdown.Bold(offer.Submission))
+                .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
+                .Append(" hosted by ").Append(Mention.User(owner));
+
+            var embed = new LocalEmbed().WithDescription(description.ToString())
+                            .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                            .WithColor(Color.LawnGreen);
+
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+
+            return ReferenceNumber.Create(message.Id);
+
         }
 
         public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)

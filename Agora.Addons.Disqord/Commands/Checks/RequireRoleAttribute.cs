@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
 
         public override async ValueTask<IResult> CheckAsync(IDiscordCommandContext context, IParameter parameter, object member)
         {
-            var settings = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId.Value);
+            var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId.Value);
             
             if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
 
@@ -34,16 +34,16 @@ namespace Agora.Addons.Disqord.Commands.Checks
             switch (_role)
             {
                 case AuthorizationRole.Administrator:
-                    hasAccess = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IUserManager>().IsAdministrator(user);
+                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user);
                     break;
                 case AuthorizationRole.Broker:
-                    hasAccess = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IUserManager>().IsBroker(user);
+                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
                     break;
                 case AuthorizationRole.Host:
-                    hasAccess = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IUserManager>().IsHost(user);
+                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsHost(user);
                     break;
                 case AuthorizationRole.Buyer:
-                    hasAccess = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
+                    hasAccess = await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
                     break;
                 default:
                     break;

@@ -3,6 +3,8 @@ using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
+using Disqord.Bot.Commands;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -18,19 +20,44 @@ namespace Agora.Addons.Disqord
     public class MessageProcessingService : AgoraService, IProductListingService, IAuditLogService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
         public EmporiumId EmporiumId { get; set; }
         public ShowroomId ShowroomId { get; set; }
 
-        public MessageProcessingService(DiscordBotBase bot, IInteractionContextAccessor interactionAccessor, ILogger<MessageProcessingService> logger) : base(logger)
+        public MessageProcessingService(DiscordBotBase bot,
+                                        ICommandContextAccessor commandAccessor,
+                                        IInteractionContextAccessor interactionAccessor,
+                                        ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
+        }
+
+        private async Task CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
+        {
+            var currentMember = _agora.GetCurrentMember(guildId);
+            var channel = _agora.GetChannel(guildId, channelId);
+            var channelPerms = currentMember.CalculateChannelPermissions(channel);
+
+            if (!channelPerms.HasFlag(permissions))
+            {
+                var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
+                var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+
+                if (feedbackId.HasValue)
+                    await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+
+                throw new InvalidOperationException(message);
+            }
         }
 
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var categorization = await GetCategoryAsync(productListing);
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization)).WithComponents(productListing.Buttons());
             var response = await _agora.SendMessageAsync(ShowroomId.Value, message);
@@ -76,6 +103,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> OpenBarteringChannelAsync(Listing listing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
+
             var duration = listing.ScheduledPeriod.Duration switch
             {
                 var minutes when minutes < TimeSpan.FromMinutes(60) => TimeSpan.FromHours(1),
@@ -122,6 +151,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingCreatedAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var intermediary = string.Empty;
             var value = productListing.ValueTag.ToString();
             var title = productListing.Product.Title.ToString();
@@ -161,6 +192,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingWithdrawnAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
@@ -184,6 +217,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var user = string.Empty;
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -215,6 +250,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingSoldAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var title = productListing.Product.Title.ToString();
             var value = productListing.CurrentOffer.Submission.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -244,6 +281,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingExpiredAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
@@ -266,6 +305,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostListingSoldAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
             var participants = $"{Mention.User(owner)} | {Mention.User(buyer)}";
@@ -294,6 +335,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostListingExpiredAsync(Listing productListing)
         {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";

@@ -127,6 +127,9 @@ namespace Agora.Addons.Disqord
                 if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")
                     return null;
 
+                if (@event.SentryExceptions.Any(e => e.Type.Equals("System.InvalidOperationException") && e.Value.Contains("DefaultBotCommandsSetup")))
+                    return @event;
+
                 if (@event.Level == SentryLevel.Error)
                 {
                     switch (@event.Logger)

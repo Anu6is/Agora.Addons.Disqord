@@ -230,11 +230,13 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Position = 4, Row = 4)]
-        public async ValueTask CloseView(ButtonEventArgs e)
-        {
-            await (e.Interaction.Client as AgoraBot).DeleteMessageAsync(e.ChannelId, e.Interaction.Message.Id);
+        public ValueTask CloseView(ButtonEventArgs e) => default;
 
-            return;
+        protected override string GetCustomId(InteractableViewComponent component)
+        {
+            if (component is ButtonViewComponent buttonComponent && buttonComponent.Label == "Close") return "Close";
+
+            return base.GetCustomId(component);
         }
 
         public override ValueTask UpdateAsync()

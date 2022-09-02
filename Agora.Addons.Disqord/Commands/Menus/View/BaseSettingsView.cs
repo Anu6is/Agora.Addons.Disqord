@@ -1,6 +1,5 @@
 ﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
-using Disqord.Rest;
 
 namespace Agora.Addons.Disqord.Menus
 {

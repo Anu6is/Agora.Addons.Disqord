@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default; ;
         }
 
-        [Button(Label = "Absentee Bidding", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 4)]
+        [Button(Label = "Absentee Bidding", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 4, IsDisabled = true)]
         public ValueTask AbsenteeBidding(ButtonEventArgs e)
         {
             _settings.AllowAbsenteeBidding = !_settings.AllowAbsenteeBidding;

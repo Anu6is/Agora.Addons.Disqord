@@ -186,7 +186,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
-                [Description("Max time between bids. Auction ends if no new bids."), RestrictDuration(5, 1800)] TimeSpan timeout,
+                [Description("Max time between bids. Auction ends if no new bids."), RestrictTimeout(5, 1800)] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,

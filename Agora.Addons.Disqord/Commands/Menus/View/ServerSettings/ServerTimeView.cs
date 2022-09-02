@@ -57,12 +57,13 @@ namespace Agora.Addons.Disqord.Menus.View
                 {
                     var emporiumId = new EmporiumId(_context.Guild.Id);
                     var emporium = await mediator.Send(new UpdateLocalTimeCommand(emporiumId, Time.From(time)));
-
                     var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
                     settings.Offset = emporium.TimeOffset;
 
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                    
+                    _context.Services.GetRequiredService<IEmporiaCacheService>().GetCachedEmporium(_context.Guild.Id).TimeOffset = emporium.TimeOffset;
 
                     MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
                 });

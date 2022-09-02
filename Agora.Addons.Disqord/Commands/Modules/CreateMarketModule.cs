@@ -1,13 +1,16 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
+using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
@@ -25,6 +28,27 @@ namespace Agora.Addons.Disqord.Commands
         [SlashGroup("add")]
         public sealed class MarketCommandGroup : AgoraModuleBase
         {
+            private bool _scheduleOverride;
+            private (DayOfWeek Weekday, TimeSpan Time)[] _schedule;
+
+            public override ValueTask OnBeforeExecuted()
+            {
+                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as CachedTextChannel;
+
+                _scheduleOverride = channel.Topic.IsNotNull() && channel.Topic.StartsWith("Schedule", StringComparison.OrdinalIgnoreCase);
+
+                if (_scheduleOverride)
+                {
+                    var schedule = channel.Topic.Replace("Schedule", "", StringComparison.OrdinalIgnoreCase).TrimStart(new[] { ':', ' ' });
+                    _schedule = schedule.Split(';')
+                        .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                        .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
+                        .OrderBy(x => x.Weekday).ToArray();
+                }
+
+                return base.OnBeforeExecuted();
+            }
+
             [SlashCommand("standard")]
             [Description("List an item(s) for sale at a fixed price.")]
             public async Task CreateStandarMarket(
@@ -47,12 +71,16 @@ namespace Agora.Addons.Disqord.Commands
                 await Deferral(isEphemeral: true);
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
 
                 quantity ??= Stock.Create(1);
+                scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
-                scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
 
-                var scheduledEnd = scheduledStart.Value.Add(duration);
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
@@ -106,14 +134,16 @@ namespace Agora.Addons.Disqord.Commands
                 await Deferral(isEphemeral: true);
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
 
                 quantity ??= Stock.Create(1);
+                scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
-                scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
 
-                if (timeout > duration) timeout = duration;
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
-                var scheduledEnd = scheduledStart.Value.Add(duration);
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
@@ -167,12 +197,16 @@ namespace Agora.Addons.Disqord.Commands
                 await Deferral(isEphemeral: true);
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
 
                 quantity ??= Stock.Create(1);
+                scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
-                scheduledStart ??= emporium.LocalTime.DateTime.AddSeconds(3);
 
-                var scheduledEnd = scheduledStart.Value.Add(duration);
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));

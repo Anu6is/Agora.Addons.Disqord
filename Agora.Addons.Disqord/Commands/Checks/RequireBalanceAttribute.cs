@@ -21,7 +21,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var economy = context.Services.GetRequiredService<EconomyFactoryService>().Create(nameof(EconomyType.AuctionBot));
             var userBalance = await economy.GetBalanceAsync(EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(context.AuthorId)), settings.DefaultCurrency);
 
-            if (userBalance.Value >= (decimal)amount)
+            if (decimal.TryParse(amount.ToString(), out var result) && userBalance.Value >= result)
                 return Results.Success;
             else
                 return Results.Failure("You lack the funds required to complete this transaction");

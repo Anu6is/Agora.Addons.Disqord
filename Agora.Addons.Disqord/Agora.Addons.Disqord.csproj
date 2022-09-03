@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha2.13" />
-    <PackageReference Include="HumanTimeParser.English" Version="2.0.0" />
+    <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha2.16" />
+    <PackageReference Include="HumanTimeParser.English" Version="3.0.0-dev-2713817134" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
   </ItemGroup>
 

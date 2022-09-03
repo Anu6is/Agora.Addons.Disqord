@@ -67,7 +67,7 @@ namespace Agora.Addons.Disqord.Extensions
                 ),
             { Product: MarketItem } => null,
             StandardTrade trade => trade.AllowOffers
-                                ? null // add buttons for bartering 
+                                ? null // TODO add buttons for bartering 
                                 : null,
             _ => LocalComponent.Row(LocalComponent.Button("undo", "Undo Offer").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null))
         };

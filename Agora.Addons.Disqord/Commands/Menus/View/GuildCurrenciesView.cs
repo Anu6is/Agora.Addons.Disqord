@@ -7,6 +7,8 @@ using Emporia.Domain.Common;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using static Disqord.Discord.Limits;
+using static Disqord.Discord.Limits.Component;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -14,33 +16,38 @@ namespace Agora.Addons.Disqord.Menus.View
     {
         private readonly List<Currency> _currencies = new();
         private readonly GuildSettingsContext _context;
+        private SelectionViewComponent _selection;
         private string _symbol = string.Empty;
+
         public GuildCurrenciesView(List<Currency> currencies, GuildSettingsContext context)
             : base(message => message.AddEmbed(
                 new LocalEmbed()
-                    .WithDescription($"Registered currencies {currencies.Count}{Environment.NewLine}{string.Join(Environment.NewLine, currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                    .WithTitle($"Registered currencies {currencies.Count}")
+                    .WithDescription(currencies.Count == 0 
+                        ? "No Currencies Exist" 
+                        : $"{string.Join(Environment.NewLine, currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
                     .WithDefaultColor()))
         {
             _context = context;
             _currencies = currencies;
-
-            var selection = EnumerateComponents().OfType<SelectionViewComponent>().First();
+            _selection = EnumerateComponents().OfType<SelectionViewComponent>().First();
 
             if (_currencies.Count == 0)
-                selection.Options.Add(new LocalSelectionComponentOption("No Currencies Exist", "0"));
+                _selection.Options.Add(new LocalSelectionComponentOption("No Currencies Exist", "0"));
 
-            var count = 0;
             foreach (var currency in _currencies)
-            {
-                count++;
-                var option = new LocalSelectionComponentOption(currency.Symbol, count.ToString());
-                selection.Options.Add(option);
-            }
+                _selection.Options.Add(new LocalSelectionComponentOption(currency.Symbol, Guid.NewGuid().ToString()));
         }
 
-        [Button(Label = "Remove Currency", Style = LocalButtonComponentStyle.Danger, Position = 1, Row = 0)]
+        [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger, Position = 1, Row = 0)]
         public async ValueTask RemoveCurrency(ButtonEventArgs e)
         {
+            if (_symbol == _context.Settings.DefaultCurrency.Symbol)
+            {
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Default currency cannot be deleted").WithIsEphemeral());
+                return;
+            }
+
             using var scope = _context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
@@ -63,12 +70,17 @@ namespace Agora.Addons.Disqord.Menus.View
             await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral(true).WithContent($"Successfully Removed {Markdown.Bold(_symbol)}"));
 
             _currencies.Remove(Currency.Create(_symbol));
+            _selection.Options.Remove(_selection.Options.First(x => x.IsDefault.HasValue && x.IsDefault.Value));
 
             MessageTemplate = message =>
             {
-                message.AddEmbed(new LocalEmbed()
-                       .WithDescription($"Registered currencies {_currencies.Count}{Environment.NewLine}{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
-                       .WithDefaultColor());
+                message.AddEmbed(
+                new LocalEmbed()
+                    .WithTitle($"Registered currencies {_currencies.Count}")
+                    .WithDescription(_currencies.Count == 0
+                        ? "No Currencies Exist"
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                    .WithDefaultColor());
             };
 
             _symbol = string.Empty;
@@ -76,7 +88,7 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
         }
 
-        [Button(Label = "Edit Currency", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 0)]
+        [Button(Label = "Update", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 0)]
         public async ValueTask EditCurrency(ButtonEventArgs e)
         {
             var response = new LocalInteractionModalResponse()
@@ -132,9 +144,13 @@ namespace Agora.Addons.Disqord.Menus.View
 
             MessageTemplate = message =>
             {
-                message.AddEmbed(new LocalEmbed()
-                       .WithDescription($"Registered currencies {_currencies.Count}{Environment.NewLine}{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
-                       .WithDefaultColor());
+                message.AddEmbed(
+                new LocalEmbed()
+                    .WithTitle($"Registered currencies {_currencies.Count}")
+                    .WithDescription(_currencies.Count == 0
+                        ? "No Currencies Exist"
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                    .WithDefaultColor());
             };
 
             ReportChanges();
@@ -142,7 +158,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
-        [Button(Label = "Add Currency", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 0)]
+        [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 0)]
         public async ValueTask AddCurrency(ButtonEventArgs e)
         {
             var response = new LocalInteractionModalResponse()
@@ -163,9 +179,10 @@ namespace Agora.Addons.Disqord.Menus.View
                     Style = TextInputComponentStyle.Short,
                     CustomId = "decimals",
                     Label = "Enter the Number of Decimal Places",
-                    Placeholder = "0",
+                    PrefilledValue = _context.Settings.DefaultCurrency.DecimalDigits.ToString(),
                     MaximumInputLength = 2,
-                    MinimumInputLength = 0
+                    MinimumInputLength = 0,
+                    IsRequired = false,
                 }));
 
             await e.Interaction.Response().SendModalAsync(response);
@@ -187,6 +204,9 @@ namespace Agora.Addons.Disqord.Menus.View
             try
             {
                 _currencies.Add(await mediator.Send(new CreateCurrencyCommand(new EmporiumId(_context.Guild.Id), symbol, decimals)));
+
+                var option = new LocalSelectionComponentOption(symbol, Guid.NewGuid().ToString());
+                _selection.Options.Add(option);
             }
             catch (Exception ex) when (ex is ValidationException validationException)
             {
@@ -202,11 +222,15 @@ namespace Agora.Addons.Disqord.Menus.View
 
             MessageTemplate = message =>
             {
-                message.AddEmbed(new LocalEmbed()
-                       .WithDescription($"Registered currencies {_currencies.Count}{Environment.NewLine}{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
-                       .WithDefaultColor());
+                message.AddEmbed(
+                new LocalEmbed()
+                    .WithTitle($"Registered currencies {_currencies.Count}")
+                    .WithDescription(_currencies.Count == 0
+                        ? "No Currencies Exist"
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                    .WithDefaultColor());
             };
-
+            
             ReportChanges();
 
             return;
@@ -225,6 +249,8 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             }
+
+            ReportChanges();
 
             return default;
         }

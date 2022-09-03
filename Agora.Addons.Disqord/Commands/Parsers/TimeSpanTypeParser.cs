@@ -14,7 +14,7 @@ namespace Agora.Addons.Disqord.Parsers
             var result = context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(value.ToString());
 
             if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult)
-                return Failure("Invalid format provided");
+                return Failure("Invalid format provided: Expected format 5s | 10m | 2h | 7d");
 
             var duration = successfulResult.Value - emporium.LocalTime.DateTime;
 

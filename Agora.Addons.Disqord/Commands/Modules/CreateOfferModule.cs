@@ -15,11 +15,11 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("bid")]
         [RequireBarterChannel]
         [Description("Submit a bid for an auction item.")]
-        public async Task<IResult> AddBid([Description("The amount to bid on the listed item."), Minimum(0)] decimal amount)
+        public async Task<IResult> AddBid([Description("The amount to bid on the listed item."), Minimum(0)] double amount)
         {
             var room = Channel as IThreadChannel;
 
-            await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, new ShowroomId(room.ChannelId.RawValue), ReferenceNumber.Create(room.Id.RawValue), amount));
+            await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, new ShowroomId(room.ChannelId.RawValue), ReferenceNumber.Create(room.Id.RawValue), (decimal)amount));
 
             return Response(new LocalInteractionMessageResponse().WithContent("Bid Succesfully Submitted!").WithIsEphemeral());
         }

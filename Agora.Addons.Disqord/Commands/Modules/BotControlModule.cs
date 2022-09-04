@@ -43,8 +43,6 @@ namespace Agora.Addons.Disqord.Commands
             Logger.LogTrace("ENABLED");
             Logger.LogDebug("ENABLED");
             Logger.LogInformation("ENABLED");
-            Logger.LogWarning("ENABLED");
-            Logger.LogError("ENABLED");
 
             await Response($"Logging set to {logLevel}");
         }

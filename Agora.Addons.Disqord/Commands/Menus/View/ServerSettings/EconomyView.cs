@@ -3,6 +3,7 @@ using Believe.Net;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Rest;
+using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -36,6 +37,9 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             var selectedEconomy = e.SelectedOptions[0];
 
+            foreach (var component in EnumerateComponents().OfType<ButtonViewComponent>())
+                if (component.Label.Contains("Default Balance")) RemoveComponent(component);
+
             if (selectedEconomy.Value == "UnbelievaBoat")
             {
                 var economyAccess = await _context.Services.GetRequiredService<UnbelievaClient>().HasPermissionAsync(_context.Guild.Id, ApplicationPermission.EditEconomy);
@@ -45,6 +49,24 @@ namespace Agora.Addons.Disqord.Menus.View
                     await RequestAuthorizationAsync(e.Interaction);
                     return;
                 }
+            }
+            else if (selectedEconomy.Value == "AuctionBot")
+            {
+                AddComponent(new ButtonViewComponent(ClearDefaultBalance)
+                {
+                    Label = "Remove Default Balance",
+                    Position = 1,
+                    Row = 4,
+                    Style = LocalButtonComponentStyle.Danger,
+                    IsDisabled = _settings.DefaultBalance == 0
+                });
+                AddComponent(new ButtonViewComponent(SetDefaultBalance)
+                {
+                    Label = "Set Default Balance",
+                    Position = 2,
+                    Row = 4,
+                    Style = LocalButtonComponentStyle.Primary
+                });
             }
 
             foreach (var option in e.Selection.Options) option.IsDefault = false;
@@ -60,6 +82,79 @@ namespace Agora.Addons.Disqord.Menus.View
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Economy", new LocalEmoji("💰")));
 
             ReportChanges();
+
+            return;
+        }
+
+        private async ValueTask ClearDefaultBalance(ButtonEventArgs e)
+        {
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
+
+            settings.DefaultBalance = 0;
+
+            using var scope = _context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+            await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
+            
+            await e.Interaction.Response().SendMessageAsync(
+                new LocalInteractionMessageResponse().WithIsEphemeral()
+                    .AddEmbed(new LocalEmbed().WithDescription("Default balance reset to 0").WithDefaultColor()));
+
+            var reset = EnumerateComponents().OfType<ButtonViewComponent>().First(x => x.Label == "Remove Default Balance").IsDisabled = true;
+
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Economy", new LocalEmoji("💰")));
+
+            return;
+        }
+
+        private async ValueTask SetDefaultBalance(ButtonEventArgs e)
+        {
+            var modalResponse = new LocalInteractionModalResponse().WithCustomId(e.Interaction.Message.Id.ToString())
+                .WithTitle("Set Default Balance")
+                .WithComponents(
+                    LocalComponent.Row(
+                        LocalComponent.TextInput("defaultBalance", "Set Default", TextInputComponentStyle.Short)
+                                      .WithPlaceholder("Enter the default amount to give new users")));
+
+            await e.Interaction.Response().SendModalAsync(modalResponse);
+
+            var response = await Menu.Interactivity.WaitForInteractionAsync(
+                e.ChannelId,
+                x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == modalResponse.CustomId,
+                TimeSpan.FromMinutes(10),
+                Menu.StoppingToken);
+
+            if (response == null) return;
+
+            var modal = response.Interaction as IModalSubmitInteraction;
+            var defaultBalance = modal.Components.OfType<IRowComponent>().First().Components.OfType<ITextInputComponent>().First().Value;
+
+            if (!decimal.TryParse(defaultBalance, out var balance))
+            {
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent($"{defaultBalance} isn't a valid number.").WithIsEphemeral());
+                return;
+            }
+
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
+
+            settings.DefaultBalance = balance;
+
+            using var scope = _context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+            await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
+
+            await modal.Response().SendMessageAsync(
+                new LocalInteractionMessageResponse()
+                    .WithContent($"Default Balance: {(settings.DefaultCurrency == null ? balance : Money.Create(balance, settings.DefaultCurrency))}")
+                    .WithIsEphemeral());
+
+            var reset = EnumerateComponents().OfType<ButtonViewComponent>().FirstOrDefault(x => x.Label == "Remove Default Balance");
+
+            if (reset != null) reset.IsDisabled = false;
+
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Economy", new LocalEmoji("💰")));
 
             return;
         }

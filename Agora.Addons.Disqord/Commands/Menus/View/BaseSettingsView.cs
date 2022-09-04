@@ -67,7 +67,7 @@ namespace Agora.Addons.Disqord.Menus
 
         protected override string GetCustomId(InteractableViewComponent component)
         {
-            if (component is ButtonViewComponent buttonComponent && buttonComponent.Label == "Close") return "Close";
+            if (component is ButtonViewComponent buttonComponent && buttonComponent.Label == "Close") return buttonComponent.Label;
 
             return base.GetCustomId(component); 
         }

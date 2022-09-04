@@ -48,7 +48,7 @@ namespace Agora.Addons.Disqord
                 var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
                 var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
 
-                if (feedbackId.HasValue)
+                if (feedbackId.HasValue && feedbackId != channelId)
                     await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
 
                 throw new InvalidOperationException(message);

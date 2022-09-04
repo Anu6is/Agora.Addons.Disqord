@@ -125,39 +125,56 @@ namespace Agora.Addons.Disqord
         {
             var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
 
-            var canSubmit = request switch
+            switch (request)
             {
-                CreateBidCommand command => (settings.AllowShillBidding
-                || !currentUser.Equals(command.Showroom.Listings.First().Owner))
-                && await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
-                {
-                    var cmd = command as CreateBidCommand;
-                    var item = cmd.Showroom.Listings.First().Product as AuctionItem;
-                    var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
-                    var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
+                case CreateBidCommand command:
+                    if (!settings.AllowShillBidding && currentUser.Equals(command.Showroom.Listings.First().Owner)) 
+                        return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in `Server Settings`.";
 
-                    if (cmd.UseMinimum)
-                        return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MinValue;
+                    var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                    {
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
 
-                    if (cmd.UseMaximum)
-                        return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value;
+                        var cmd = command as CreateBidCommand;
+                        var item = cmd.Showroom.Listings.First().Product as AuctionItem;
+                        var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                        var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
 
-                    return userBalance >= cmd.Amount;
-                }),
-                CreatePaymentCommand command => !currentUser.Equals(command.Showroom.Listings.First().Owner)
-                && await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
-                {
-                    var cmd = command as CreatePaymentCommand;
-                    var item = cmd.Showroom.Listings.First().Product as MarketItem;
-                    var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
-                    var userBalance = await economy.GetBalanceAsync(currentUser, item.Price.Currency);
+                        if (cmd.UseMinimum)
+                            return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MinValue;
 
-                    return userBalance >= cmd.PaymentAmount;
-                }),
-                _ => true
-            };
+                        if (cmd.UseMaximum)
+                            return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value;
 
-            return canSubmit ? string.Empty : "Transaction Denied: Unable to complete this action.";
+                        return userBalance >= cmd.Amount;
+                    });
+
+                    if (!validBid) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+                    break;
+
+                case CreatePaymentCommand command:
+                    if (currentUser.Equals(command.Showroom.Listings.First().Owner))
+                        return "Transaction Denied: you cannot purchase an item you listed.";
+
+                    var validPurchase = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                    {
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+
+                        var cmd = command as CreatePaymentCommand;
+                        var item = cmd.Showroom.Listings.First().Product as MarketItem;
+                        var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                        var userBalance = await economy.GetBalanceAsync(currentUser, item.Price.Currency);
+
+                        return userBalance >= cmd.PaymentAmount;
+                    });
+
+                    if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+                    break;
+                default:
+                    return string.Empty;
+            }
+
+            return string.Empty;
         }
 
         private async Task<string> ValidateManagerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)

@@ -1,7 +1,5 @@
 ﻿using Agora.Shared.EconomyFactory;
 using Disqord.Bot.Commands;
-using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
@@ -19,7 +17,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
 
             var economy = context.Services.GetRequiredService<EconomyFactoryService>().Create(nameof(EconomyType.AuctionBot));
-            var userBalance = await economy.GetBalanceAsync(EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(context.AuthorId)), settings.DefaultCurrency);
+            var user = await context.Services.GetRequiredService<IEmporiaCacheService>().GetUserAsync(context.GuildId.Value, context.AuthorId);
+            var userBalance = await economy.GetBalanceAsync(user.ToEmporiumUser(), settings.DefaultCurrency);
 
             if (decimal.TryParse(amount.ToString(), out var result) && userBalance.Value >= result)
                 return Results.Success;

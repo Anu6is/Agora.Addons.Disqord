@@ -51,6 +51,9 @@ namespace Agora.Addons.Disqord.Commands
 
             Settings = await SettingsService.GetGuildSettingsAsync(Context.GuildId);
 
+            var command = Context.Command as ApplicationCommand;
+            Logger.LogDebug("{Author} executed {Parent} {Module} {Command} in {Guild}", Context.Author.Name, command.Module.Parent.Name, command.Module.Alias, command.Alias, Context.GuildId);
+
             await base.OnBeforeExecuted();
 
             return;

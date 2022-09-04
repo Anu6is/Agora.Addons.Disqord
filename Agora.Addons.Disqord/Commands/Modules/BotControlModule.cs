@@ -12,19 +12,42 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
 using System.Diagnostics;
+using Serilog.Events;
 
 namespace Agora.Addons.Disqord.Commands
 {
     public sealed class BotControlModule : AgoraModuleBase
     {
         public IHost ApplicationHost { get; init; }
+        private ILoggingLevelSwitcher _switcher;
 
-        public BotControlModule(IHost applicationHost) => ApplicationHost = applicationHost;
+        public BotControlModule(IHost applicationHost, ILoggingLevelSwitcher switcher)
+        {
+            ApplicationHost = applicationHost;
+            _switcher = switcher;
+        }
 
         [SlashCommand("ping")]
         [Description("Test application responsiveness.")]
         [RateLimit(1, 5, RateLimitMeasure.Seconds, RateLimitBucketType.Guild)]
         public async Task<IResult> Ping() => await GetStatsAsync();
+
+        [RequireBotOwner]
+        [SlashCommand("log")]
+        [RequireGuild(551567205461131305)]
+        [Description("Set the log level")]
+        public async Task ChangeLogLevel([Description("Serilog log level")]LogEventLevel logLevel)
+        {
+            _switcher.SetMinimumLevel(logLevel);
+
+            Logger.LogTrace("ENABLED");
+            Logger.LogDebug("ENABLED");
+            Logger.LogInformation("ENABLED");
+            Logger.LogWarning("ENABLED");
+            Logger.LogError("ENABLED");
+
+            await Response($"Logging set to {logLevel}");
+        }
 
         [RequireBotOwner]
         [SlashCommand("shutdown")]

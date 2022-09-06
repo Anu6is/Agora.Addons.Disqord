@@ -11,8 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
-using System.Diagnostics;
 using Serilog.Events;
+using System.Diagnostics;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -46,6 +46,17 @@ namespace Agora.Addons.Disqord.Commands
 
             await Response($"Logging set to {logLevel}");
         }
+
+        [RequireBotOwner]
+        [SlashCommand("shard-status")]
+        [RequireGuild(551567205461131305)]
+        [Description("Get the status of all shards")]
+        public IResult Shards()
+        {
+            var shards = Bot.ApiClient.Shards.Values;
+            return Response(string.Join('\n', shards.Select(shard => $"{shard.Id}: `{shard.State}`")));
+        }
+
 
         [RequireBotOwner]
         [SlashCommand("shutdown")]

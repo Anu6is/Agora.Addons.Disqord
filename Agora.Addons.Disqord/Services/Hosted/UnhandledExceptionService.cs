@@ -37,6 +37,8 @@ namespace Agora.Addons.Disqord
 
             if (result is ChecksFailedResult checksFailedResult)
                 failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+            else if (result is ParameterChecksFailedResult parameterChecksFailedResult)
+                failureReason = string.Join('\n', parameterChecksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
 
             _hub.CaptureEvent(new SentryEvent()
             {

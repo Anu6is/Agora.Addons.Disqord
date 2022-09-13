@@ -51,10 +51,10 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [Description("User with the highest bid wins when the auction ends.")]
             public async Task CreateStandardAuction(
-                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
@@ -77,6 +77,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -117,10 +118,10 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("sealed")]
             [Description("Bids are hidden. Winner pays the second highest bid.")]
             public async Task CreateVickreyAuction(
-                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
@@ -143,6 +144,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -183,11 +185,11 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("live")]
             [Description("Auction ends if no bids are made during the timeout period.")]
             public async Task CreateLiveAuction(
-                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
-                [Description("Max time between bids. Auction ends if no new bids."), RestrictTimeout(5, 1800)] TimeSpan timeout,
+                [Description("Max time between bids. Auction ends if no new bids. (example: 5m or 5 minutes)"), RestrictTimeout(5, 43200)] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
@@ -209,6 +211,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 

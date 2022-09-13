@@ -54,18 +54,18 @@ namespace Agora.Addons.Disqord.Menus.View
                     new LocalTextInputComponent()
                     {
                         Style = TextInputComponentStyle.Short,
-                        CustomId = e.Interaction.CustomId,
+                        CustomId = "opening",
                         Label = "Opens At",
-                        Placeholder = room.ActiveHours.OpensAt.ToString("HH:mm"),
+                        Placeholder = room.ActiveHours?.ClosesAt.ToString(@"hh\:mm") ?? "00:00",
                         MaximumInputLength = 5,
                         MinimumInputLength = 4
                     },
                     new LocalTextInputComponent()
                     {
                         Style = TextInputComponentStyle.Short,
-                        CustomId = e.Interaction.CustomId,
+                        CustomId = "closing",
                         Label = "Closes At",
-                        Placeholder = room.ActiveHours.ClosesAt.ToString("HH:mm"),
+                        Placeholder = room.ActiveHours?.ClosesAt.ToString(@"hh\:mm") ?? "00:00",
                         MaximumInputLength = 5,
                         MinimumInputLength = 4
                     }));

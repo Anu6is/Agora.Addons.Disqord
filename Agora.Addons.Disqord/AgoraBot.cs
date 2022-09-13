@@ -47,7 +47,8 @@ namespace Agora.Addons.Disqord
         protected override LocalMessageBase CreateFailureMessage(IDiscordCommandContext context)
         {
             if (context is IDiscordInteractionCommandContext)
-                return new LocalInteractionMessageResponse() { IsEphemeral = true };
+                return new LocalInteractionMessageResponse()
+                            .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server"))).WithIsEphemeral();
 
             return new LocalMessage().WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G","Support Server")));
         }

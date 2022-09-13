@@ -153,16 +153,20 @@ namespace Agora.Addons.Disqord.Extensions
             var rooms = showrooms.Where(x => x.ListingType == listingType.ToString());
 
             if (rooms.Any())
-                return string.Join(Environment.NewLine, rooms.Select(s =>
+            {
+                var details = string.Join(Environment.NewLine, rooms.Select(s =>
                 {
                     var status = s.IsActive ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
                     var businessHours = s.ActiveHours == null ? "24-hours" : s.ActiveHours.ToString();
                     var roomDetails = $"{status}|{Mention.Channel(new Snowflake(s.Id.Value))} | {Markdown.Code("Business Hours:")} {Markdown.Bold(businessHours)}";
 
-                    return roomDetails.Length > Discord.Limits.Message.Embed.Field.MaxValueLength
-                            ? roomDetails[..Discord.Limits.Message.Embed.Field.MaxValueLength]
-                            : roomDetails;
+                    return roomDetails;
                 }));
+
+                return details.Length > Discord.Limits.Message.Embed.Field.MaxValueLength
+                    ? details[..(Discord.Limits.Message.Embed.Field.MaxValueLength - 5)] + "..."
+                    : details;
+            }
             else
                 return Markdown.Italics("Undefined");
         }

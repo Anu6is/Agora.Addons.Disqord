@@ -13,7 +13,6 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Text;
-using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {
@@ -41,6 +40,10 @@ namespace Agora.Addons.Disqord
         {
             var currentMember = _agora.GetCurrentMember(guildId);
             var channel = _agora.GetChannel(guildId, channelId);
+
+            if (channel == null)
+                throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
             if (!channelPerms.HasFlag(permissions))
@@ -71,32 +74,40 @@ namespace Agora.Addons.Disqord
             var categorization = await GetCategoryAsync(productListing);
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed().WithCategory(categorization) };
 
-            if (_interactionAccessor.Context == null)
+            try
             {
-                await _agora.ModifyMessageAsync(ShowroomId.Value,
-                    productListing.Product.ReferenceNumber.Value,
-                    x =>
-                    {
-                        x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons();
-                    });
-            }
-            else
-            {
-                var interaction = _interactionAccessor.Context.Interaction;
-
-                if (interaction.Response().HasResponded)
-                    await interaction.Followup().ModifyResponseAsync(x =>
-                    {
-                        x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons();
-                    });
+                if (_interactionAccessor.Context == null)
+                {
+                    await _agora.ModifyMessageAsync(ShowroomId.Value,
+                        productListing.Product.ReferenceNumber.Value,
+                        x =>
+                        {
+                            x.Embeds = productEmbeds;
+                            x.Components = productListing.Buttons();
+                        });
+                }
                 else
-                    await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
-                    {
-                        Embeds = productEmbeds,
-                        Components = productListing.Buttons()
-                    });
+                {
+                    var interaction = _interactionAccessor.Context.Interaction;
+
+                    if (interaction.Response().HasResponded)
+                        await interaction.Followup().ModifyResponseAsync(x =>
+                        {
+                            x.Embeds = productEmbeds;
+                            x.Components = productListing.Buttons();
+                        });
+                    else
+                        await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
+                        {
+                            Embeds = productEmbeds,
+                            Components = productListing.Buttons()
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to update product listing.");
+                return null;
             }
 
             return productListing.Product.ReferenceNumber;

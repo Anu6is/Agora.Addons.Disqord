@@ -109,16 +109,28 @@ namespace Agora.Addons.Disqord
 
         private async Task<string> ValidateUpdateAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
-            var canModify = request switch
+            switch (request)
             {
-                UpdateAuctionItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
-                UpdateMarketItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
-                UpdateTradeItemCommand command => command.Showroom.Listings.First().CurrentOffer == null || await _userManager.IsAdministrator(currentUser),
-                UndoBidCommand command => command.Showroom.Listings.First().CurrentOffer != null && command.Showroom.Listings.First().CurrentOffer.SubmittedOn.ToUniversalTime().AddSeconds(30) >= SystemClock.Now,
-                _ => true
-            };
+                case UndoBidCommand command:
+                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
 
-            return canModify ? string.Empty : "Invalid operation: This action is no longer available.";
+                    var currentOffer = command.Showroom.Listings.First().CurrentOffer;
+
+                    if (currentOffer == null) 
+                        return "Invalid Operation: No available bids exist.";
+
+                    if (currentOffer.SubmittedOn.ToUniversalTime().AddSeconds(30) < SystemClock.Now)
+                        return "Invalid Operation: This action is no longer available. Bids can only be withdrawn up to 30 seconds after submission.";
+                    break;
+                case IProductListingBinder command:
+                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
+                    if (command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Updates cannot be made once an offer has been submitted.";
+                    break;
+                default:
+                    break;
+            }
+
+            return string.Empty;
         }
 
         private async Task<string> ValidateSubmissionAsync<TRequest>(IEmporiumUser currentUser, TRequest request)

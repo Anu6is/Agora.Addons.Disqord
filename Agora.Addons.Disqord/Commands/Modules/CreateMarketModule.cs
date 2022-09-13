@@ -52,10 +52,10 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [Description("List an item(s) for sale at a fixed price.")]
             public async Task CreateStandarMarket(
-                [Description("Length of time the item is available.")] TimeSpan duration,
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
@@ -76,6 +76,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -114,13 +115,13 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("flash")]
             [Description("List an item(s) with a timed discount.")]
             public async Task CreateFlashMarket(
-                [Description("Length of time the item is available.")] TimeSpan duration,
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("The type of discount to aplly."), Choice("Percent", 1), Choice("Amount", 2)] int discountType,
                 [Description("The value of discount to apply."), Minimum(0)] double discountValue,
-                [Description("Length of time the discount is available.")] TimeSpan timeout,
+                [Description("Length of time the discount is available. (example: 15m or 15 minutes)")] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
@@ -139,6 +140,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -177,7 +179,6 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("bulk")]
             [Description("Users can purchase all or a portion of the listed item stock.")]
             public async Task CreateBulkMarket(
-                [Description("Length of time the item is available.")] TimeSpan duration,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity,
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the complete bundle is being sold."), Minimum(0)] double totalPrice,
@@ -185,6 +186,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Buying this number of items at once, applies a special price."), Minimum(2)] int amountInBundle = 0,
                 [Description("Price applied when purchaing a set number of items at once."), Minimum(0)] double pricePerBundle = 0,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("When the item would be available. Defaults to now.")] DateTime? scheduledStart = null,
@@ -202,6 +204,7 @@ namespace Agora.Addons.Disqord.Commands
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Symbol;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 

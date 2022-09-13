@@ -14,12 +14,14 @@ namespace Agora.Addons.Disqord
 {
     public partial class PersistentInteractionService : DiscordBotService
     {
+        private readonly ILogger<PersistentInteractionService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IEmporiaCacheService _cache;
 
         public PersistentInteractionService(DiscordBotBase bot, IServiceScopeFactory scopeFactory, IEmporiaCacheService cache, ILogger<PersistentInteractionService> logger) : base(logger, bot)
         {
             _cache = cache;
+            _logger = logger;
             _scopeFactory = scopeFactory;
         }
 
@@ -29,6 +31,8 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
+                _logger.LogDebug("{Author} selected {button} in {guild}", interaction.Author.Name, interaction.CustomId, interaction.GuildId);
+                
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
 
                 await _cache.GetUserAsync(e.GuildId.Value, e.AuthorId);
@@ -66,7 +70,12 @@ namespace Agora.Addons.Disqord
                 _ => "An error occured while processing this action. If this persists, please contact support."
             };
 
-            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral(true));
+            var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
+
+            if (message.EndsWith("contact support.")) 
+                response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
+
+            await interaction.Response().SendMessageAsync(response);
             await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
 
             return;

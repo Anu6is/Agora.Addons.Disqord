@@ -2,8 +2,10 @@
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
+using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,9 +30,14 @@ namespace Agora.Addons.Disqord
 
             if (emporium == null) return;
 
-            var mediator = Bot.Services.CreateScope().ServiceProvider.GetRequiredService<IMediator>();
-            
-            await mediator.Send(new DeleteEmporiumCommand(new EmporiumId(emporium.EmporiumId)));
+            using var scope = Bot.Services.CreateScope();
+            {
+                var currentUserService = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();  
+                
+                currentUserService.CurrentUser = EmporiumUser.Create(new EmporiumId(e.GuildId), ReferenceNumber.Create(Bot.CurrentUser.Id));
+
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new DeleteEmporiumCommand(new EmporiumId(emporium.EmporiumId)));
+            }
 
             _logger.LogDebug("Removed data for {guild}", e.Guild.Name);
         }
@@ -47,10 +54,17 @@ namespace Agora.Addons.Disqord
 
             if (rooms.Length == 0) return;
 
-            var mediator = Bot.Services.CreateScope().ServiceProvider.GetRequiredService<IMediator>();
+            using var scope = Bot.Services.CreateScope();
+            {
+                var currentUserService = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
 
-            foreach (var room in rooms)
-                await mediator.Send(new DeleteShowroomCommand(new EmporiumId(emporium.EmporiumId), room.Id, Enum.Parse<ListingType>(room.ListingType)));
+                currentUserService.CurrentUser = EmporiumUser.Create(new EmporiumId(e.GuildId), ReferenceNumber.Create(Bot.CurrentUser.Id));
+
+                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+                foreach (var room in rooms)
+                    await mediator.Send(new DeleteShowroomCommand(new EmporiumId(emporium.EmporiumId), room.Id, Enum.Parse<ListingType>(room.ListingType)));
+            }
 
             _logger.LogDebug("Removed showroom data for {guild}", Bot.GetGuild(e.GuildId));
         }

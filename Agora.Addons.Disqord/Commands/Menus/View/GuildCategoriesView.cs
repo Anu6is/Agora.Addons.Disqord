@@ -84,7 +84,7 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             var response = new LocalInteractionModalResponse()
                 .WithCustomId(e.Interaction.Message.Id.ToString())
-                .WithTitle($"Create a Subcategory for {_selectedCategory}")
+                .WithTitle($"{_selectedCategory} Subcategory")
                 .WithComponents(LocalComponent.Row(new LocalTextInputComponent()
                 {
                     Style = TextInputComponentStyle.Short,

@@ -50,9 +50,9 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [Description("Specify what you have to offer and what you want in return")]
             public async Task CreateStandardTrade(
-                [Description("Length of time the trade should last. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration,
                 [Description("Title of the item to be traded."), Maximum(75)] ProductTitle offering,
                 [Description("Title of the item you want in return."), Maximum(75)] string accepting,
+                [Description("Length of time the trade should last. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
@@ -68,6 +68,7 @@ namespace Agora.Addons.Disqord.Commands
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
 
                 scheduledStart ??= currentDateTime;
+                duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 

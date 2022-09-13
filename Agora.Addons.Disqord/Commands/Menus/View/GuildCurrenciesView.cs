@@ -106,7 +106,9 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await e.Interaction.Response().SendModalAsync(response);
 
-            var reply = await Menu.Interactivity.WaitForInteractionAsync(e.ChannelId, x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, TimeSpan.FromMinutes(10));
+            var reply = await Menu.Interactivity.WaitForInteractionAsync
+                (e.ChannelId, 
+                x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, TimeSpan.FromMinutes(10));
 
             if (reply == null) return;
 
@@ -134,8 +136,8 @@ namespace Agora.Addons.Disqord.Menus.View
             {
                 var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
 
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
                 await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
 
                 return;
             }

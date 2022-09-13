@@ -35,7 +35,7 @@ namespace Agora.Addons.Disqord.Extensions
 
             if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
-            if (listing.Product is TradeItem)
+            else if (listing.Product is TradeItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("trade", "Claim").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else
                 firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing.CurrentOffer == null));

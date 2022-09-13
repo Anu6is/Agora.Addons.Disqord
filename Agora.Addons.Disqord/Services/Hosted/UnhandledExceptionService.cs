@@ -34,11 +34,25 @@ namespace Agora.Addons.Disqord
             var parent = module?.Parent;
             var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
             var failureReason = result.FailureReason;
+            var eventId = "CommandExecution";
 
-            if (result is ChecksFailedResult checksFailedResult)
-                failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
-            else if (result is ParameterChecksFailedResult parameterChecksFailedResult)
-                failureReason = string.Join('\n', parameterChecksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+            switch (result)
+            {
+                case ChecksFailedResult checksFailedResult:
+                    failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+                    eventId = "CheckFailed";
+                    break;
+                case ParameterChecksFailedResult parameterChecksFailedResult:
+                    failureReason = string.Join('\n', parameterChecksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+                    eventId = "ParameterCheckFailed";
+                    break;
+                case TypeParseFailedResult typeParseFailedResult:
+                    failureReason = typeParseFailedResult.FailureReason;
+                    eventId = "TypeParserFailed";
+                    break;
+                default:
+                    break;
+            }
 
             _hub.CaptureEvent(new SentryEvent()
             {
@@ -56,6 +70,7 @@ namespace Agora.Addons.Disqord
                 scope.TransactionName = alias;
                 scope.User = new User() { Id = context.Author.Id.ToString(), Username = context.Author.Tag };
 
+                scope.SetTag("eventId", eventId);
                 scope.SetTag("GuildId", context.GuildId.ToString());
                 scope.SetTag("ChannelId", context.ChannelId.ToString());
 
@@ -74,16 +89,19 @@ namespace Agora.Addons.Disqord
             var command = interaction.CustomId;
             var reason = "An error occurred while executing the interaction.";
             var step = "processing";
+            var eventId = "InteractionExecution";
 
             switch (exception)
             {
                 case ValidationException validationException:
                     reason = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
                     step = "validation";
+                    eventId = "ValidationFailed";
                     break;
                 case UnauthorizedAccessException unauthorizedAccessException:
                     reason = unauthorizedAccessException.Message;
                     step = "authorization";
+                    eventId = "AuthorizationFailed";
                     break;
                 default:
                     break;
@@ -105,6 +123,7 @@ namespace Agora.Addons.Disqord
                 scope.TransactionName = command;
                 scope.User = new User() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
 
+                scope.SetTag("eventId", eventId);
                 scope.SetTag("GuildId", interaction.GuildId.ToString());
                 scope.SetTag("ChannelId", interaction.ChannelId.ToString());
                 scope.SetTag("MessageId", interaction.Message.Id.ToString());
@@ -126,8 +145,12 @@ namespace Agora.Addons.Disqord
         {
             public SentryEvent Process(SentryEvent @event)
             {
-                if (@event.Tags.TryGetValue("eventId", out var id) && id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning")
-                    return null;
+                if (@event.Tags.TryGetValue("eventId", out var id))
+                {
+                    if (id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning") return null;
+                    if (id == "CheckFailed" || id == "ParameterCheckFailed" || id == "TypeParserFailed") return null;
+                    if (id == "ValidationFailed" || id == "AuthorizationFailed") return null;
+                };
 
                 if (@event.SentryExceptions.Any(e => e.Type.Equals("System.InvalidOperationException") && e.Value.Contains("DefaultBotCommandsSetup")))
                     return @event;

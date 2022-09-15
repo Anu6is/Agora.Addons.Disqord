@@ -1,8 +1,6 @@
 ﻿using Agora.Addons.Disqord.Parsers;
 using Disqord;
-using Disqord.Models;
 using Disqord.Rest;
-using Disqord.Serialization.Json.Default;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
@@ -11,8 +9,6 @@ using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Qmmands;
-using Qommon;
 
 namespace Agora.Addons.Disqord
 {

@@ -74,6 +74,8 @@ namespace Agora.Addons.Disqord
             var categorization = await GetCategoryAsync(productListing);
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed().WithCategory(categorization) };
 
+            if (productListing.Product.Carousel.Count > 1) productEmbeds.AddRange(productListing.WithImages());
+
             try
             {
                 if (_interactionAccessor.Context == null)
@@ -106,7 +108,7 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Failed to update product listing.");
+                Logger.LogError("Failed to update product listing: {exception}", ex);
                 return null;
             }
 

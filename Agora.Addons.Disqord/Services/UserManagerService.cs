@@ -40,7 +40,7 @@ namespace Agora.Addons.Disqord
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var adminRole = guildSettings.AdminRole;
 
-            return member.RoleIds.Contains(adminRole);
+            return adminRole == GuildId || member.RoleIds.Contains(adminRole);
         }
 
         public async ValueTask<bool> IsBroker(IEmporiumUser user)
@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var brokerRole = guildSettings.BrokerRole;
 
-            return member.RoleIds.Contains(brokerRole);
+            return brokerRole == GuildId || member.RoleIds.Contains(brokerRole);
         }
 
         public async ValueTask<bool> IsHost(IEmporiumUser user)
@@ -73,7 +73,11 @@ namespace Agora.Addons.Disqord
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var buyerRole = guildSettings.BuyerRole;
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
-            var hasRole = buyerRole == 0ul || member.RoleIds.Contains(buyerRole) || await IsAdministrator(user);
+
+            var hasRole = buyerRole == 0ul
+                        || buyerRole == GuildId
+                        || member.RoleIds.Contains(buyerRole) 
+                        || await IsAdministrator(user);
 
             return hasRole && (criteria == null || await criteria(user, command));
         }

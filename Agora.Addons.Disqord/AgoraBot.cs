@@ -5,7 +5,11 @@ using Disqord.Bot;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
+using Disqord.Gateway;
+using Disqord.Rest;
+using Disqord.Rest.Api;
 using Emporia.Domain.Common;
+using Emporia.Extensions.Discord;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -37,9 +41,8 @@ namespace Agora.Addons.Disqord
         {
             if (result is CommandNotFoundResult) return;
 
-            await base.OnFailedResult(context, result);
-
             await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
+            await base.OnFailedResult(context, result);
 
             return;
         }

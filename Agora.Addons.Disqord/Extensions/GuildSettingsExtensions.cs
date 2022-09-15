@@ -110,11 +110,11 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField($"{shillBid} Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{absenteeBid} Absentee Bidding", settings.AllowAbsenteeBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineBlankField()
-                .AddInlineField("Manager Role", settings.AdminRole == 0 ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
-                .AddInlineField("Broker Role", settings.BrokerRole == 0 ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
+                .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
+                .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
                 .AddInlineBlankField()
-                .AddInlineField("Merchant Role", settings.MerchantRole == 0 ? Mention.Everyone : Mention.Role(new Snowflake(settings.MerchantRole)))
-                .AddInlineField("Buyer Role", settings.BuyerRole == 0 ? Mention.Everyone : Mention.Role(new Snowflake(settings.BuyerRole)))
+                .AddInlineField("Merchant Role", settings.MerchantRole == 0 || settings.MerchantRole == settings.GuildId ? Mention.Everyone : Mention.Role(new Snowflake(settings.MerchantRole)))
+                .AddInlineField("Buyer Role", settings.BuyerRole == 0 || settings.BuyerRole == settings.GuildId ? Mention.Everyone : Mention.Role(new Snowflake(settings.BuyerRole)))
                 .AddInlineBlankField()
                 .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
 

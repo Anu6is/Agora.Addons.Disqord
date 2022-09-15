@@ -15,6 +15,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Title = $"{listing.Type}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
+                Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode}")
             }
@@ -103,6 +104,18 @@ namespace Agora.Addons.Disqord.Extensions
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
         };
+
+        public static List<LocalEmbed> WithImages(this Listing listing)
+        {
+            var embeds = new List<LocalEmbed>();
+            var images = listing.Product.Carousel.Images;
+            var url = images.First().Url;
+
+            foreach (var image in images.Skip(1))
+                embeds.Add(new LocalEmbed().WithUrl(url).WithImageUrl(image.Url));
+
+            return embeds;
+        }
 
         private static LocalEmbedAuthor UniqueTrait(this Listing listing) => listing switch
         {

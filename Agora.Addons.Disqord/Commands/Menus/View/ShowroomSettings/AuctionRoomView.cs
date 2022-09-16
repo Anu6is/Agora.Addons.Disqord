@@ -52,26 +52,26 @@ namespace Agora.Addons.Disqord.Menus.View
                 .WithCustomId(e.Interaction.Message.Id.ToString())
                 .WithTitle($"Update Business Hours")
                 .WithComponents(
-                LocalComponent.Row(new LocalTextInputComponent()
-                {
-                    Style = TextInputComponentStyle.Short,
-                    CustomId = "opening",
-                    Label = "Opens At",
-                    Placeholder = room.ActiveHours?.OpensAt.ToString(@"hh\:mm") ?? "00:00",
-                    MaximumInputLength = 5,
-                    MinimumInputLength = 4,
-                    IsRequired = true
-                }),
-                LocalComponent.Row(new LocalTextInputComponent()
-                {
-                    Style = TextInputComponentStyle.Short,
-                    CustomId = "closing",
-                    Label = "Closes At",
-                    Placeholder = room.ActiveHours?.ClosesAt.ToString(@"hh\:mm") ?? "00:00",
-                    MaximumInputLength = 5,
-                    MinimumInputLength = 4,
-                    IsRequired = true
-                }));
+                    LocalComponent.Row(new LocalTextInputComponent()
+                    {
+                        Style = TextInputComponentStyle.Short,
+                        CustomId = "opening",
+                        Label = "Opens At",
+                        Placeholder = room.ActiveHours?.OpensAt.ToString(@"hh\:mm") ?? "00:00",
+                        MaximumInputLength = 5,
+                        MinimumInputLength = 4,
+                        IsRequired = true
+                    }),
+                    LocalComponent.Row(new LocalTextInputComponent()
+                    {
+                        Style = TextInputComponentStyle.Short,
+                        CustomId = "closing",
+                        Label = "Closes At",
+                        Placeholder = room.ActiveHours?.ClosesAt.ToString(@"hh\:mm") ?? "00:00",
+                        MaximumInputLength = 5,
+                        MinimumInputLength = 4,
+                        IsRequired = true
+                    }));
 
             await e.Interaction.Response().SendModalAsync(response);
 
@@ -99,12 +99,17 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await mediator.Send(new UpdateBusinessHoursCommand(new EmporiumId(Context.Guild.Id), room.Id, ListingType.Auction, room.ActiveHours));
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            catch (Exception ex)
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                var message = ex switch
+                {
+                    ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                    FormatException => ex.Message,
+                    _ => "An error occured while processing this action. If this persists, please contact support."
+                };
 
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
                 await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
 
                 return;
             }

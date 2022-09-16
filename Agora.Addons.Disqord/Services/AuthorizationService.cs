@@ -114,7 +114,8 @@ namespace Agora.Addons.Disqord
                 case UndoBidCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
 
-                    var currentOffer = command.Showroom.Listings.First().CurrentOffer;
+                    var listing = command.Showroom.Listings.First();
+                    var currentOffer = listing.CurrentOffer;
 
                     if (currentOffer == null) 
                         return "Invalid Operation: No available bids exist.";
@@ -194,7 +195,7 @@ namespace Agora.Addons.Disqord
             var isManager = request switch
             {
                 UndoBidCommand command => await _userManager.IsHost(currentUser) || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
-                IProductListingBinder binder => currentUser.Equals(binder.Showroom.Listings.First().Owner) || await _userManager.IsBroker(currentUser), 
+                IProductListingBinder binder => await _userManager.IsBroker(currentUser) || currentUser.Equals(binder.Showroom.Listings.First().Owner), 
                 _ => false
             };
 

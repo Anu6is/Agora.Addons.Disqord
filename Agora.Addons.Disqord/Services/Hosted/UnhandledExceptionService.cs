@@ -34,21 +34,28 @@ namespace Agora.Addons.Disqord
             var parent = module?.Parent;
             var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
             var failureReason = result.FailureReason;
-            var eventId = "CommandExecution";
+            var eventId = result.GetType().Name;
 
             switch (result)
             {
                 case ChecksFailedResult checksFailedResult:
                     failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
-                    eventId = "CheckFailed";
                     break;
                 case ParameterChecksFailedResult parameterChecksFailedResult:
                     failureReason = string.Join('\n', parameterChecksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
-                    eventId = "ParameterCheckFailed";
                     break;
                 case TypeParseFailedResult typeParseFailedResult:
                     failureReason = typeParseFailedResult.FailureReason;
-                    eventId = "TypeParserFailed";
+                    break;
+                case ExceptionResult exceptionResult:
+                    eventId = exceptionResult.Exception.GetType().Name;
+
+                    failureReason = exceptionResult.Exception switch
+                    {
+                        ValidationException validation => string.Join('\n', validation.Errors.Select(x => $"• {x.ErrorMessage}")),
+                        UnauthorizedAccessException unauthorizedAccess => unauthorizedAccess.Message,
+                        _ => exceptionResult.Exception.ToString()
+                    };
                     break;
                 default:
                     break;
@@ -58,7 +65,7 @@ namespace Agora.Addons.Disqord
             {
                 ServerName = guild.Name,
                 Logger = $"{guild.Name}.{channel.Name}.{alias}",
-                Message = new SentryMessage() { Message = result is ExceptionResult exceptionResult ? exceptionResult.Exception.ToString() : failureReason },
+                Message = new SentryMessage() { Message = failureReason },
             }, scope =>
             {
                 scope.AddBreadcrumb(
@@ -89,19 +96,17 @@ namespace Agora.Addons.Disqord
             var command = interaction.CustomId;
             var reason = "An error occurred while executing the interaction.";
             var step = "processing";
-            var eventId = "InteractionExecution";
+            var eventId = exception.GetType().Name;
 
             switch (exception)
             {
                 case ValidationException validationException:
                     reason = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
                     step = "validation";
-                    eventId = "ValidationFailed";
                     break;
                 case UnauthorizedAccessException unauthorizedAccessException:
                     reason = unauthorizedAccessException.Message;
                     step = "authorization";
-                    eventId = "AuthorizationFailed";
                     break;
                 default:
                     break;
@@ -148,8 +153,9 @@ namespace Agora.Addons.Disqord
                 if (@event.Tags.TryGetValue("eventId", out var id))
                 {
                     if (id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning") return null;
-                    if (id == "CheckFailed" || id == "ParameterCheckFailed" || id == "TypeParserFailed") return null;
-                    if (id == "ValidationFailed" || id == "AuthorizationFailed") return null;
+                    if (id == "ChecksFailedResult" || id == "ParameterChecksFailedResult" || id == "TypeParseFailedResult") return null;
+                    if (id == "ValidationException" || id == "UnauthorizedAccessException") return null;
+                    if (id == "FormatException") return null;
                 };
 
                 if (@event.SentryExceptions.Any(e => e.Type.Equals("System.InvalidOperationException") && e.Value.Contains("DefaultBotCommandsSetup")))

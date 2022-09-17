@@ -81,9 +81,11 @@ namespace Agora.Addons.Disqord.Extensions
             var serverTime = Markdown.Bold(DateTimeOffset.UtcNow.ToOffset(settings.Offset).ToString("MMMM d, yyyy HH:mm  [zzz] "));
             var snipeExtension = settings.SnipeExtension == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
+            var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var absenteeBid = settings.AllowAbsenteeBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var listingRecall = settings.AllowListingRecall ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
             var missing = settings.FindMissingRequirement();
             var description = missing is null
@@ -106,10 +108,10 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineBlankField()
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
-                .AddInlineBlankField()
+                .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{shillBid} Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{absenteeBid} Absentee Bidding", settings.AllowAbsenteeBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
-                .AddInlineBlankField()
+                .AddInlineField($"{listingRecall} Recall Listings", settings.AllowListingRecall ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
                 .AddInlineBlankField()

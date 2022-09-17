@@ -18,6 +18,7 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Selection(MaximumSelectedOptions = 1, Row = 1, Placeholder = "Select a snipe extension duration.")]
+        [SelectionOption("Disable", Value = "0")]
         [SelectionOption("30 seconds", Value = "30")]
         [SelectionOption("1 minute", Value = "60")]
         [SelectionOption("5 minutes", Value = "300")]

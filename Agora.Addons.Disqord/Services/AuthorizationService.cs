@@ -1,6 +1,7 @@
 ﻿using Agora.Shared.Attributes;
 using Agora.Shared.EconomyFactory;
 using Agora.Shared.Services;
+using Disqord;
 using Disqord.Bot;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
@@ -8,6 +9,8 @@ using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
+using Humanizer;
+using Humanizer.Localisation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -109,19 +112,42 @@ namespace Agora.Addons.Disqord
 
         private async Task<string> ValidateUpdateAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
+            var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
+
             switch (request)
             {
+                case AcceptListingCommand command:
+                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty; 
+                    
+                    var canAcceptFrom = command.Showroom.Listings.First().ScheduledPeriod.ScheduledStart.Add(settings.MinimumDuration).ToUniversalTime();
+                    var duration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
+                    var remaining = canAcceptFrom.Subtract(SystemClock.Now).Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
+
+                    if (canAcceptFrom > SystemClock.Now)
+                        return $"Invalid Operation: Item has to be listed for at least {duration}. {remaining} remaining.";
+                    break;
+                case WithdrawListingCommand command:
+                    if (settings.AllowListingRecall) return string.Empty;
+                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
+                    if (command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
+                    break;
                 case UndoBidCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
 
+                    var managerRole = settings.AdminRole == 0 ? "Manager Privileges" : Mention.Role(settings.AdminRole);
                     var listing = command.Showroom.Listings.First();
                     var currentOffer = listing.CurrentOffer;
 
                     if (currentOffer == null) 
                         return "Invalid Operation: No available bids exist.";
 
-                    if (currentOffer.SubmittedOn.ToUniversalTime().AddSeconds(30) < SystemClock.Now)
-                        return "Invalid Operation: This action is no longer available. Bids can only be withdrawn up to 30 seconds after submission.";
+                    if (settings.BiddingRecallLimit == TimeSpan.Zero)
+                        return $"Only users with {managerRole} can undo bids";
+
+                    var limit = settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
+
+                    if (currentOffer.SubmittedOn.ToUniversalTime().Add(settings.BiddingRecallLimit) < SystemClock.Now)
+                        return $"Invalid Operation: This action is no longer available. Bids can only be withdrawn up to {limit} after submission.";
                     break;
                 case IProductListingBinder command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;

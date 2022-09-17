@@ -17,6 +17,8 @@ namespace Agora.Addons.Disqord.Menus.View
             CurrentChannelId = context.Settings.AuditLogChannelId;
         }
 
+        public override Permissions CheckForPermissions() => Permissions.SendMessages | Permissions.SendEmbeds;
+
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)
         {
             var settings = (DefaultDiscordGuildSettings)Context.Settings;

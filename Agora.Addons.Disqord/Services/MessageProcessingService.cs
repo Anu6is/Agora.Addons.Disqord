@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord
             _interactionAccessor = interactionAccessor;
         }
 
-        private async Task CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
+        private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
         {
             var currentMember = _agora.GetCurrentMember(guildId);
             var channel = _agora.GetChannel(guildId, channelId);
@@ -54,8 +54,17 @@ namespace Agora.Addons.Disqord
                 if (feedbackId.HasValue && feedbackId != channelId)
                     await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
 
+                var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
+                
+                if (settings.AuditLogChannelId != 0)
+                    await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                else if (settings.ResultLogChannelId != 0)
+                    await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+
                 throw new InvalidOperationException(message);
             }
+
+            return;
         }
 
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)

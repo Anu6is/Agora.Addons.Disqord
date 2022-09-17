@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Disqord.Checks;
+using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
 using Agora.Shared.EconomyFactory;
@@ -24,8 +25,10 @@ namespace Agora.Addons.Disqord.Commands
         [RequireUnregisteredServer]
         [Description("Setup the bot for use in your server.")]
         public async Task<IResult> ServerSetup(
-            [Description("Log all sold/expired items to this channel.")][ChannelTypes(ChannelType.Text)] IChannel resultLog,
-            [Description("Log all item activity to this channel.")][ChannelTypes(ChannelType.Text)] IChannel auditLog = null,
+            [Description("Log all sold/expired items to this channel.")][ChannelTypes(ChannelType.Text)]
+            [RequireChannelPermissions(Permissions.SendMessages | Permissions.SendEmbeds)] IChannel resultLog,
+            [Description("Log all item activity to this channel.")][ChannelTypes(ChannelType.Text)]
+            [RequireChannelPermissions(Permissions.SendMessages | Permissions.SendEmbeds)] IChannel auditLog = null,
             [Description("Default currency symbol.")] string symbol = "$",
             [Description("Number of decimal places to show for prices.")] int decimalPlaces = 2,
             [Description("Current server time (24-Hour format | 15:30). Defaults to UTC")] Time serverTime = null)

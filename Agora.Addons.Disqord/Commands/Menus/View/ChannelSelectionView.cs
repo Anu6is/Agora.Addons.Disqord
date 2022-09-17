@@ -1,6 +1,8 @@
 ﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Gateway;
+using Disqord.Rest;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -79,6 +81,17 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (SelectedChannelId == 0ul) return;
                 if (SelectedChannelId == CurrentChannelId) return;
 
+                if (!HasRequiredPermissions(out var missingPermissions))
+                {
+                    await e.Interaction.Response().SendMessageAsync(
+                        new LocalInteractionMessageResponse().WithIsEphemeral().AddEmbed(
+                            new LocalEmbed()
+                                .WithDescription($"The bot lacks the necessary permissions ({missingPermissions}) in the selected channel.")
+                                .WithColor(Color.Red)));
+
+                    return;
+                }
+
                 if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption) defaultOption.IsDefault = false;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
@@ -99,6 +112,33 @@ namespace Agora.Addons.Disqord.Menus.View
 
             return default;
         }
+
+        public bool HasRequiredPermissions(out Permissions missingPermissions) 
+        {
+            missingPermissions = default;
+
+            var requiredPermissions = CheckForPermissions();
+
+            if (requiredPermissions != default)
+            {
+                var bot = Context.Services.GetRequiredService<AgoraBot>();
+                var channel = bot.GetChannel(Context.Guild.Id, SelectedChannelId);
+
+                if (channel == null) throw new InvalidOperationException("Unable to locate the specified channel.");
+
+                var currentMember = bot.GetCurrentMember(Context.Guild.Id);
+                var currentPermissions = currentMember.CalculateChannelPermissions(channel);
+
+                if (!currentPermissions.HasFlag(requiredPermissions))
+                    missingPermissions = requiredPermissions & ~currentPermissions;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        public virtual Permissions CheckForPermissions() => default;
 
         public abstract ValueTask SaveChannelAsync(SelectionEventArgs e);
     }

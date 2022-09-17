@@ -7,7 +7,6 @@ using Emporia.Domain.Common;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using static Disqord.Discord.Limits;
 using static Disqord.Discord.Limits.Component;
 
 namespace Agora.Addons.Disqord.Menus.View

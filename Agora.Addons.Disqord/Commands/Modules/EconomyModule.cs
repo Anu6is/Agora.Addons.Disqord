@@ -1,8 +1,11 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Menus.View;
 using Agora.Shared.EconomyFactory;
 using Agora.Shared.EconomyFactory.Models;
+using Agora.Shared.Features.Queries;
 using Agora.Shared.Persistence.Specifications;
+using Agora.Shared.Persistence.Specifications.Filters;
 using Disqord;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Common;
@@ -23,6 +26,19 @@ namespace Agora.Addons.Disqord.Commands
         {
             _economy = economyFactory.Create(nameof(EconomyType.AuctionBot));
             _dataAccesor = dataAccessor;
+        }
+
+        [SlashCommand("leaderboard")]
+        [Description("View the leaderboard")]
+        public async Task<IResult> ViewLeaderboard()
+        {
+            await Deferral();
+
+            var filter = new LeaderboardFilter(EmporiumId) { PageNumber = 1, IsPagingEnabled = true };
+
+            var response = await Base.ExecuteAsync(new GetEmporiumLeaderboardQuery(filter));
+
+            return View(new LeaderboardView(Settings, response));
         }
 
         [SlashCommand("balance")]

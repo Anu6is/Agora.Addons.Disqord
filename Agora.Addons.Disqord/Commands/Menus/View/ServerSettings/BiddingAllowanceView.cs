@@ -34,9 +34,6 @@ namespace Agora.Addons.Disqord.Menus.View
             _settings.AllowShillBidding = !_settings.AllowShillBidding;
             e.Button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
 
-            Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = true;
-            Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = false;
-
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
 
             ReportChanges();
@@ -49,9 +46,6 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             _settings.AllowAbsenteeBidding = !_settings.AllowAbsenteeBidding;
             e.Button.Label = $"{(_settings.AllowAbsenteeBidding ? "Disable" : "Enable")} Absentee Bidding";
-
-            Selection.Options.FirstOrDefault(x => x.Label == "Shill Bidding").IsDefault = false;
-            Selection.Options.FirstOrDefault(x => x.Label == "Absentee Bidding").IsDefault = true;
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Absentee Bidding"));
 

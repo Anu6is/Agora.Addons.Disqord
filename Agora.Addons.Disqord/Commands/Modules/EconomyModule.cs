@@ -2,7 +2,7 @@
 using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Menus.View;
 using Agora.Shared.EconomyFactory;
-using Agora.Shared.EconomyFactory.Models;
+using Agora.Shared.Persistence.Models;
 using Agora.Shared.Features.Queries;
 using Agora.Shared.Persistence.Specifications;
 using Agora.Shared.Persistence.Specifications.Filters;
@@ -20,12 +20,12 @@ namespace Agora.Addons.Disqord.Commands
     public sealed class EconomyModule : AgoraModuleBase
     {
         private readonly IEconomy _economy;
-        private readonly IDataAccessor _dataAccesor;
+        private readonly IDataAccessor _dataAccessor;
 
         public EconomyModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
         {
             _economy = economyFactory.Create(nameof(EconomyType.AuctionBot));
-            _dataAccesor = dataAccessor;
+            _dataAccessor = dataAccessor;
         }
 
         [SlashCommand("leaderboard")]
@@ -120,9 +120,9 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Set all balances zero")]
         public async Task<IResult> ResetEconomy()
         {
-            var users = await _dataAccesor.Transaction<GenericRepository<DefaultEconomyUser>>().ListAsync(new EconomyUsersSpec(new EmporiumId(Context.GuildId)));
+            var users = await _dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().ListAsync(new EconomyUsersSpec(new EmporiumId(Context.GuildId)));
 
-            await _dataAccesor.Transaction<GenericRepository<DefaultEconomyUser>>().DeleteRangeAsync(users);
+            await _dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().DeleteRangeAsync(users);
 
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription("Economy reset")).WithIsEphemeral());
 

@@ -17,6 +17,8 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class MarketRoomView : ChannelSelectionView
     {
+        protected override bool AllowAutoGeneration => true;
+
         private readonly List<Showroom> _showrooms;
 
         public MarketRoomView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions, List<Showroom> showrooms)

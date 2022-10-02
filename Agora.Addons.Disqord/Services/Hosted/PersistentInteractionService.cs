@@ -32,7 +32,20 @@ namespace Agora.Addons.Disqord
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
                 _logger.LogDebug("{Author} selected {button} in {guild}", interaction.Author.Name, interaction.CustomId, interaction.GuildId);
+
+                ulong roomId;
+                var emporium = await _cache.GetEmporiumAsync(e.GuildId.Value);
                 
+                if (emporium.Showrooms.Any(x => x.Id.Value.Equals(e.ChannelId.RawValue)))
+                {
+                    roomId = e.ChannelId.RawValue;
+                }
+                else
+                {
+                    var channel = Client.GetChannel(e.GuildId.Value, e.ChannelId) as ITextChannel;
+                    roomId = channel.CategoryId.GetValueOrDefault();
+                }
+
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
 
                 await _cache.GetUserAsync(e.GuildId.Value, e.AuthorId);
@@ -41,7 +54,7 @@ namespace Agora.Addons.Disqord
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                var command = modalInteraction == null ? HandleInteraction(interaction) : await HandleModalInteraction(modalInteraction);
+                var command = modalInteraction == null ? HandleInteraction(interaction, roomId) : await HandleModalInteraction(modalInteraction, roomId);
 
                 try
                 {

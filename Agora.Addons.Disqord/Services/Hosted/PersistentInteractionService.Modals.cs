@@ -14,10 +14,10 @@ namespace Agora.Addons.Disqord
 {
     public partial class PersistentInteractionService
     {
-        private async Task<IBaseRequest> HandleModalInteraction(IModalSubmitInteraction modalInteraction)
+        private async Task<IBaseRequest> HandleModalInteraction(IModalSubmitInteraction modalInteraction, ulong roomId)
         {
             var emporiumId = new EmporiumId(modalInteraction.GuildId.Value);
-            var showroomId = new ShowroomId(modalInteraction.ChannelId);
+            var showroomId = new ShowroomId(roomId);
             var keys = modalInteraction.CustomId.Split(':');
 
             switch (keys[0])

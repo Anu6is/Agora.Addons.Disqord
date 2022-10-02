@@ -1,4 +1,5 @@
-﻿using Disqord;
+﻿using Agora.Shared.Extensions;
+using Disqord;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
@@ -17,7 +18,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Description = listing.Product.Description?.Value,
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
-                Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode}")
+                Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode.Code()}")
             }
             .WithProductDetails(listing)
             .WithDefaultColor();

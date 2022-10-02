@@ -17,9 +17,14 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Submit a bid for an auction item.")]
         public async Task<IResult> AddBid([Description("The amount to bid on the listed item."), Minimum(0)] double amount)
         {
-            var room = Channel as IThreadChannel;
+            ulong reference;
 
-            await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, new ShowroomId(room.ChannelId.RawValue), ReferenceNumber.Create(room.Id.RawValue), (decimal)amount));
+            if (Channel is IThreadChannel room)
+                reference = room.Id.RawValue;
+            else
+                reference = Cache.GetCachedProduct(Guild.Id, Context.ChannelId).ProductId;
+
+            await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(reference), (decimal)amount));
 
             return Response(new LocalInteractionMessageResponse().WithContent("Bid Succesfully Submitted!").WithIsEphemeral());
         }

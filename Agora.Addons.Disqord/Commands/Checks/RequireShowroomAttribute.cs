@@ -1,6 +1,7 @@
 ﻿using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
+using Disqord.Gateway;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,8 +28,9 @@ namespace Agora.Addons.Disqord.Checks
 
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);
             var showrooms = emporium.Showrooms.Where(x => x.ListingType.Equals(_roomType, StringComparison.OrdinalIgnoreCase));
+            var channel = context.Bot.GetChannel(context.GuildId, context.ChannelId) as ITextChannel;
 
-            if (showrooms.Any(x => x.Id.Value.Equals(context.ChannelId.RawValue))) return Results.Success;
+            if (showrooms.Any(x => x.Id.Value.Equals(context.ChannelId.RawValue) || x.Id.Value.Equals(channel.CategoryId.GetValueOrDefault().RawValue))) return Results.Success;
 
             return Results.Failure($"Command must be executed in a {_roomType} Room:{Environment.NewLine}{string.Join(" | ", showrooms.Select(x => Mention.Channel(x.Id.Value)))}");
         }

@@ -59,16 +59,15 @@ namespace Agora.Addons.Disqord.Commands
         private async Task<string> GetListingTypeAsync()
         {
             var listing = string.Empty;
-            var channel = Channel as IThreadChannel;
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-            var rooms = emporium.Showrooms.Where(x => x.Id.Value == channel.ChannelId).Select(x => x.ListingType).ToArray();
+            var rooms = emporium.Showrooms.Where(x => x.Id.Value == ShowroomId.Value).Select(x => x.ListingType).ToArray();
 
             if (rooms.Length == 0) throw new InvalidOperationException("Room not found in `Server Rooms` list");
 
             if (rooms.Length == 1) listing = rooms[0];
             else
             {
-                var product = await Cache.GetProductAsync(Context.GuildId, channel.ChannelId, channel.Id);
+                var product = Cache.GetCachedProduct(Guild.Id, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
                 if (product == null) throw new InvalidOperationException("Unable to retrieve product details.");
 
@@ -80,22 +79,22 @@ namespace Agora.Addons.Disqord.Commands
 
         private async Task<IResult> UpdateImagesAsync(string listing, List<string> images)
         {
-            var channel = Channel as IThreadChannel;
+            var product = Cache.GetCachedProduct(Guild.Id, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
             Product item = listing switch
             {
                 "Auction" => await Base.ExecuteAsync(
-                    new UpdateAuctionItemCommand(EmporiumId, new ShowroomId(channel.ChannelId), ReferenceNumber.Create(channel.Id))
+                    new UpdateAuctionItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
                     {
                         ImageUrls = images.ToArray()
                     }),
                 "Market" => await Base.ExecuteAsync(
-                    new UpdateMarketItemCommand(EmporiumId, new ShowroomId(channel.ChannelId), ReferenceNumber.Create(channel.Id))
+                    new UpdateMarketItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
                     {
                         ImageUrls = images.ToArray()
                     }),
                 "Trade" => await Base.ExecuteAsync(
-                    new UpdateTradeItemCommand(EmporiumId, new ShowroomId(channel.ChannelId), ReferenceNumber.Create(channel.Id))
+                    new UpdateTradeItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
                     {
                         ImageUrls = images.ToArray()
                     }),

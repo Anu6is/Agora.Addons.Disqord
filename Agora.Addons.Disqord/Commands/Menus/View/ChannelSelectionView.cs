@@ -8,6 +8,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public abstract class ChannelSelectionView : BaseSettingsView
     {
+        protected virtual bool AllowAutoGeneration { get; }
         public GuildSettingsContext Context { get; }
         public ulong CurrentChannelId { get; set; }
         public ulong SelectedChannelId { get; private set; }
@@ -30,7 +31,7 @@ namespace Agora.Addons.Disqord.Menus.View
                         .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                         .ForEach(component => selection.Options.Add(component));
                 else if (selection.Row == 2)
-                    selection.Placeholder = "Select a channel category to populate the options below";
+                    selection.Placeholder = "Select a channel category to populate the options.";
 
                 if (selection.Options.Count == 0)
                 {
@@ -56,15 +57,19 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 textSelection.Options.Clear();
 
+                if (AllowAutoGeneration)
+                    textSelection.Options.Add(new LocalSelectionComponentOption("Auto-Generate showrooms", category.ToString()));
+
                 textChannels.Where(x => x.Id != CurrentChannelId && x.CategoryId == category).Take(25)
                     .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                     .ForEach(component => textSelection.Options.Add(component));
 
                 if (textSelection.Options.Count > 0)
-                {
                     textSelection.Placeholder = "Select a text channel";
-                    textSelection.IsDisabled = false;
-                }
+                else
+                    textSelection.Placeholder = "No available text channels";
+
+                textSelection.IsDisabled = false;
             }
 
             return default;

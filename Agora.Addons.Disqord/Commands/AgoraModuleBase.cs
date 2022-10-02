@@ -1,4 +1,5 @@
 ﻿using Agora.Shared;
+using Disqord;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Emporia.Application.Common;
@@ -27,10 +28,10 @@ namespace Agora.Addons.Disqord.Commands
         public IDiscordGuildSettings Settings { get; private set; }
         public IGuildSettingsService SettingsService { get; private set; }
 
+        public ShowroomId ShowroomId { get; private set; }
+        public EmporiumId EmporiumId => new(Context.GuildId);
         public CachedGuild Guild => Context.Bot.GetGuild(Context.GuildId);
         public CachedMessageGuildChannel Channel => Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as CachedMessageGuildChannel;
-        public EmporiumId EmporiumId => new(Context.GuildId);
-        public ShowroomId ShowroomId => new(Context.ChannelId);
 
         public ICommandModuleBase Base => this;
 
@@ -50,6 +51,15 @@ namespace Agora.Addons.Disqord.Commands
             Transaction.SetExtra("active_commands", _activeCommands);
 
             Settings = await SettingsService.GetGuildSettingsAsync(Context.GuildId);
+
+            var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            if (Channel is IThreadChannel thread)
+                ShowroomId = new(thread.ChannelId);
+            else if (emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId.RawValue)))
+                ShowroomId = new(Context.ChannelId);
+            else
+                ShowroomId = new(Channel.CategoryId.GetValueOrDefault());
 
             var command = Context.Command as ApplicationCommand;
             var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();

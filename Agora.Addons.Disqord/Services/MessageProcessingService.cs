@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Attributes;
+using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
@@ -12,6 +13,7 @@ using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Qommon;
 using System.Text;
 
 namespace Agora.Addons.Disqord
@@ -71,9 +73,25 @@ namespace Agora.Addons.Disqord
         {
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
 
+            var channelId = ShowroomId.Value;
+            var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var categorization = await GetCategoryAsync(productListing);
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization)).WithComponents(productListing.Buttons());
-            var response = await _agora.SendMessageAsync(ShowroomId.Value, message);
+
+            if (channel is CachedCategoryChannel categoryChannel)
+            {
+                await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels);
+                var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value, 
+                                                                   productListing.Product.Title.Value,
+                                                                   x => x.CategoryId = Optional.Create(new Snowflake(ShowroomId.Value)));
+                
+                channelId = showroom.Id.RawValue;
+                productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
+            }
+
+            var response = await _agora.SendMessageAsync(channelId, message);
+
+            if (channelId != ShowroomId.Value) await response.PinAsync();
 
             return ReferenceNumber.Create(response.Id);
         }
@@ -85,11 +103,17 @@ namespace Agora.Addons.Disqord
 
             if (productListing.Product.Carousel.Count > 1) productEmbeds.AddRange(productListing.WithImages());
 
+            var channelId = ShowroomId.Value;
+            var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+
+            if (channel is CachedCategoryChannel categoryChannel)
+                channelId = productListing.ReferenceCode.Reference();
+
             try
             {
                 if (_interactionAccessor.Context == null)
                 {
-                    await _agora.ModifyMessageAsync(ShowroomId.Value,
+                    await _agora.ModifyMessageAsync(channelId,
                         productListing.Product.ReferenceNumber.Value,
                         x =>
                         {
@@ -126,6 +150,10 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> OpenBarteringChannelAsync(Listing listing)
         {
+            var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+            if (channel is CachedCategoryChannel categoryChannel) return default;
+
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
 
             var duration = listing.ScheduledPeriod.Duration switch
@@ -139,7 +167,10 @@ namespace Agora.Addons.Disqord
             try
             {
                 var product = listing.Product;
-                var thread = await _agora.CreatePublicThreadAsync(ShowroomId.Value, $"[{listing.ReferenceCode}] {product.Title}", product.ReferenceNumber.Value, x => x.AutomaticArchiveDuration = duration);
+                var thread = await _agora.CreatePublicThreadAsync(ShowroomId.Value, 
+                                                                  $"[{listing.ReferenceCode.Code()}] {product.Title}", 
+                                                                  product.ReferenceNumber.Value, 
+                                                                  x => x.AutomaticArchiveDuration = duration);
 
                 await thread.SendMessageAsync(new LocalMessage().WithContent("Execute commands for this item HERE!"));
 
@@ -148,15 +179,21 @@ namespace Agora.Addons.Disqord
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Failed to create bartering channel");
-                return null;
+                return default;
             }
         }
 
-        public async ValueTask CloseBarteringChannelAsync(ReferenceNumber referenceNumber)
+        public async ValueTask CloseBarteringChannelAsync(Listing productListing)
         {
             try
             {
-                await _agora.DeleteChannelAsync(referenceNumber.Value);
+                var channelId = productListing.Product.ReferenceNumber.Value;
+                var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+                if (showroom is CachedCategoryChannel)
+                    channelId = productListing.ReferenceCode.Reference();
+                
+                await _agora.DeleteChannelAsync(channelId);
             }
             catch (Exception ex)
             {
@@ -166,9 +203,13 @@ namespace Agora.Addons.Disqord
             return;
         }
 
-        public async ValueTask RemoveProductListingAsync(ReferenceNumber referenceNumber)
+        public async ValueTask RemoveProductListingAsync(Listing productListing)
         {
-            await _agora.DeleteMessageAsync(ShowroomId.Value, referenceNumber.Value);
+            var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+            if (channel is CachedCategoryChannel) return;
+            
+            await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
             return;
         }
 
@@ -200,7 +241,7 @@ namespace Agora.Addons.Disqord
             var embed = new LocalEmbed().WithDescription($"{host} {Markdown.Underline("listed")} {Markdown.Bold($"{quantity}{title}")}{intermediary} for {original}{Markdown.Bold(value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledEnd))
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SteelBlue);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -225,7 +266,7 @@ namespace Agora.Addons.Disqord
             if (owner != productListing.User.ReferenceNumber.Value) user = $"by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
             var embed = new LocalEmbed().WithDescription($"{Markdown.Bold($"{quantity}{title}")} hosted by {Mention.User(owner)} has been {Markdown.Underline("withrawn")} {user}")
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.OrangeRed);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -249,7 +290,7 @@ namespace Agora.Addons.Disqord
                 .Append(" hosted by ").Append(Mention.User(owner));
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
-                            .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                            .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                             .WithColor(Color.LawnGreen);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -278,7 +319,7 @@ namespace Agora.Addons.Disqord
                 .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.Orange);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -314,7 +355,7 @@ namespace Agora.Addons.Disqord
                 .Append(" by ").Append(Mention.User(buyer));
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.Teal);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -338,7 +379,7 @@ namespace Agora.Addons.Disqord
                 .Append(" after ").Append(duration.Humanize());
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SlateGray);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
@@ -401,7 +442,7 @@ namespace Agora.Addons.Disqord
             var guildId = productListing.Owner.EmporiumId;
             var embed = new LocalEmbed().WithTitle("Acquisition includes a message!")
                                         .WithDescription(productListing.HiddenMessage.ToString())
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode}")
+                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.Teal);
 
             try

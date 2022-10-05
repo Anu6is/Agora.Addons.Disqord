@@ -56,14 +56,17 @@ namespace Agora.Addons.Disqord.Commands
 
             if (Channel is IThreadChannel thread)
                 ShowroomId = new(thread.ChannelId);
-            else if (emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId.RawValue)))
+            else if (emporium != null && emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId.RawValue)))
                 ShowroomId = new(Context.ChannelId);
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault());
 
-            var command = Context.Command as ApplicationCommand;
-            var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
-            Logger.LogDebug("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
+
+            if (Context.Command is ApplicationCommand command)
+            {
+                var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
+                Logger.LogDebug("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
+            }
 
             await base.OnBeforeExecuted();
 

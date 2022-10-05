@@ -137,7 +137,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (!currentPermissions.HasFlag(requiredPermissions))
                     missingPermissions = requiredPermissions & ~currentPermissions;
 
-                return false;
+                return missingPermissions == Permissions.None;
             }
 
             return true;

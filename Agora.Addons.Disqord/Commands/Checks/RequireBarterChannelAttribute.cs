@@ -21,6 +21,17 @@ namespace Agora.Addons.Disqord.Checks
             {
                 var emporium = await cache.GetEmporiumAsync(context.GuildId);
 
+                if (emporium == null)
+                {
+                    var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
+
+                    if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+
+                    await cache.RemoveEmporiumAsync(context.GuildId);
+
+                    return Results.Failure("Unable to complete this action. Please try again."); 
+                }
+
                 if (!emporium.Showrooms.Any(x => x.Id.Value.Equals(textChannel.CategoryId.GetValueOrDefault().RawValue)))
                     return Results.Failure("This command can only be used in a thread/channel linked to an item.");
 

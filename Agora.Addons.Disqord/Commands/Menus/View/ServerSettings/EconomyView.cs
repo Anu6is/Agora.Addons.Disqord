@@ -47,6 +47,11 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (!economyAccess)
                 {
                     await RequestAuthorizationAsync(e.Interaction);
+
+                    foreach (var option in e.Selection.Options) option.IsDefault = false;
+
+                    ReportChanges();
+
                     return;
                 }
             }

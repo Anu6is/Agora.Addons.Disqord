@@ -35,7 +35,9 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as CachedTextChannel;
 
-                _scheduleOverride = channel.Topic.IsNotNull() && channel.Topic.StartsWith("Schedule", StringComparison.OrdinalIgnoreCase);
+                _scheduleOverride = channel != null
+                                    && channel.Topic.IsNotNull()
+                                    && channel.Topic.StartsWith("Schedule", StringComparison.OrdinalIgnoreCase);
 
                 if (_scheduleOverride)
                 {

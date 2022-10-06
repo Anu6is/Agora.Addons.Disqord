@@ -8,6 +8,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public abstract class ChannelSelectionView : BaseSettingsView
     {
+        protected virtual bool IncludeForumChannels { get; }
         protected virtual bool AllowAutoGeneration { get; }
         public GuildSettingsContext Context { get; }
         public ulong CurrentChannelId { get; set; }
@@ -52,7 +53,11 @@ namespace Agora.Addons.Disqord.Menus.View
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
 
                 var category = ulong.Parse(e.SelectedOptions[0].Value.ToString());
-                var textChannels = Context.Guild.GetChannels().Values.OfType<CachedTextChannel>();
+                var channels = Context.Guild.GetChannels().Values
+                    .OfType<ICategorizableGuildChannel>()
+                    .Where(x => x.Id != CurrentChannelId && x.CategoryId == category 
+                             && (x.Type == ChannelType.Text || (IncludeForumChannels && x.Type == ChannelType.Forum)));
+
                 var textSelection = (SelectionViewComponent)EnumerateComponents().First(x => x.Row == 2);
 
                 textSelection.Options.Clear();
@@ -60,8 +65,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (AllowAutoGeneration)
                     textSelection.Options.Add(new LocalSelectionComponentOption("Auto-Generate showrooms", category.ToString()));
 
-                textChannels.Where(x => x.Id != CurrentChannelId && x.CategoryId == category).Take(25)
-                    .Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
+                channels.Take(25).Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                     .ForEach(component => textSelection.Options.Add(component));
 
                 if (textSelection.Options.Count > 0)

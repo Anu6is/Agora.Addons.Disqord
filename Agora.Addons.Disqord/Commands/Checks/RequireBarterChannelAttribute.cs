@@ -44,9 +44,12 @@ namespace Agora.Addons.Disqord.Checks
 
                 product = await cache.GetProductAsync(context.GuildId, productMessage.ChannelId, productMessage.Id, uniqueRoom: true);
             }
-            else if (commandChannel is IThreadChannel channel)
+            else if (commandChannel is IThreadChannel thread)
             {
-                product = await cache.GetProductAsync(context.GuildId, channel.ChannelId, channel.Id);
+                if (thread.GetChannel() is IForumChannel)
+                    product = await cache.GetProductAsync(context.GuildId, thread.Id, thread.Id);
+                else
+                    product = await cache.GetProductAsync(context.GuildId, thread.ChannelId, thread.Id);
             }
 
             if (product == null) 

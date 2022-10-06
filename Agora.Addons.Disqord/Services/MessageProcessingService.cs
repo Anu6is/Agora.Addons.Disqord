@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
 using System.Text;
+using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {
@@ -22,18 +23,21 @@ namespace Agora.Addons.Disqord
     public class MessageProcessingService : AgoraService, IMessageService, IProductListingService, IAuditLogService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly IEmporiaCacheService _emporiaCache;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
         public EmporiumId EmporiumId { get; set; }
         public ShowroomId ShowroomId { get; set; }
 
-        public MessageProcessingService(DiscordBotBase bot,
+        public MessageProcessingService(DiscordBotBase bot, 
+                                        IEmporiaCacheService emporiaCache,
                                         ICommandContextAccessor commandAccessor,
                                         IInteractionContextAccessor interactionAccessor,
                                         ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _emporiaCache = emporiaCache;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
         }
@@ -54,14 +58,18 @@ namespace Agora.Addons.Disqord
                 var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
 
                 if (feedbackId.HasValue && feedbackId != channelId)
+                {
                     await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                }
+                else
+                {
+                    var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
 
-                var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
-                
-                if (settings.AuditLogChannelId != 0)
-                    await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                else if (settings.ResultLogChannelId != 0)
-                    await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    if (settings.AuditLogChannelId != 0)
+                        await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    else if (settings.ResultLogChannelId != 0)
+                        await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                }
 
                 throw new InvalidOperationException(message);
             }
@@ -71,29 +79,59 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value,
+                                        ShowroomId.Value,
+                                        Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads);
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var categorization = await GetCategoryAsync(productListing);
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization)).WithComponents(productListing.Buttons());
 
-            if (channel is CachedCategoryChannel categoryChannel)
+            if (channel is CachedForumChannel forum)
             {
-                await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels);
-                var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value, 
-                                                                   productListing.Product.Title.Value,
-                                                                   x => x.CategoryId = Optional.Create(new Snowflake(ShowroomId.Value)));
-                
-                channelId = showroom.Id.RawValue;
-                productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
+                channelId = await CreateForumPostAsync(forum, message, productListing, categorization);
+
+                return ReferenceNumber.Create(channelId);
             }
 
+            if (channel is CachedCategoryChannel)
+                channelId = await CreateCategoryChannelAsync(productListing);
+            
             var response = await _agora.SendMessageAsync(channelId, message);
 
             if (channelId != ShowroomId.Value) await response.PinAsync();
 
             return ReferenceNumber.Create(response.Id);
+        }
+
+        private async ValueTask<ulong> CreateForumPostAsync(CachedForumChannel forum, LocalMessage message, Listing productListing, string category)
+        {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads);
+
+            //TODO: Add tag matching category
+
+            var showroom = await forum.CreateThreadAsync($"[{productListing}] {productListing.Product.Title}", message, x =>
+            {
+                x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
+                
+            });
+
+            productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
+
+            return showroom.Id.RawValue;
+        }
+
+        private async ValueTask<ulong> CreateCategoryChannelAsync(Listing productListing)
+        {
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels | Permissions.ManageMessages);
+            var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value,
+                                                               productListing.Product.Title.Value,
+                                                               x => x.CategoryId = Optional.Create(new Snowflake(ShowroomId.Value)));
+
+            productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
+
+            return showroom.Id.RawValue;
         }
 
         public async ValueTask<ReferenceNumber> UpdateProductListingAsync(Listing productListing)
@@ -106,7 +144,7 @@ namespace Agora.Addons.Disqord
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
 
-            if (channel is CachedCategoryChannel categoryChannel)
+            if (channel is CachedCategoryChannel or CachedForumChannel)
                 channelId = productListing.ReferenceCode.Reference();
 
             try
@@ -152,7 +190,7 @@ namespace Agora.Addons.Disqord
         {
             var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
-            if (channel is CachedCategoryChannel categoryChannel) return default;
+            if (channel is CachedCategoryChannel or CachedForumChannel) return default;
 
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
 
@@ -190,10 +228,29 @@ namespace Agora.Addons.Disqord
                 var channelId = productListing.Product.ReferenceNumber.Value;
                 var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
-                if (showroom is CachedCategoryChannel)
+                if (showroom == null) return;
+
+                if (showroom is CachedCategoryChannel or CachedForumChannel)
                     channelId = productListing.ReferenceCode.Reference();
-                
-                await _agora.DeleteChannelAsync(channelId);
+
+                if (productListing.Status != ListingStatus.Withdrawn && showroom is CachedForumChannel forum)
+                {
+                    await _interactionAccessor.Context.Interaction.Response()
+                            .SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully accepted!")
+                            .WithIsEphemeral(true));
+                    
+                    var post = _agora.GetChannel(EmporiumId.Value, channelId) as CachedThreadChannel;
+
+                    await post?.ModifyAsync(x => 
+                    {
+                        x.IsArchived = true;
+                        x.IsLocked = true;
+                    });
+                }
+                else
+                {
+                    await _agora.DeleteChannelAsync(channelId);
+                }
             }
             catch (Exception ex)
             {
@@ -207,7 +264,7 @@ namespace Agora.Addons.Disqord
         {
             var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
-            if (channel is CachedCategoryChannel) return;
+            if (channel is CachedCategoryChannel or CachedForumChannel) return;
             
             await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
             return;

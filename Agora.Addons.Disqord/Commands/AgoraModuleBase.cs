@@ -56,7 +56,7 @@ namespace Agora.Addons.Disqord.Commands
 
             if (Channel is IThreadChannel thread)
                 ShowroomId = new(thread.ChannelId);
-            else if (emporium != null && emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId.RawValue)))
+            else if (emporium != null && emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId)))
                 ShowroomId = new(Context.ChannelId);
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault());

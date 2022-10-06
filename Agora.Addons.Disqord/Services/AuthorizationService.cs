@@ -127,9 +127,8 @@ namespace Agora.Addons.Disqord
                         return $"Invalid Operation: Item has to be listed for at least {duration}. {remaining} remaining.";
                     break;
                 case WithdrawListingCommand command:
-                    if (settings.AllowListingRecall) return string.Empty;
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
+                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
                     break;
                 case UndoBidCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
@@ -220,8 +219,13 @@ namespace Agora.Addons.Disqord
         {
             var isManager = request switch
             {
-                UndoBidCommand command => await _userManager.IsHost(currentUser) || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
-                IProductListingBinder binder => await _userManager.IsBroker(currentUser) || currentUser.Equals(binder.Showroom.Listings.First().Owner), 
+                WithdrawListingCommand command => await _userManager.IsAdministrator(currentUser) 
+                                               || currentUser.Equals(command.Showroom.Listings.First().Owner),
+                UndoBidCommand command => await _userManager.IsAdministrator(currentUser) 
+                                       || currentUser.Equals(command.Showroom.Listings.First().Owner) 
+                                       || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
+                IProductListingBinder binder => await _userManager.IsBroker(currentUser) 
+                                             || currentUser.Equals(binder.Showroom.Listings.First().Owner), 
                 _ => false
             };
 

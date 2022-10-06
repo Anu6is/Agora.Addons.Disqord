@@ -42,8 +42,12 @@ namespace Agora.Addons.Disqord
                 }
                 else
                 {
-                    var channel = Client.GetChannel(e.GuildId.Value, e.ChannelId) as ITextChannel;
-                    roomId = channel.CategoryId.GetValueOrDefault();
+                    roomId = Client.GetChannel(e.GuildId.Value, e.ChannelId) switch
+                    {
+                        ITextChannel textChannel => textChannel.CategoryId.GetValueOrDefault(),
+                        IThreadChannel threadChannel => threadChannel.ChannelId,
+                        _ => 0
+                    };
                 }
 
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
@@ -80,16 +84,23 @@ namespace Agora.Addons.Disqord
             {
                 ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
+                { } when ex.Message.Contains("interaction has already been", StringComparison.OrdinalIgnoreCase) => null,
                 _ => "An error occured while processing this action. If this persists, please contact support."
             };
+            
+            await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+
+            if (message == null) return;
 
             var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
 
             if (message.EndsWith("contact support.")) 
                 response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
 
-            await interaction.Response().SendMessageAsync(response);
-            await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+            if (interaction.Response().HasResponded)
+                await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithIsEphemeral().WithContent(message));
+            else
+                await interaction.Response().SendMessageAsync(response);
 
             return;
         }
@@ -103,7 +114,10 @@ namespace Agora.Addons.Disqord
 
                 await interaction.Response().SendModalAsync(response);
 
-                var reply = await Client.WaitForInteractionAsync(interaction.ChannelId, x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, timeout, Client.StoppingToken);
+                var reply = await Client.WaitForInteractionAsync(interaction.ChannelId,
+                                                                 x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId,
+                                                                 timeout,
+                                                                 Client.StoppingToken);
 
                 return reply?.Interaction as IModalSubmitInteraction;
             }

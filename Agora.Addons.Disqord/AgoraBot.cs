@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Commands;
 using Agora.Addons.Disqord.Parsers;
+using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Commands;
@@ -7,6 +8,7 @@ using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
 using Emporia.Domain.Common;
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,7 +25,14 @@ namespace Agora.Addons.Disqord
             : base(options, logger, services, client) { }
 
         protected override IEnumerable<Assembly> GetModuleAssemblies()
-            => new[] { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
+        {
+            var assemblies = new List<Assembly> { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
+            var externalAssemblies = Services.GetRequiredService<IConfiguration>().LoadCommandAssemblies();
+            
+            assemblies.AddRange(externalAssemblies);
+
+            return assemblies;
+        }
 
         protected override ValueTask<IResult> OnBeforeExecuted(IDiscordCommandContext context)
         {
@@ -47,9 +56,11 @@ namespace Agora.Addons.Disqord
         {
             if (context is IDiscordInteractionCommandContext)
                 return new LocalInteractionMessageResponse()
-                            .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server"))).WithIsEphemeral();
+                    .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")))
+                    .WithIsEphemeral();
 
-            return new LocalMessage().WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G","Support Server")));
+            return new LocalMessage()
+                .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G","Support Server")));
         }
 
         protected override string FormatFailureReason(IDiscordCommandContext context, IResult result)

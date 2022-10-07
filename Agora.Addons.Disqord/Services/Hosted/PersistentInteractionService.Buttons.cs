@@ -8,6 +8,15 @@ namespace Agora.Addons.Disqord
 {
     public partial class PersistentInteractionService
     {
+        private readonly Dictionary<string, string> _confirmationRequired = new()
+        {
+            { "withdrawAuction", "Remove Auction Listing" },
+            { "withdrawMarket", "Remove Market Listing" },
+            { "withdrawTrade", "Remove Trade Listing" },
+            { "acceptAuction", "Accept Current Bid" },
+            { "acceptTrade", "Accept Trade Offer" },
+        };
+
         private readonly Dictionary<string, Func<IComponentInteraction, LocalInteractionModalResponse>> _modalRedirect = new()
         {
             { "extendAuction", ExtendListingModal },
@@ -17,6 +26,17 @@ namespace Agora.Addons.Disqord
             { "editMarket", EditMarketListingModal },
             { "editTrade", EditTradeListingModal },
             { "claim", PartialPurchaseModal }
+        };
+
+        private static IBaseRequest AuthorizeInteraction(IComponentInteraction interaction, ulong showroomId) => interaction.CustomId switch
+        {
+            { } when interaction.CustomId.StartsWith("extend") => new ExtendListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("extend", "")) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("accept") => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("accept", "")) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("withdraw") => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("withdraw", "")) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("editAuction") => new UpdateAuctionItemCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("editMarket") => new UpdateMarketItemCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("editTrade") => new UpdateTradeItemCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            _ => null
         };
 
         private static IBaseRequest HandleInteraction(IComponentInteraction interaction, ulong showroomId) => interaction.CustomId switch

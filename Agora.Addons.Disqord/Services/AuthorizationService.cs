@@ -19,11 +19,16 @@ namespace Agora.Addons.Disqord
     [AgoraService(AgoraServiceAttribute.ServiceLifetime.Scoped)]
     public class AuthorizationService : AgoraService, IAuthorizationService
     {
+        public bool IsAuthorized { get; set; }
+
         private readonly DiscordBotBase _agora;
         private readonly IUserManager _userManager;
         private readonly IGuildSettingsService _guildSettingsService;
 
-        public AuthorizationService(DiscordBotBase bot, IGuildSettingsService settingsService, IUserManager userManager, ILogger<AuthorizationService> logger) : base(logger)
+        public AuthorizationService(DiscordBotBase bot,
+                                    IGuildSettingsService settingsService,
+                                    IUserManager userManager,
+                                    ILogger<AuthorizationService> logger) : base(logger)
         {
             _agora = bot;
             _userManager = userManager;
@@ -249,6 +254,6 @@ namespace Agora.Addons.Disqord
         }
 
         public ValueTask<bool> SkipAuthorizationAsync(IEmporiumUser currentUser)
-            => ValueTask.FromResult(currentUser != null && currentUser.ReferenceNumber.Value == _agora.CurrentUser.Id.RawValue);
+            => ValueTask.FromResult(IsAuthorized || (currentUser != null && currentUser.ReferenceNumber.Value == _agora.CurrentUser.Id.RawValue));
     }
 }

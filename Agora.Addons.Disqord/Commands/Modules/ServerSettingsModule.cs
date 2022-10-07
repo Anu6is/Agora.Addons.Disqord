@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Extensions;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
 using Agora.Shared.EconomyFactory;
@@ -120,6 +121,57 @@ namespace Agora.Addons.Disqord.Commands
             SettingsService.Clear(Context.GuildId);
 
             return Response(new LocalInteractionMessageResponse().WithContent("Server reset successful!").WithIsEphemeral(true));
+        }
+
+        [SlashGroup("roles")]
+        public sealed class BotRoleCommands : AgoraModuleBase
+        {
+            public enum BotRole { Buyer, Merchant, Broker, Manager }
+
+            [SlashCommand("set")]
+            public async Task SetRole(BotRole botRole, IRole serverRole)
+            {
+                UpdateRole(botRole, serverRole.Id);
+
+                await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                await Response(new LocalInteractionMessageResponse()
+                        .AddEmbed(new LocalEmbed().WithDescription($"{botRole} set to {serverRole.Mention}").WithColor(Color.Teal))
+                        .WithIsEphemeral());
+            }
+
+            [SlashCommand("clear")]
+            public async Task ClearRole(BotRole botRole)
+            {
+                UpdateRole(botRole, botRole <= BotRole.Merchant ? Context.GuildId : 0);
+
+                await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                await Response(new LocalInteractionMessageResponse()
+                        .AddEmbed(new LocalEmbed().WithDescription($"{botRole} role cleared").WithDefaultColor())
+                        .WithIsEphemeral());
+            }
+
+            private void UpdateRole(BotRole botRole, ulong value)
+            {
+                switch (botRole)
+                {
+                    case BotRole.Buyer:
+                        Settings.BuyerRole = value;
+                        break;
+                    case BotRole.Merchant:
+                        Settings.MerchantRole = value;
+                        break;
+                    case BotRole.Broker:
+                        Settings.BrokerRole = value;
+                        break;
+                    case BotRole.Manager:
+                        Settings.AdminRole = value;
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 }

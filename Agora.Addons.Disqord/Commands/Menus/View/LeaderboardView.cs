@@ -72,7 +72,7 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Position = 4, Row = 4)]
-        public ValueTask CloseView(ButtonEventArgs e) => default;
+        public async ValueTask CloseView(ButtonEventArgs e) => await Task.Delay(TimeSpan.FromMilliseconds(500));
 
         private static LocalMessageBase LeaderboardMessage(PagedResponse<LeaderboardResponse> response, LocalMessageBase message, Currency currency)
         {

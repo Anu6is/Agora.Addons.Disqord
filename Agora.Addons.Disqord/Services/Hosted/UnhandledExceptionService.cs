@@ -61,7 +61,7 @@ namespace Agora.Addons.Disqord
                     break;
             }
 
-            _hub.CaptureEvent(new SentryEvent()
+            _hub?.CaptureEvent(new SentryEvent()
             {
                 ServerName = guild.Name,
                 Logger = $"{guild.Name}.{channel.Name}.{alias}",

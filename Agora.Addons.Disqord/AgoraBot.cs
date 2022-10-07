@@ -47,7 +47,14 @@ namespace Agora.Addons.Disqord
             if (result is CommandNotFoundResult) return;
 
             await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
-            await base.OnFailedResult(context, result);
+            
+            LocalMessageBase localMessageBase = CreateFailureMessage(context);
+
+            if (localMessageBase == null) return;
+
+            if (!FormatFailureMessage(context, localMessageBase, result)) return;
+
+            await SendFailureMessageAsync(context, localMessageBase);
 
             return;
         }

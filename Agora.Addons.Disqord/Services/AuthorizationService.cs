@@ -213,6 +213,10 @@ namespace Agora.Addons.Disqord
 
                     if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
                     break;
+                case CreateTradeOfferCommand command:
+                    if (currentUser.Equals(command.Showroom.Listings.First().Owner)) 
+                        return "Transaction Denied: you cannot claim your own trade.";
+                    break;
                 default:
                     return string.Empty;
             }

@@ -15,7 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
 using System.Text;
-using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {
@@ -111,7 +110,9 @@ namespace Agora.Addons.Disqord
 
             //TODO: Add tag matching category
 
-            var showroom = await forum.CreateThreadAsync($"[{productListing}] {productListing.Product.Title}", message, x =>
+            var type = productListing.Type.ToString().Replace("Market", "Sale");
+            var price = productListing.Type == ListingType.Market ? $"({productListing.ValueTag})" : string.Empty;  
+            var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
                 

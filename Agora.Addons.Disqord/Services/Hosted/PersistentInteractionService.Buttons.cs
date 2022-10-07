@@ -14,7 +14,8 @@ namespace Agora.Addons.Disqord
             { "withdrawMarket", "Remove Market Listing" },
             { "withdrawTrade", "Remove Trade Listing" },
             { "acceptAuction", "Accept Current Bid" },
-            { "acceptTrade", "Accept Trade Offer" },
+            { "trade", "Accept Trade Offer" },
+            { "buy", "Confirm Purchase" }
         };
 
         private readonly Dictionary<string, Func<IComponentInteraction, LocalInteractionModalResponse>> _modalRedirect = new()
@@ -30,6 +31,8 @@ namespace Agora.Addons.Disqord
 
         private static IBaseRequest AuthorizeInteraction(IComponentInteraction interaction, ulong showroomId) => interaction.CustomId switch
         {
+            "buy" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            "trade" => new CreateTradeOfferCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("extend") => new ExtendListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("extend", "")) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("accept") => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("accept", "")) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("withdraw") => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("withdraw", "")) { AuthorizeOnly = true },
@@ -49,16 +52,6 @@ namespace Agora.Addons.Disqord
             { } when interaction.CustomId.StartsWith("accept") => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("accept", "")),
             { } when interaction.CustomId.StartsWith("withdraw") => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("withdraw", "")),
             _ => null
-        };
-
-        private static Task HandleResponse(IComponentInteraction interaction) => interaction.CustomId switch
-        {
-            { } when interaction.CustomId.StartsWith("withdraw") 
-                  => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Listing successfully withdrawn!").WithIsEphemeral(true)),
-            "buy" => interaction.Response().HasResponded
-                   ? interaction.Followup().SendAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true))
-                   : interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
-            _ => Task.CompletedTask
         };
 
         private static LocalInteractionModalResponse ExtendListingModal(IComponentInteraction interaction)

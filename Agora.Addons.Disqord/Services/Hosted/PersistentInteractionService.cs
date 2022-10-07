@@ -70,10 +70,7 @@ namespace Agora.Addons.Disqord
             {
                 if (command != null) await mediator.Send(command);
 
-                if (modalInteraction != null)
-                    await HandleResponse(modalInteraction);
-                else
-                    await HandleResponse(interaction);
+                if (modalInteraction != null) await HandleResponse(modalInteraction);
             }
             catch (Exception ex)
             {

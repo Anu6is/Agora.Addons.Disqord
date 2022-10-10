@@ -42,7 +42,8 @@ namespace Agora.Addons.Disqord.Menus.View
 
             if (selectedEconomy.Value == "UnbelievaBoat")
             {
-                var economyAccess = await _context.Services.GetRequiredService<UnbelievaClient>().HasPermissionAsync(_context.Guild.Id, ApplicationPermission.EditEconomy);
+                var ubClient = _context.Services.GetRequiredService<UnbelievaClient>();
+                var economyAccess = await ubClient.HasPermissionAsync(_context.Guild.Id, ApplicationPermission.EditEconomy);
 
                 if (!economyAccess)
                 {

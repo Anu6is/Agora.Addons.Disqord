@@ -137,13 +137,10 @@ namespace Agora.Addons.Disqord
 
             var confirmed = response != null && response.CustomId.Contains("confirm");
 
-            if (!confirmed)
-            {
-                if (response == null)
-                    await interaction.Followup().ModifyResponseAsync(x => x.Components = components);
-                else
-                    await response.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents(components));
-            }
+            if (response == null)
+                await interaction.Followup().ModifyResponseAsync(x => x.Components = components);
+            else
+                await response.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents(components));
 
             return confirmed;
         }

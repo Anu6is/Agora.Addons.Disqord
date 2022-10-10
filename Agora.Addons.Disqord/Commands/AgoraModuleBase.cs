@@ -59,7 +59,7 @@ namespace Agora.Addons.Disqord.Commands
             else if (emporium != null && emporium.Showrooms.Any(x => x.Id.Value.Equals(Context.ChannelId)))
                 ShowroomId = new(Context.ChannelId);
             else
-                ShowroomId = new(Channel.CategoryId.GetValueOrDefault());
+                ShowroomId = new(Channel.CategoryId.GetValueOrDefault(Context.ChannelId));
 
 
             if (Context.Command is ApplicationCommand command)

@@ -30,8 +30,10 @@ namespace Agora.Addons.Disqord
                        bot.Status = UserStatus.Offline;
                        bot.Token = context.Configuration["Token:Discord"];
                        bot.ReadyEventDelayMode = ReadyEventDelayMode.Guilds;
-                       bot.ServiceAssemblies.Add(Assembly.GetExecutingAssembly());
                        bot.Intents = GatewayIntents.Guilds | GatewayIntents.Integrations;
+                       bot.ServiceAssemblies = bot.ServiceAssemblies
+                                                  .Append(Assembly.GetExecutingAssembly())
+                                                  .Concat(context.Configuration.LoadCommandAssemblies()).ToList();
                    })
                     .UseDefaultServiceProvider(x =>
                     {

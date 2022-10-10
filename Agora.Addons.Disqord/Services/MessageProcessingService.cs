@@ -236,10 +236,16 @@ namespace Agora.Addons.Disqord
 
                 if (productListing.Status != ListingStatus.Withdrawn && showroom is CachedForumChannel forum)
                 {
-                    await _interactionAccessor.Context.Interaction.Response()
-                            .SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully accepted!")
-                            .WithIsEphemeral(true));
-                    
+                    if (_interactionAccessor != null && _interactionAccessor.Context != null)
+                    {
+                        var interaction = _interactionAccessor.Context.Interaction;
+
+                        if (interaction.Response().HasResponded)
+                            await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithContent("Success!").WithIsEphemeral());
+                        else
+                            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Success!").WithIsEphemeral(true));
+                    }
+
                     var post = _agora.GetChannel(EmporiumId.Value, channelId) as CachedThreadChannel;
 
                     await post?.ModifyAsync(x => 
@@ -459,8 +465,17 @@ namespace Agora.Addons.Disqord
             var quantity = stock == 1 ? string.Empty : $"{stock} ";
             var embed = new LocalEmbed().WithTitle($"{productListing} Claimed")
                                         .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} for {Markdown.Bold(productListing.CurrentOffer.Submission)}")
-                                        .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer))
                                         .WithColor(Color.Teal);
+
+            var carousel = productListing.Product.Carousel;
+
+            if (carousel != null && carousel.Images != null && carousel.Images.Any()) 
+                embed.WithThumbnailUrl(carousel.Images[0].Url);
+
+            if (productListing.Product.Description != null) 
+                embed.AddField("Description", productListing.Product.Description.Value);
+
+            embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer));
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(participants).AddEmbed(embed));
             var delivered = await SendHiddenMessage(productListing, message);

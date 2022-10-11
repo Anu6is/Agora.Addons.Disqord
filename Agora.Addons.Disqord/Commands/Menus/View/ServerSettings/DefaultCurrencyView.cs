@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 selection.Options.Add(new LocalSelectionComponentOption("Error loading currencies", "0"));
             else if (emporium.Currencies != null)
                 _currencies = emporium.Currencies.ToArray();
-
+            
             foreach (var currency in _currencies)
             {
                 var option = new LocalSelectionComponentOption($"Symbol: {currency.Symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);

@@ -78,7 +78,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
-                currency ??= Settings.DefaultCurrency.Symbol;
+                currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
@@ -145,7 +145,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
-                currency ??= Settings.DefaultCurrency.Symbol;
+                currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
@@ -212,7 +212,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
-                currency ??= Settings.DefaultCurrency.Symbol;
+                currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? Settings.MaximumDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
@@ -260,9 +260,9 @@ namespace Agora.Addons.Disqord.Commands
                 if (currency.IsFocused)
                 {
                     if (currency.RawArgument == string.Empty)
-                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).ToArray());
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
                     else
-                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Symbol).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
                 }
                 else if (category.IsFocused)
                 {

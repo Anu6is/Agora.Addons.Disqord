@@ -115,9 +115,9 @@ namespace Agora.Addons.Disqord
             var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
-                
             });
-
+            
+            await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
             productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
 
             return showroom.Id.RawValue;

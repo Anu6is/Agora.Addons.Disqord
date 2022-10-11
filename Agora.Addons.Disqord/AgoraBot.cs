@@ -21,8 +21,10 @@ namespace Agora.Addons.Disqord
 {
     internal class AgoraBot : DiscordBot
     {
+        private readonly ILogger<DiscordBot> _logger;
+
         public AgoraBot(IOptions<DiscordBotConfiguration> options, ILogger<DiscordBot> logger, IServiceProvider services, DiscordClient client)
-            : base(options, logger, services, client) { }
+            : base(options, logger, services, client) { _logger = logger; }
 
         protected override IEnumerable<Assembly> GetModuleAssemblies()
         {
@@ -54,7 +56,14 @@ namespace Agora.Addons.Disqord
 
             if (!FormatFailureMessage(context, localMessageBase, result)) return;
 
-            await SendFailureMessageAsync(context, localMessageBase);
+            try
+            {
+                await SendFailureMessageAsync(context, localMessageBase);
+            }
+            catch (Exception) 
+            {
+                Logger.LogError("Failed to log exception {result} for {command}", result.FailureReason, context.Command.Name);
+            }
 
             return;
         }

@@ -61,12 +61,33 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalRowComponent ParticipantButtons(Listing listing) => listing switch
         {
-            { Product: AuctionItem auctionItem } => LocalComponent.Row(
-                    LocalComponent.Button("undobid", "Undo Bid").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null),
-                    LocalComponent.Button("minbid", $"Min Bid [{auctionItem.MinIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(listing is VickreyAuction),
-                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]").WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
-                //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
-                ),
+            { Product: AuctionItem auctionItem } => auctionItem.StartingPrice.Currency.Code == auctionItem.StartingPrice.Currency.Symbol 
+                ? LocalComponent.Row(
+                    LocalComponent.Button("undobid", "Undo Bid")
+                                  .WithStyle(LocalButtonComponentStyle.Danger)
+                                  .WithIsDisabled(listing.CurrentOffer == null),
+                    LocalComponent.Button("minbid", $"Min Bid [{auctionItem.MinIncrement()}]")
+                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithIsDisabled(listing is VickreyAuction),
+                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
+                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
+                    //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
+                    )
+                : LocalComponent.Row(
+                    LocalComponent.Button("undobid", "Undo Bid")
+                                  .WithStyle(LocalButtonComponentStyle.Danger)
+                                  .WithIsDisabled(listing.CurrentOffer == null),
+                    LocalComponent.Button("minbid", $"Min Bid [{auctionItem.MinIncrement()}]")
+                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithIsDisabled(listing is VickreyAuction)
+                                  .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
+                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
+                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
+                                  .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol))
+                    //LocalComponent.Button("autobid", "Auto Bid").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing is VickreyAuction)
+                    ),
             { Product: MarketItem } => null,
             StandardTrade trade => trade.AllowOffers
                                 ? null // TODO add buttons for bartering 
@@ -143,7 +164,9 @@ namespace Agora.Addons.Disqord.Extensions
         {
             0 => "Unlimited",
             >= 10000 => decimal.ToDouble(value).ToMetric(),
-            _ => Money.Create(value, auction.StartingPrice.Currency).ToString(),
+            _ => auction.StartingPrice.Currency.Code == auction.StartingPrice.Currency.Symbol 
+                ? Money.Create(value, auction.StartingPrice.Currency).ToString() 
+                : Money.Create(value, auction.StartingPrice.Currency).ToString().Replace(auction.StartingPrice.Currency.Symbol, ""),
         };
 
         private static string FormatMarketPrice(this Listing listing)

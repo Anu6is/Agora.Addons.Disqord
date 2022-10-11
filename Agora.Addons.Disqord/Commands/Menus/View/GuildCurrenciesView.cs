@@ -1,6 +1,8 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
+using Disqord.Bot;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
@@ -15,8 +17,8 @@ namespace Agora.Addons.Disqord.Menus.View
     {
         private readonly List<Currency> _currencies = new();
         private readonly GuildSettingsContext _context;
-        private SelectionViewComponent _selection;
-        private string _symbol = string.Empty;
+        private readonly SelectionViewComponent _selection;
+        private string _code = string.Empty;
 
         public GuildCurrenciesView(List<Currency> currencies, GuildSettingsContext context)
             : base(message => message.AddEmbed(
@@ -35,13 +37,13 @@ namespace Agora.Addons.Disqord.Menus.View
                 _selection.Options.Add(new LocalSelectionComponentOption("No Currencies Exist", "0"));
 
             foreach (var currency in _currencies)
-                _selection.Options.Add(new LocalSelectionComponentOption(currency.Symbol, Guid.NewGuid().ToString()));
+                _selection.Options.Add(new LocalSelectionComponentOption(currency.Code, Guid.NewGuid().ToString()));
         }
 
         [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger, Position = 1, Row = 0)]
         public async ValueTask RemoveCurrency(ButtonEventArgs e)
         {
-            if (_symbol == _context.Settings.DefaultCurrency.Symbol)
+            if (_code == _context.Settings.DefaultCurrency.Code)
             {
                 await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Default currency cannot be deleted").WithIsEphemeral());
                 return;
@@ -54,7 +56,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             try
             {
-                await mediator.Send(new DeleteCurrencyCommand(new EmporiumId(_context.Guild.Id), _symbol));
+                await mediator.Send(new DeleteCurrencyCommand(new EmporiumId(_context.Guild.Id), _code));
             }
             catch (Exception ex) when (ex is ValidationException validationException)
             {
@@ -66,9 +68,9 @@ namespace Agora.Addons.Disqord.Menus.View
                 return;
             }
 
-            await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral(true).WithContent($"Successfully Removed {Markdown.Bold(_symbol)}"));
+            await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral(true).WithContent($"Successfully Removed {Markdown.Bold(_code)}"));
 
-            _currencies.Remove(Currency.Create(_symbol));
+            _currencies.Remove(Currency.Create(_code));
             _selection.Options.Remove(_selection.Options.First(x => x.IsDefault.HasValue && x.IsDefault.Value));
 
             MessageTemplate = message =>
@@ -82,7 +84,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithDefaultColor());
             };
 
-            _symbol = string.Empty;
+            _code = string.Empty;
 
             ReportChanges();
         }
@@ -98,7 +100,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     Style = TextInputComponentStyle.Short,
                     CustomId = e.Interaction.CustomId,
                     Label = "Update Decimal Places",
-                    Placeholder = _currencies.First(x => x.Symbol == _symbol).DecimalDigits.ToString(),
+                    Placeholder = _currencies.First(x => x.Code == _code).DecimalDigits.ToString(),
                     MaximumInputLength = 25,
                     IsRequired = true
                 }));
@@ -127,9 +129,9 @@ namespace Agora.Addons.Disqord.Menus.View
 
             try
             {
-                await mediator.Send(new UpdateDecimalsCommand(new EmporiumId(_context.Guild.Id), _symbol, decimals));
+                await mediator.Send(new UpdateDecimalsCommand(new EmporiumId(_context.Guild.Id), _code, decimals));
 
-                _currencies.First(x => x.Symbol == _symbol).WithDecimals(decimals);
+                _currencies.First(x => x.Code == _code).WithDecimals(decimals);
             }
             catch (Exception ex) when (ex is ValidationException validationException)
             {
@@ -141,7 +143,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 return;
             }
 
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(_symbol)} Updated to {decimals} Decimals"));
+            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(_code)} Updated to {decimals} Decimals"));
 
             MessageTemplate = message =>
             {
@@ -171,7 +173,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     Style = TextInputComponentStyle.Short,
                     CustomId = "symbol",
                     Label = "Enter Currency Symbol",
-                    Placeholder = "symbol",
+                    Placeholder = "symbol or :emojiName:",
                     MaximumInputLength = 25,
                     IsRequired = true
                 }),
@@ -194,8 +196,18 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var modal = reply.Interaction as IModalSubmitInteraction;
             var rows = modal.Components.OfType<IRowComponent>();
-            var symbol = rows.First().Components.OfType<ITextInputComponent>().First().Value;
+            var code = rows.First().Components.OfType<ITextInputComponent>().First().Value;
             _ = int.TryParse(rows.Last().Components.OfType<ITextInputComponent>().First().Value, out int decimals);
+
+            var symbol = code;
+            if (code.StartsWith(':') && code.EndsWith(':'))
+            {
+                var bot = Menu.Client as DiscordBot;
+                var emojis = bot.GetGuild(_context.Guild.Id).Emojis.Values;
+                var emoji = emojis.FirstOrDefault(x => x.Name.Equals(code.Trim(':'), StringComparison.OrdinalIgnoreCase));
+
+                if (emoji != null) symbol = emoji.ToString();
+            }
 
             using var scope = _context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
@@ -204,9 +216,9 @@ namespace Agora.Addons.Disqord.Menus.View
 
             try
             {
-                _currencies.Add(await mediator.Send(new CreateCurrencyCommand(new EmporiumId(_context.Guild.Id), symbol, decimals)));
+                _currencies.Add(await mediator.Send(new CreateCurrencyCommand(new EmporiumId(_context.Guild.Id), code, decimals, symbol)));
 
-                var option = new LocalSelectionComponentOption(symbol, Guid.NewGuid().ToString());
+                var option = new LocalSelectionComponentOption(code, Guid.NewGuid().ToString());
                 _selection.Options.Add(option);
             }
             catch (Exception ex) when (ex is ValidationException validationException)
@@ -219,7 +231,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 return;
             }
 
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(symbol)} Successfully Added!"));
+            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(code)} Successfully Added!"));
 
             MessageTemplate = message =>
             {
@@ -246,7 +258,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
                     defaultOption.IsDefault = false;
 
-                _symbol = e.SelectedOptions[0].Label.Value;
+                _code = e.SelectedOptions[0].Label.Value;
 
                 e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
             }
@@ -270,9 +282,9 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
                 if (button.Position == 1)
-                    button.IsDisabled = _currencies.Count <= 1 || _symbol == string.Empty;
+                    button.IsDisabled = _currencies.Count <= 1 || _code == string.Empty;
                 else if (button.Position == 2)
-                    button.IsDisabled = _symbol == string.Empty;
+                    button.IsDisabled = _code == string.Empty;
 
             return base.UpdateAsync();
         }

@@ -248,7 +248,9 @@ namespace Agora.Addons.Disqord
 
                     var post = _agora.GetChannel(EmporiumId.Value, channelId) as CachedThreadChannel;
 
-                    await post?.ModifyAsync(x => 
+                    if (post == null) return;
+
+                    await post.ModifyAsync(x => 
                     {
                         x.IsArchived = true;
                         x.IsLocked = true;
@@ -256,6 +258,10 @@ namespace Agora.Addons.Disqord
                 }
                 else
                 {
+                    var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+
+                    if (channel == null) return;
+
                     await _agora.DeleteChannelAsync(channelId);
                 }
             }
@@ -422,7 +428,8 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.Teal);
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var localMessage = new LocalMessage().AddEmbed(embed);            
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
 
             return ReferenceNumber.Create(message.Id);
         }
@@ -469,6 +476,9 @@ namespace Agora.Addons.Disqord
 
             var carousel = productListing.Product.Carousel;
 
+            if (owner != buyer)
+                embed.WithFooter("review this transaction | right-click -> apps -> review");
+
             if (carousel != null && carousel.Images != null && carousel.Images.Any()) 
                 embed.WithThumbnailUrl(carousel.Images[0].Url);
 
@@ -477,7 +487,8 @@ namespace Agora.Addons.Disqord
 
             embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer));
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(participants).AddEmbed(embed));
+            var localMessage = new LocalMessage().WithContent(participants).AddEmbed(embed);
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
             var delivered = await SendHiddenMessage(productListing, message);
 
             if (!delivered)

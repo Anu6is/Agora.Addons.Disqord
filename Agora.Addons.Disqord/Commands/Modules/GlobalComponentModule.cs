@@ -2,7 +2,7 @@
 using Disqord.Bot.Commands.Components;
 using Disqord.Rest;
 
-namespace Agora.Addons.Disqord.Commands.Modules
+namespace Agora.Addons.Disqord.Commands
 {
     public sealed class GlobalComponentModule : DiscordComponentModuleBase
     {

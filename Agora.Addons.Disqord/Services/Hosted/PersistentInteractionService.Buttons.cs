@@ -1,5 +1,4 @@
 ﻿using Disqord;
-using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using MediatR;
@@ -15,7 +14,7 @@ namespace Agora.Addons.Disqord
             { "withdrawTrade", "Remove Trade Listing" },
             { "acceptAuction", "Accept Current Bid" },
             { "trade", "Accept Trade Offer" },
-            { "buy", "Confirm Purchase" }
+            { "buy", "Confirm This Purchase" }
         };
 
         private readonly Dictionary<string, Func<IComponentInteraction, LocalInteractionModalResponse>> _modalRedirect = new()

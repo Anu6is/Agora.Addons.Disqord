@@ -53,6 +53,8 @@ namespace Agora.Addons.Disqord
             LocalMessageBase localMessageBase = CreateFailureMessage(context);
 
             if (localMessageBase == null) return;
+            if (result is ExceptionResult ex &&  ex.Exception is ValidationException or UnauthorizedAccessException) 
+                localMessageBase.Components = new List<LocalRowComponent>();
 
             if (!FormatFailureMessage(context, localMessageBase, result)) return;
 

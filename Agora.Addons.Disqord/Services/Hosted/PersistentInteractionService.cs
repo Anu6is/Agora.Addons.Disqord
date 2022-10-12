@@ -87,17 +87,16 @@ namespace Agora.Addons.Disqord
         {
             var request = AuthorizeInteraction(interaction, roomId);
 
-            if (request != null)
+            if (request == null) return;
+
+            try
             {
-                try
-                {
-                    await mediator.Send(request);
-                }
-                catch (Exception ex)
-                {
-                    await SendErrorResponseAsync(args, interaction, scope, ex);
-                    throw;
-                }
+                await mediator.Send(request);
+            }
+            catch (Exception ex)
+            {
+                await SendErrorResponseAsync(args, interaction, scope, ex);
+                throw;
             }
         }
 

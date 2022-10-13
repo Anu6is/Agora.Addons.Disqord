@@ -37,7 +37,10 @@ namespace Agora.Addons.Disqord.Commands
 
             await Context.Interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents());
             
-            await _mediator.Send(new CreateUserReviewCommand(new EmporiumId(Context.GuildId), ReferenceNumber.Create(owner), rating));
+            await _mediator.Send(new CreateUserReviewCommand(new EmporiumId(Context.GuildId), ReferenceNumber.Create(owner), rating)
+            {
+                Comment = Comment.Create(userMessage.Id.ToString())
+            });
             
             await userMessage.ModifyAsync(x => x.Embeds = new[] { LocalEmbed.CreateFrom(userMessage.Embeds[0]).WithFooter("✅") });
 

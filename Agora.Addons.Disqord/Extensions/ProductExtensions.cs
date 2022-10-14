@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Extensions
             .WithDefaultColor();
         }
 
-        public static LocalRowComponent[] Buttons(this Listing listing)
+        public static LocalRowComponent[] Buttons(this Listing listing, bool allowBidAccept)
         {
             var type = listing.Type.ToString();
             var edit = LocalComponent.Button($"edit{type}", "Edit").WithStyle(LocalButtonComponentStyle.Primary);
@@ -39,8 +39,8 @@ namespace Agora.Addons.Disqord.Extensions
                 firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else if (listing.Product is TradeItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("trade", "Claim").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
-            else
-                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(listing.CurrentOffer == null));
+            else if (listing.Product is AuctionItem)
+                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
 
             var secondRowButtons = ParticipantButtons(listing);
 

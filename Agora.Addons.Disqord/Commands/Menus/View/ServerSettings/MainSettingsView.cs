@@ -12,6 +12,7 @@
                       new ("Result Logs", "Channel to send the results of completed listings to.", (ctx, opts) => new ResultChannelView(ctx, opts)),
                       new ("Audit Logs", "Channel to log all the actions performed on a listed item.", (ctx, opts) => new AuditChannelView(ctx, opts)),
                       new ("Duration Settings", "Minimum/Maximum amount of time an item can be listed.",(ctx, opts) => new ListingDurationView(ctx, opts)),
+                      new ("Accept Auction Offer", "Allow users to accept a bid and close the auction.",(ctx, opts) => new AuctionAcceptView(ctx, opts)),
                       new ("Snipe Trigger", "Remaining time before a bid will trigger an extension.", (ctx, opts) => new SnipeTriggerView(ctx, opts)),
                       new ("Snipe Extension", "Duration to extend by if a bid is made within the trigger range.", (ctx, opts) => new SnipeExtensionView(ctx, opts)),
                       new ("Bidding Recall Limit", "The amount of time allowed before a bid can be recalled.", (ctx, opts) => new BiddingRecallView(ctx, opts)),

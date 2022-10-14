@@ -118,12 +118,13 @@ namespace Agora.Addons.Disqord
         private async Task<string> ValidateUpdateAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
             var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
+            var managerRole = settings.AdminRole == 0 ? Markdown.Bold("Manager Privileges") : Mention.Role(settings.AdminRole);
 
             switch (request)
             {
                 case AcceptListingCommand command:
-                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty; 
-                    
+                    if (!settings.AllowAcceptingOffer) return "Invalid Operation: This action has been disabled.";
+
                     var canAcceptFrom = command.Showroom.Listings.First().ScheduledPeriod.ScheduledStart.Add(settings.MinimumDuration).ToUniversalTime();
                     var duration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
                     var remaining = canAcceptFrom.Subtract(SystemClock.Now).Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
@@ -138,7 +139,6 @@ namespace Agora.Addons.Disqord
                 case UndoBidCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
 
-                    var managerRole = settings.AdminRole == 0 ? "Manager Privileges" : Mention.Role(settings.AdminRole);
                     var listing = command.Showroom.Listings.First();
                     var currentOffer = listing.CurrentOffer;
 
@@ -146,7 +146,7 @@ namespace Agora.Addons.Disqord
                         return "Invalid Operation: No available bids exist.";
 
                     if (settings.BiddingRecallLimit == TimeSpan.Zero)
-                        return $"Only users with {managerRole} can undo bids";
+                        return $"Unauthorized Action: Only users with {managerRole} can undo bids";
 
                     var limit = settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
 

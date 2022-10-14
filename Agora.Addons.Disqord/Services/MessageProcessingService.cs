@@ -22,7 +22,7 @@ namespace Agora.Addons.Disqord
     public class MessageProcessingService : AgoraService, IMessageService, IProductListingService, IAuditLogService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
-        private readonly IEmporiaCacheService _emporiaCache;
+        private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
@@ -30,13 +30,13 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public MessageProcessingService(DiscordBotBase bot, 
-                                        IEmporiaCacheService emporiaCache,
+                                        IGuildSettingsService settingsService,
                                         ICommandContextAccessor commandAccessor,
                                         IInteractionContextAccessor interactionAccessor,
                                         ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
-            _emporiaCache = emporiaCache;
+            _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
         }
@@ -85,7 +85,9 @@ namespace Agora.Addons.Disqord
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var categorization = await GetCategoryAsync(productListing);
-            var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization)).WithComponents(productListing.Buttons());
+            var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+            var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization))
+                                            .WithComponents(productListing.Buttons(settings.AllowAcceptingOffer));
 
             if (channel is CachedForumChannel forum)
             {
@@ -144,6 +146,7 @@ namespace Agora.Addons.Disqord
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+            var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
 
             if (channel is CachedCategoryChannel or CachedForumChannel)
                 channelId = productListing.ReferenceCode.Reference();
@@ -157,7 +160,7 @@ namespace Agora.Addons.Disqord
                         x =>
                         {
                             x.Embeds = productEmbeds;
-                            x.Components = productListing.Buttons();
+                            x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
                         });
                 }
                 else
@@ -168,13 +171,13 @@ namespace Agora.Addons.Disqord
                         await interaction.Followup().ModifyResponseAsync(x =>
                         {
                             x.Embeds = productEmbeds;
-                            x.Components = productListing.Buttons();
+                            x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
                         });
                     else
                         await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
                         {
                             Embeds = productEmbeds,
-                            Components = productListing.Buttons()
+                            Components = productListing.Buttons(settings.AllowAcceptingOffer)
                         });
                 }
             }

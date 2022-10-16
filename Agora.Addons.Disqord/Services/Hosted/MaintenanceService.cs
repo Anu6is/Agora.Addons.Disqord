@@ -2,6 +2,7 @@
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
+using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
@@ -67,6 +68,33 @@ namespace Agora.Addons.Disqord
             }
 
             _logger.LogDebug("Removed showroom data for {guild}", Bot.GetGuild(e.GuildId));
+        }
+
+        protected override async ValueTask OnThreadUpdated(ThreadUpdatedEventArgs e)
+        {
+            var thread = e.NewThread;
+            
+            if (!thread.Metadata.IsArchived) return;
+            if (thread.CreatorId != Bot.CurrentUser.Id) return;
+            if (Bot.GetChannel(e.GuildId, thread.ChannelId) is not IForumChannel forum) return;
+
+            var emporium = await _emporiumCache.GetEmporiumAsync(e.GuildId);
+
+            if (emporium == null || emporium.Showrooms == null) return;
+            if (!emporium.Showrooms.Any(x => x.Id.Value.Equals(thread.ChannelId))) return;
+
+            var sold = forum.Tags.FirstOrDefault(x => x.Name.Equals("Sold", StringComparison.OrdinalIgnoreCase));
+            var expired = forum.Tags.FirstOrDefault(x => x.Name.Equals("Expired", StringComparison.OrdinalIgnoreCase));
+
+            if (thread.TagIds.Any(id => id == sold?.Id || id == expired?.Id)) return;
+
+            await Task.Delay(1500);
+
+            await thread.ModifyAsync(x =>
+            {
+                x.IsArchived = false;
+                x.IsLocked = false;
+            });
         }
     }
 }

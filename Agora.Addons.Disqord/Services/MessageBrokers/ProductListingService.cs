@@ -114,6 +114,23 @@ namespace Agora.Addons.Disqord
                         });
                 }
 
+                if (channel is IForumChannel forumChannel && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked))
+                {
+                    forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
+
+                    var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
+                    var active = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
+                    var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
+
+                    if (active != null && !thread.TagIds.Contains(active.Value))
+                    {
+                        await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                        {
+                            x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault()).Append(active.Value).ToArray();
+                        });
+                    }
+                }
+
                 return productListing.Product.ReferenceNumber;
             }
             catch (Exception ex)
@@ -174,7 +191,7 @@ namespace Agora.Addons.Disqord
                 if (showroom is CachedCategoryChannel or CachedForumChannel)
                     channelId = productListing.ReferenceCode.Reference();
 
-                if (productListing.Status != ListingStatus.Withdrawn && showroom is CachedForumChannel forum)
+                if (productListing.Status != ListingStatus.Withdrawn && showroom is IForumChannel forum)
                 {
                     if (_interactionAccessor != null && _interactionAccessor.Context != null)
                     {
@@ -186,9 +203,9 @@ namespace Agora.Addons.Disqord
                             await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Success!").WithIsEphemeral(true));
                     }
 
-                    var post = _agora.GetChannel(EmporiumId.Value, channelId) as CachedThreadChannel;
+                    if (_agora.GetChannel(EmporiumId.Value, channelId) is not CachedThreadChannel post) return;
 
-                    if (post == null) return;
+                    forum = await TagClosedPostAsync(productListing, forum, post);
 
                     await post.ModifyAsync(x =>
                     {
@@ -211,6 +228,36 @@ namespace Agora.Addons.Disqord
             }
 
             return;
+        }
+
+        private async Task<IForumChannel> TagClosedPostAsync(Listing productListing, IForumChannel forum, CachedThreadChannel post)
+        {
+            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Expired, AgoraTag.Sold);
+
+            var active = forum.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
+
+            if (productListing.Status == ListingStatus.Sold)
+            {
+                var sold = forum.Tags.First(x => x.Name.Equals("Sold", StringComparison.OrdinalIgnoreCase)).Id;
+
+                if (!post.TagIds.Contains(sold))
+                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                    {
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault()).Append(sold).ToArray();
+                    });
+            }
+            else if (productListing.Status == ListingStatus.Expired)
+            {
+                var expired = forum.Tags.First(x => x.Name.Equals("Expired", StringComparison.OrdinalIgnoreCase)).Id;
+
+                if (!post.TagIds.Contains(expired))
+                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                    {
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault()).Append(expired).ToArray();
+                    });
+            }
+
+            return forum;
         }
 
         public async ValueTask RemoveProductListingAsync(Listing productListing)
@@ -258,23 +305,67 @@ namespace Agora.Addons.Disqord
             return;
         }
 
-        private async ValueTask<ulong> CreateForumPostAsync(CachedForumChannel forum, LocalMessage message, Listing productListing, string category)
+        private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
         {
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads);
-
-            //TODO: Add tag matching category
+            
+            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
 
             var type = productListing.Type.ToString().Replace("Market", "Sale");
             var price = productListing.Type == ListingType.Market ? $"({productListing.ValueTag})" : string.Empty;
+            var tags = new List<Snowflake>() { forum.Tags.First(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase)).Id };
+
+            if (category != string.Empty)
+                tags.AddRange(await GetTagIdsAsync(forum, category.Split(':')));
+
             var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
+                x.TagIds = tags;
             });
 
             await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
             productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
 
             return showroom.Id.RawValue;
+        }
+
+        private static async ValueTask<IForumChannel> EnsureForumTagsExistAsync(IForumChannel forum, params LocalForumTag[] tagsToAdd)
+        {
+            var tagAdded = false;
+            var tags = forum.Tags.Select(x => LocalForumTag.CreateFrom(x));
+
+            foreach (var tag in tagsToAdd)
+            {
+                if (tags.Any(x => x.Name.Value.Equals(tag.Name.Value, StringComparison.OrdinalIgnoreCase))) continue;
+
+                tags = tags.Append(tag);
+                tagAdded = true;
+            }
+
+            if (tagAdded) 
+                return await forum.ModifyAsync(x => x.Tags = tags.ToArray());
+
+            return forum;
+        }
+
+        private static async ValueTask<IEnumerable<Snowflake>> GetTagIdsAsync(IForumChannel forum, string[] tagNames)
+        {
+            var tagAdded = false;
+            var tags = forum.Tags.Select(x => LocalForumTag.CreateFrom(x));
+
+            foreach (var name in tagNames)
+            {
+                if (tags.Any(x => x.Name.Value.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))) continue;
+                
+                tags = tags.Append(new LocalForumTag() { Emoji = new LocalEmoji("📁"), Name = name.Trim() });
+                tagAdded = true;
+            }
+
+            if (tagAdded) 
+                forum = await forum.ModifyAsync(x => x.Tags = tags.ToArray());
+
+            return forum.Tags.Where(x => tagNames.Any(name => name.Trim().Equals(x.Name))).Select(x => x.Id);
         }
 
         private async ValueTask<ulong> CreateCategoryChannelAsync(Listing productListing)

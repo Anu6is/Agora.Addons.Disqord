@@ -292,7 +292,7 @@ namespace Agora.Addons.Disqord.Commands
                         if (currentCategory?.SubCategories.Count > 1)
                         {
                             if (subcategory.RawArgument == string.Empty)
-                                subcategory.Choices.AddRange(currentCategory.SubCategories.Skip(1).Select(x => x.Title.Value).ToArray());
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Select(x => x.Title.Value).ToArray());
                             else
                                 subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.Contains(subcategory.RawArgument, StringComparison.OrdinalIgnoreCase))
                                                                                           .Select(x => x.Title.Value)

@@ -13,6 +13,7 @@ using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
+using Qommon;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -104,6 +105,59 @@ namespace Agora.Addons.Disqord.Commands
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 await Response("Standard Trade successfully created!");
+            }
+
+            [AutoComplete("standard")]
+            public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
+            {
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+                if (currency.IsFocused)
+                {
+                    if (currency.RawArgument == string.Empty)
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
+                    else
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
+                }
+                else if (category.IsFocused)
+                {
+                    if (!emporium.Categories.Any())
+                        category.Choices.Add("No configured server categories exist.");
+                    else
+                    {
+                        if (category.RawArgument == string.Empty)
+                            category.Choices.AddRange(emporium.Categories.Select(x => x.Title.Value).ToArray());
+                        else
+                            category.Choices.AddRange(emporium.Categories.Where(x => x.Title.Value.Contains(category.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                         .Select(x => x.Title.Value)
+                                                                         .ToArray());
+                    }
+                }
+                else if (subcategory.IsFocused)
+                {
+                    if (!category.Argument.TryGetValue(out var agoraCategory))
+                        subcategory.Choices.Add("Select a category to populate suggestions.");
+                    else
+                    {
+                        var currentCategory = emporium.Categories.FirstOrDefault(x => x.Title.Equals(agoraCategory));
+
+                        if (currentCategory?.SubCategories.Count > 1)
+                        {
+                            if (subcategory.RawArgument == string.Empty)
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Select(x => x.Title.Value).ToArray());
+                            else
+                                subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.Contains(subcategory.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                                          .Select(x => x.Title.Value)
+                                                                                          .ToArray());
+                        }
+                        else
+                        {
+                            subcategory.Choices.Add($"No configured subcategories exist for {currentCategory}");
+                        }
+                    }
+                }
+
+                return;
             }
 
             //open

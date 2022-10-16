@@ -11,12 +11,14 @@ using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Qmmands;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
     public class AuctionRoomView : ChannelSelectionView
     {
         protected override bool IncludeForumChannels => true;
+        protected override bool IncludeNewsChannels => true;
         protected override bool AllowAutoGeneration => true;
 
         private readonly List<Showroom> _showrooms;

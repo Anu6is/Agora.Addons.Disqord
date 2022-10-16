@@ -6,6 +6,7 @@ using Disqord.Bot;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
+using Disqord.Gateway;
 using Emporia.Domain.Common;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
@@ -91,6 +92,9 @@ namespace Agora.Addons.Disqord
                     _ => executionFailedResult.Exception.Message
                 };
 
+            if (result is CommandRateLimitedResult rateLimitedResult)
+                return rateLimitedResult.FailureReason.Replace("News", "Publish");
+
             return base.FormatFailureReason(context, result);
         }
 
@@ -144,6 +148,35 @@ namespace Agora.Addons.Disqord
             message.AddEmbed(embed);
             message.WithAllowedMentions(LocalAllowedMentions.None);
             return true;
+        }
+
+        protected override ValueTask InitializeRateLimiter(CancellationToken cancellationToken)
+        {
+            if (Services.GetService<ICommandRateLimiter>() is AgoraCommandRateLimiter rateLimiter)
+            {
+                rateLimiter.BucketKeyGenerator = (_, bucketType) =>
+                {
+                    if (_ is not IDiscordCommandContext context)
+                        throw new ArgumentException($"Context must be a {typeof(IDiscordCommandContext)}.", nameof(context));
+
+                    return GetRateLimitBucketKey(context, bucketType.ToString());
+                };
+            }
+
+            return default;
+        }
+
+        private static object GetRateLimitBucketKey(IDiscordCommandContext context, string bucketType)
+        {
+            return bucketType switch
+            {
+                "User" => context.Author.Id,
+                "Member" => (context.GuildId, context.Author.Id),
+                "Guild" => context.GuildId ?? context.Author.Id,
+                "Channel" => context.ChannelId,
+                "News" => context.Bot.GetChannel(context.GuildId.Value, context.ChannelId).Type == ChannelType.News ? context.ChannelId : null,
+                _ => throw new ArgumentOutOfRangeException(nameof(bucketType))
+            };
         }
 
         protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)

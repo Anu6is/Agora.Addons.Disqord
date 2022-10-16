@@ -50,6 +50,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("standard")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Specify what you have to offer and what you want in return")]
             public async Task CreateStandardTrade(
                 [Description("Title of the item to be traded."), Maximum(75)] ProductTitle offering,

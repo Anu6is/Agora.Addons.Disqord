@@ -9,6 +9,7 @@ namespace Agora.Addons.Disqord.Menus.View
     public abstract class ChannelSelectionView : BaseSettingsView
     {
         protected virtual bool IncludeForumChannels { get; }
+        protected virtual bool IncludeNewsChannels { get; }
         protected virtual bool AllowAutoGeneration { get; }
         public GuildSettingsContext Context { get; }
         public ulong CurrentChannelId { get; set; }
@@ -56,7 +57,9 @@ namespace Agora.Addons.Disqord.Menus.View
                 var channels = Context.Guild.GetChannels().Values
                     .OfType<ICategorizableGuildChannel>()
                     .Where(x => x.Id != CurrentChannelId && x.CategoryId == category 
-                             && (x.Type == ChannelType.Text || (IncludeForumChannels && x.Type == ChannelType.Forum)));
+                             && (x.Type == ChannelType.Text 
+                             || (IncludeNewsChannels && x.Type == ChannelType.News)
+                             || (IncludeForumChannels && x.Type == ChannelType.Forum)));
 
                 var textSelection = (SelectionViewComponent)EnumerateComponents().First(x => x.Row == 2);
 

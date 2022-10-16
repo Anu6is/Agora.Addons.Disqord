@@ -52,6 +52,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("standard")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("List an item(s) for sale at a fixed price.")]
             public async Task CreateStandarMarket(
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
@@ -115,6 +116,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("flash")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("List an item(s) with a timed discount.")]
             public async Task CreateFlashMarket(
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
@@ -179,6 +181,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("bulk")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Users can purchase all or a portion of the listed item stock.")]
             public async Task CreateBulkMarket(
                 [Description("Quantity available. Defaults to 1.")] Stock quantity,

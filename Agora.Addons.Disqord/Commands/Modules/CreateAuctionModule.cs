@@ -51,6 +51,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("standard")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("User with the highest bid wins when the auction ends.")]
             public async Task CreateStandardAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
@@ -118,6 +119,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("sealed")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Bids are hidden. Winner pays the second highest bid.")]
             public async Task CreateVickreyAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
@@ -185,6 +187,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("live")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Auction ends if no bids are made during the timeout period.")]
             public async Task CreateLiveAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,

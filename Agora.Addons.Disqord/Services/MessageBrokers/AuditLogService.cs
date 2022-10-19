@@ -58,9 +58,9 @@ namespace Agora.Addons.Disqord
             };
 
             if (owner != productListing.User.ReferenceNumber.Value)
-                intermediary = $" on behalf of {(productListing.Anonymous ? Markdown.Italics("Anonymous") : Mention.User(owner))}";
+                intermediary = $" on behalf of {(productListing.Anonymous ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(owner)}||" : Mention.User(owner))}";
             else
-                host = productListing.Anonymous ? Markdown.Italics("Anonymous") : host;
+                host = productListing.Anonymous ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(owner)}||" : host;
 
             var embed = new LocalEmbed().WithDescription($"{host} {Markdown.Underline("listed")} {Markdown.Bold($"{quantity}{title}")}{intermediary} for {original}{Markdown.Bold(value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(productListing.ScheduledPeriod.ScheduledStart))
@@ -103,7 +103,9 @@ namespace Agora.Addons.Disqord
             await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, productListing.ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
-            var owner = productListing.Owner.ReferenceNumber.Value;
+            var owner = productListing.Anonymous 
+                      ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||" 
+                      : Mention.User(productListing.Owner.ReferenceNumber.Value);
             var submitter = offer.UserReference.Value;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
@@ -111,7 +113,7 @@ namespace Agora.Addons.Disqord
                 .Append(Mention.User(submitter))
                 .Append(" offered ").Append(Markdown.Bold(offer.Submission))
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
-                .Append(" hosted by ").Append(Mention.User(owner));
+                .Append(" hosted by ").Append(owner);
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
                             .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
@@ -129,7 +131,9 @@ namespace Agora.Addons.Disqord
 
             var user = string.Empty;
             var title = productListing.Product.Title.ToString();
-            var owner = productListing.Owner.ReferenceNumber.Value;
+            var owner = productListing.Anonymous
+                      ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||"
+                      : Mention.User(productListing.Owner.ReferenceNumber.Value);
             var submitter = offer.UserReference.Value;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
@@ -139,7 +143,7 @@ namespace Agora.Addons.Disqord
                 .Append("An offer of ").Append(Markdown.Bold(offer.Submission))
                 .Append(" made by ").Append(Mention.User(submitter))
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
-                .Append(" hosted by ").Append(Mention.User(owner))
+                .Append(" hosted by ").Append(owner)
                 .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
 
             var embed = new LocalEmbed().WithDescription(description.ToString())

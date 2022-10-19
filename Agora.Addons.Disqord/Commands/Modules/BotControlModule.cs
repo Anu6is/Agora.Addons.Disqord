@@ -1,12 +1,14 @@
 ﻿using Agora.Addons.Conversion;
 using Agora.Addons.Disqord.Checks;
 using Agora.Shared;
+using Agora.Shared.Models;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Humanizer;
 using Humanizer.Localisation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,18 +21,31 @@ namespace Agora.Addons.Disqord.Commands
     public sealed class BotControlModule : AgoraModuleBase
     {
         public IHost ApplicationHost { get; init; }
-        private ILoggingLevelSwitcher _switcher;
+        private readonly ILoggingLevelSwitcher _switcher;
+        private readonly IConfiguration _configuration;
+        private readonly Random _random;
 
-        public BotControlModule(IHost applicationHost, ILoggingLevelSwitcher switcher)
+        public BotControlModule(Random random, IHost applicationHost, IConfiguration configuration, ILoggingLevelSwitcher switcher)
         {
             ApplicationHost = applicationHost;
+            _configuration = configuration;
             _switcher = switcher;
+            _random = random;
         }
 
         [SlashCommand("ping")]
         [Description("Test application responsiveness.")]
         [RateLimit(1, 5, RateLimitMeasure.Seconds, RateLimitBucketType.Guild)]
         public async Task<IResult> Ping() => await GetStatsAsync();
+
+        [SlashCommand("tips")]
+        [Description("Quick tips about Auction Bot")]
+        public IResult Tips()
+        {
+            var tips = _configuration.GetSection("Facts").Get<List<Fact>>();
+            
+            return View(new QuickTipsView(tips.OrderBy(x => _random.Next())));
+        }
 
         [RequireBotOwner]
         [SlashCommand("log")]

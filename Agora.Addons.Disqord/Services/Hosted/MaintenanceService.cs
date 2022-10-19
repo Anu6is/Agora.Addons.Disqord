@@ -88,7 +88,7 @@ namespace Agora.Addons.Disqord
 
             if (thread.TagIds.Any(id => id == sold?.Id || id == expired?.Id)) return;
 
-            await Task.Delay(1500);
+            await Task.Delay(2000);
 
             await thread.ModifyAsync(x =>
             {

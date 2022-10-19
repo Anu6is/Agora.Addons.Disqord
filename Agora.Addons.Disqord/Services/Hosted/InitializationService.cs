@@ -12,12 +12,20 @@ namespace Agora.Addons.Disqord
 {
     public class InitializationService : DiscordBotService
     {
+        private readonly Random _random;
         private readonly IMessageBroker _messageBroker;
         private readonly ILogger<InitializationService> _logger;
 
-        public InitializationService(DiscordBotBase bot, IMessageBroker messageBroker, ILogger<InitializationService> logger)
+        private readonly List<LocalActivity> _activities = new()
+        {
+            new LocalActivity("/server setup", ActivityType.Watching),
+            new LocalActivity("/tips", ActivityType.Watching)
+        };
+
+        public InitializationService(DiscordBotBase bot, Random random, IMessageBroker messageBroker, ILogger<InitializationService> logger)
             : base(logger, bot)
         {
+            _random = random;
             _logger = logger;
             _messageBroker = messageBroker;
         }
@@ -35,9 +43,14 @@ namespace Agora.Addons.Disqord
 
             _logger.LogInformation("Initialized...updating status");
 
-            await Client.SetPresenceAsync(UserStatus.Online, new LocalActivity("/Server Setup", ActivityType.Watching), cancellationToken: stoppingToken);
-
-            await base.ExecuteAsync(stoppingToken);
+            while (!stoppingToken.IsCancellationRequested) 
+            {
+                foreach (var activity in _activities)
+                {
+                    await Client.SetPresenceAsync(UserStatus.Online, activity, cancellationToken: stoppingToken);
+                    await Task.Delay(TimeSpan.FromMinutes(_random.Next(5, 30)), stoppingToken);
+                }
+            }
 
             return;
         }

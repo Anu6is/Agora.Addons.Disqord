@@ -21,6 +21,7 @@ namespace Agora.Addons.Disqord.Commands
     [RequireMerchant]
     [SlashGroup("auction")]
     [RequireShowroom("Auction")]
+    [Description("Add an item to be auctioned")]
     [RequireBotPermissions(Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ManageThreads)]
     public sealed class CreateAuctionModule : AgoraModuleBase
     {
@@ -32,7 +33,7 @@ namespace Agora.Addons.Disqord.Commands
 
             public override ValueTask OnBeforeExecuted()
             {
-                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as CachedTextChannel;
+                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel;
 
                 _scheduleOverride = channel != null
                                     && channel.Topic.IsNotNull()

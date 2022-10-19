@@ -18,6 +18,7 @@ using Qmmands;
 namespace Agora.Addons.Disqord.Commands
 {
     [SlashGroup("server")]
+    [Description("Configure Auction Bot for your server")]
     [RequireAuthorPermissions(Permissions.ManageGuild)]
     public sealed class ServerSettingsModule : AgoraModuleBase
     {
@@ -123,6 +124,7 @@ namespace Agora.Addons.Disqord.Commands
             return Response(new LocalInteractionMessageResponse().WithContent("Server reset successful!").WithIsEphemeral(true));
         }
 
+        [RequireSetup]
         [SlashGroup("roles")]
         public sealed class BotRoleCommands : AgoraModuleBase
         {

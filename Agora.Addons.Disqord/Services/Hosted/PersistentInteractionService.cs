@@ -40,6 +40,9 @@ namespace Agora.Addons.Disqord
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
                 
                 var roomId = await DetermineShowroomAsync(args);
+
+                if (roomId == 0) return;
+
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
                 await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator);
@@ -148,6 +151,8 @@ namespace Agora.Addons.Disqord
         {
             ulong roomId;
             var emporium = await _cache.GetEmporiumAsync(e.GuildId.Value);
+
+            if (emporium == null) return 0ul;
 
             if (emporium.Showrooms.Any(x => x.Id.Value.Equals(e.ChannelId.RawValue)))
             {

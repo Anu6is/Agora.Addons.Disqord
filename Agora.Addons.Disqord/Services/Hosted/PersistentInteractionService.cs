@@ -30,6 +30,8 @@ namespace Agora.Addons.Disqord
 
         protected override async ValueTask OnInteractionReceived(InteractionReceivedEventArgs args)
         {
+            if (args.GuildId == null) return;
+
             if (args.Interaction is IComponentInteraction interaction
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)

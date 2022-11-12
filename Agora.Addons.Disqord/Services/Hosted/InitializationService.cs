@@ -41,6 +41,8 @@ namespace Agora.Addons.Disqord
 
             await Bot.WaitUntilReadyAsync(stoppingToken);
 
+            await ResetLiveAuctionsAsync();
+
             _logger.LogInformation("Initialized...updating status");
 
             while (!stoppingToken.IsCancellationRequested) 
@@ -53,6 +55,17 @@ namespace Agora.Addons.Disqord
             }
 
             return;
+        }
+
+        //TODO - live auction reset
+        private Task ResetLiveAuctionsAsync()
+        {
+            //get all active live auctions
+            
+            //get time since last bid 
+            //if expired ? end : reset
+
+            return Task.CompletedTask;
         }
     }
 }

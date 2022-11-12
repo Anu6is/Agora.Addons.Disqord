@@ -108,10 +108,70 @@ namespace Agora.Addons.Disqord.Commands
                 await Response("Standard Trade successfully created!");
             }
 
+            //[SlashCommand("open")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
+            [Description("Specify what you have to offer and allow users to submit a counter offer")]
+            public async Task CreateOpenTrade(
+                [Description("Title of the item to be traded."), Maximum(75)] ProductTitle offering,
+                [Description("Title of the preferred item you want in return."), Maximum(75)] string accepting = "Best Offer",
+                [Description("Length of time the trade should last. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("Scheduled start of the auction. Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to hide the item owner.")] bool anonymous = false)
+            {
+                await Deferral(isEphemeral: true);
+
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+
+                scheduledStart ??= currentDateTime;
+                duration = duration == default ? Settings.MaximumDuration : duration;
+
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Trade);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
+                var item = new TradeItemModel(offering, accepting)
+                {
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
+                    Description = description
+                };
+
+                var ownerId = owner?.Id ?? Context.Author.Id;
+                var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                var listing = new StandardTradeModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
+                {
+                    HiddenMessage = message,
+                    Anonymous = anonymous,
+                    AllowOffers = true,
+                };
+
+                await Base.ExecuteAsync(new CreateStandardTradeCommand(showroom, item, listing));
+
+                _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                await Response("Open Trade successfully created!");
+            }
+
             [AutoComplete("standard")]
+            //[AutoComplete("open")]
             public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+                if (emporium == null) return;
 
                 if (currency.IsFocused)
                 {

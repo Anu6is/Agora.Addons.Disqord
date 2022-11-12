@@ -253,6 +253,8 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 
+                if (emporium == null) return;
+
                 if (currency.IsFocused)
                 {
                     if (currency.RawArgument == string.Empty)

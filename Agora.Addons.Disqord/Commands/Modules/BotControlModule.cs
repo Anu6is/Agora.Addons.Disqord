@@ -1,6 +1,7 @@
 ﻿using Agora.Addons.Conversion;
 using Agora.Addons.Disqord.Checks;
 using Agora.Shared;
+using Agora.Shared.Extensions;
 using Agora.Shared.Models;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -51,9 +52,14 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("log")]
         [RequireGuild(551567205461131305)]
         [Description("Set the log level")]
-        public async Task ChangeLogLevel([Description("Serilog log level")]LogEventLevel logLevel)
+        public async Task ChangeLogLevel([Description("Serilog log level")]LogEventLevel logLevel, bool includeEF = false)
         {
             _switcher.SetMinimumLevel(logLevel);
+
+            if (includeEF)
+                _switcher.SetOverrideLevel(logLevel);
+            else
+                _switcher.SetOverrideLevel(_configuration.GetOverrideLoglevel("Microsoft.EntityFrameworkCore"));
 
             Logger.LogTrace("ENABLED");
             Logger.LogDebug("ENABLED");

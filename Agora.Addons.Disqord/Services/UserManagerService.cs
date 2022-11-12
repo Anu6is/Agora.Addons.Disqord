@@ -16,7 +16,7 @@ namespace Agora.Addons.Disqord
     [AgoraService(AgoraServiceAttribute.ServiceLifetime.Scoped)]
     public class UserManagerService : AgoraService, IUserManager
     {
-        private Snowflake? GuildId { get; }
+        private Snowflake? GuildId { get; set; }
         private DiscordBotBase Bot { get; }
 
         private readonly IGuildSettingsService _guildSettingsService;
@@ -35,6 +35,7 @@ namespace Agora.Addons.Disqord
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
             if (member == null) return false;
+            if (member.GetGuild() == null) return false;
             if (member.CalculateGuildPermissions().HasFlag(Permissions.ManageGuild)) return true;
 
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
@@ -104,5 +105,7 @@ namespace Agora.Addons.Disqord
 
             return member;
         }
+
+        public void SetGuildId(Snowflake id) => GuildId = id;
     }
 }

@@ -45,7 +45,7 @@ namespace Agora.Addons.Disqord
 
         protected override async ValueTask OnChannelDeleted(ChannelDeletedEventArgs e)
         {
-            if (e.Channel is not ITextChannel) return;
+            if (e.Channel is IVoiceChannel) return;
 
             var emporium = await _emporiumCache.GetEmporiumAsync(e.GuildId);
 

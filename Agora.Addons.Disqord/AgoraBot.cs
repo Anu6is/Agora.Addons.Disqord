@@ -54,7 +54,7 @@ namespace Agora.Addons.Disqord
             LocalMessageBase localMessageBase = CreateFailureMessage(context);
 
             if (localMessageBase == null) return;
-            if (result is ExceptionResult ex &&  ex.Exception is ValidationException or UnauthorizedAccessException) 
+            if (result is ExceptionResult err &&  err.Exception is ValidationException or UnauthorizedAccessException) 
                 localMessageBase.Components = new List<LocalRowComponent>();
 
             if (!FormatFailureMessage(context, localMessageBase, result)) return;
@@ -65,7 +65,17 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception) 
             {
-                Logger.LogError("Failed to log exception {result} for {command}", result.FailureReason, context.Command.Name);
+                var failureReason = result.FailureReason;
+
+                if (result is ChecksFailedResult checksFailedResult)
+                    failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+                
+                Logger.LogError("Failed to log {type} exception {result} for {command} in {guild} with {args}",
+                                result.GetType(),
+                                failureReason ?? "no reason",
+                                context.Command == null ? "non command action" : context.Command.Name,
+                                context.GuildId.GetValueOrDefault(),
+                                context.RawArguments == null ? "no args" : string.Join(",", context.RawArguments.Select(x => $"key: {x.Key} | value:{string.Join("", x.Value)}")));
             }
 
             return;

@@ -115,11 +115,17 @@ namespace Agora.Addons.Disqord
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
                 .Append(" hosted by ").Append(owner);
 
-            var embed = new LocalEmbed().WithDescription(description.ToString())
+            var embeds = new List<LocalEmbed>()
+            {
+                new LocalEmbed().WithDescription(description.ToString())
                             .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
-                            .WithColor(Color.LawnGreen);
+                            .WithColor(Color.LawnGreen)
+            };
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
+                embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Attached Message From")} {Mention.User(submitter)}: {tradeOffer.Details}"));
+
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
             return ReferenceNumber.Create(message.Id);
 
@@ -146,11 +152,17 @@ namespace Agora.Addons.Disqord
                 .Append(" hosted by ").Append(owner)
                 .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
 
-            var embed = new LocalEmbed().WithDescription(description.ToString())
-                                        .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
-                                        .WithColor(Color.Orange);
+            var embeds = new List<LocalEmbed>()
+            {
+                new LocalEmbed().WithDescription(description.ToString())
+                                .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
+                                .WithColor(Color.OrangeRed)
+            }; 
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
+                embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Reason:")} {tradeOffer.Details}"));
+
+            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
             return ReferenceNumber.Create(message.Id);
         }

@@ -30,6 +30,8 @@ namespace Agora.Addons.Disqord
                     return EditMarketListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editTrade":
                     return EditTradeListing(modalInteraction, emporiumId, showroomId, keys);
+                case "barter":
+                    return SubmitTradeOffer(modalInteraction, emporiumId, showroomId, keys);
                 case "claim":
                     return ClaimListing(modalInteraction, emporiumId, showroomId, keys);
                 default:
@@ -42,11 +44,13 @@ namespace Agora.Addons.Disqord
         private static Task HandleResponse(IModalSubmitInteraction interaction) => interaction.CustomId switch
         {
             { } when interaction.CustomId.StartsWith("extend")
-                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing extended!").WithIsEphemeral(true)),
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing extended!").WithIsEphemeral()),
             { } when interaction.CustomId.StartsWith("edit")
-                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing successfully updated!").WithIsEphemeral(true)),
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing successfully updated!").WithIsEphemeral()),
             { } when interaction.CustomId.StartsWith("claim")
-                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral(true)),
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("barter")
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully submitted!").WithIsEphemeral()),
             _ => Task.CompletedTask
         };
 
@@ -143,16 +147,29 @@ namespace Agora.Addons.Disqord
             };
         }
 
+        private static IBaseRequest SubmitTradeOffer(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var rows = modalInteraction.Components
+                .OfType<IRowComponent>()
+                .Select(row => row.Components.OfType<ITextInputComponent>().First())
+                .Where(component => component is not null)
+                .ToDictionary(key => key.CustomId, value => value.Value);
+
+            return new CreateDealCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), rows["offer"])
+            {
+                Details = rows["details"]
+            };
+        }
+
         private static IBaseRequest ClaimListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
         {
             var input = modalInteraction.Components
                 .OfType<IRowComponent>().First()
                 .Components.OfType<ITextInputComponent>().First().Value;
 
-            if (int.TryParse(input, out var items))
-                return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1]))) { ItemCount = items };
-            else
-                throw new ValidationException("Claim amount must be a number!");
+            if (!int.TryParse(input, out var items)) throw new ValidationException("Claim amount must be a number!");
+
+            return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1]))) { ItemCount = items };
         }
     }
 }

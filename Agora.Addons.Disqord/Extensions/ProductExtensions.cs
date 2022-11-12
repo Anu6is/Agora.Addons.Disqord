@@ -34,11 +34,21 @@ namespace Agora.Addons.Disqord.Extensions
 
             if (listing is MassMarket)
                 firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
+            else if (listing is StandardTrade trade)
+            {
+                if (trade.AllowOffers && listing.Product is TradeItem item) 
+                    firstRowButtons.AddComponent(LocalComponent.Button($"offers", "View Offers")
+                                                               .WithStyle(LocalButtonComponentStyle.Primary)
+                                                               .WithIsDisabled(!item.Offers.Any()));
+
+                firstRowButtons.AddComponent(LocalComponent.Button(trade.AllowOffers ? "barter" : "trade", trade.AllowOffers ? "Submit Offer" : "Claim")
+                                                           .WithStyle(LocalButtonComponentStyle.Success)
+                                                           .WithIsDisabled(!listing.IsActive()));
+            }
+
 
             if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
-            else if (listing.Product is TradeItem)
-                firstRowButtons.AddComponent(LocalComponent.Button("trade", "Claim").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else if (listing.Product is AuctionItem)
                 firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
 
@@ -117,11 +127,11 @@ namespace Agora.Addons.Disqord.Extensions
                                           .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
-            TradeItem tradeItem => embed.AddField("Trading For", tradeItem.SuggestedOffer)
+            TradeItem tradeItem => embed.AddTradeOfferFields(listing)
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
                                         .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
-                                        .AddInlineField("Item Owner", listing.Anonymous
+                                        .AddField("Item Owner", listing.Anonymous
                                                                 ? Markdown.BoldItalics("Anonymous")
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
@@ -229,6 +239,25 @@ namespace Agora.Addons.Disqord.Extensions
                 : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
             _ => null
         };
+
+        private static LocalEmbed AddTradeOfferFields(this LocalEmbed embed, Listing listing)
+        {
+            if (listing is not StandardTrade trade) return embed;
+
+            var tradeItem = listing.Product as TradeItem;
+
+            if (!trade.AllowOffers)
+                return embed.AddField("Trading For", tradeItem.SuggestedOffer);
+
+            embed.AddInlineField("Trading For", tradeItem.SuggestedOffer);
+            
+            if (tradeItem.Offers.Any())
+                embed.AddInlineField("Submitted Offers", tradeItem.Offers.Count);
+            else
+                embed.AddInlineBlankField();
+
+            return embed.AddInlineBlankField();
+        }
 
         private static DateTimeOffset ExpiresAt(this Listing listing)
         {

@@ -59,13 +59,13 @@ namespace Agora.Addons.Disqord
                 switch (role)
                 {
                     case AuthorizationRole.Administrator:
-                        if (!await _userManager.IsAdministrator(currentUser)) authorizationError = "Unauthorized access: Manager role reqired.";
+                        if (!await _userManager.IsAdministrator(currentUser)) authorizationError = "Unauthorized access: Manager role required.";
                         break;
                     case AuthorizationRole.Broker:
-                        if (!await _userManager.IsBroker(currentUser)) authorizationError = "Unauthorized access: Broker role reqired.";
+                        if (!await _userManager.IsBroker(currentUser)) authorizationError = "Unauthorized access: Broker role required.";
                         break;
                     case AuthorizationRole.Host:
-                        if (!await _userManager.IsHost(currentUser)) authorizationError = "Unauthorized access: Merchant role reqired.";
+                        if (!await _userManager.IsHost(currentUser)) authorizationError = "Unauthorized access: Merchant role required.";
                         break;
                     case AuthorizationRole.Buyer:
                         if (!await _userManager.ValidateBuyerAsync(currentUser)) authorizationError = "Unathorized access: Buyer role required.";
@@ -213,9 +213,14 @@ namespace Agora.Addons.Disqord
 
                     if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
                     break;
-                case CreateTradeOfferCommand command:
-                    if (currentUser.Equals(command.Showroom.Listings.First().Owner)) 
-                        return "Transaction Denied: you cannot claim your own trade.";
+                case CreateDealCommand command:
+                    var listing = command.Showroom.Listings.First();
+
+                    if (currentUser.Equals(listing.Owner)) 
+                        return "Transaction Denied: you cannot trade with yourself.";
+
+                    if (listing.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
+                        return "Invalid Action: You already made an offer on this item.";
                     break;
                 default:
                     return string.Empty;

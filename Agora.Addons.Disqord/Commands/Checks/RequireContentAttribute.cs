@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Bot.Commands;
+using Emporia.Domain.Extension;
 using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
@@ -17,7 +18,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
 
         public override ValueTask<IResult> CheckAsync(IDiscordCommandContext context, IParameter parameter, object argument)
         {
-            if (argument is IAttachment attachment && attachment.ContentType.StartsWith(_contentType)) return Results.Success;
+            if (argument is IAttachment attachment && attachment.ContentType.IsNotNull() && attachment.ContentType.StartsWith(_contentType)) return Results.Success;
 
             return Results.Failure($"Invalid Upload: Attachment must be a {_contentType}");
         }

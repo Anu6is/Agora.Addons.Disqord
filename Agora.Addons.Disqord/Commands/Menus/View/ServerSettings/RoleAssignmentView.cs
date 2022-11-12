@@ -21,11 +21,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var roles = context.Guild.Roles.Values.Where(role => !role.IsManaged);
             var roleSelection = EnumerateComponents().OfType<SelectionViewComponent>().First(selection => selection.Row == 1);
 
-            roleSelection.Options.Clear();
-
-            roles.Take(25)
-                 .Select(role => new LocalSelectionComponentOption(role.Name, role.Id.ToString())).ToList()
-                 .ForEach(component => roleSelection.Options.Add(component));
+            roleSelection.Type = SelectionComponentType.Role;
         }
 
         [Selection(MaximumSelectedOptions = 1, MinimumSelectedOptions = 1, Row = 1, Placeholder = "Select a role.")]

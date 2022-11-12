@@ -23,11 +23,11 @@ namespace Agora.Addons.Disqord.Commands.Checks
             Snowflake channelId = (argument as IChannel).Id;
             IGuildChannel channel = discordGuildCommandContext.Bot.GetChannel(discordGuildCommandContext.GuildId, channelId);
                 
-            if (channel == null) Throw.InvalidOperationException("Unable to locate the specified channel.");
+            if (channel == null) Results.Failure("Unable to locate the specified channel.");
 
             CachedMember currentMember = discordGuildCommandContext.Bot.GetCurrentMember(discordGuildCommandContext.GuildId);
                 
-            if (currentMember == null) Throw.InvalidOperationException("RequireBotPermissionsAttribute requires the current member cached.");
+            if (currentMember == null) Results.Failure("RequireBotPermissionsAttribute requires the current member cached.");
 
             permissions = currentMember.CalculateChannelPermissions(channel);
 

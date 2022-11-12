@@ -88,7 +88,9 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                if (_interactionAccessor.Context == null)
+                if (_interactionAccessor.Context == null
+                    || (_interactionAccessor.Context.Interaction is IComponentInteraction component 
+                    && component.Message.Id != productListing.Product.ReferenceNumber.Value))
                 {
                     await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
                     {

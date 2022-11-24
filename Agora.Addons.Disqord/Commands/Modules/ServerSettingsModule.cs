@@ -126,11 +126,13 @@ namespace Agora.Addons.Disqord.Commands
 
         [RequireSetup]
         [SlashGroup("roles")]
+        [Description("Manage bot specific server roles")]
         public sealed class BotRoleCommands : AgoraModuleBase
         {
             public enum BotRole { Buyer, Merchant, Broker, Manager }
 
             [SlashCommand("set")]
+            [Description("Set a role to represent a Manager, Broker, Merchant or Buyer")]
             public async Task SetRole(BotRole botRole, IRole serverRole)
             {
                 UpdateRole(botRole, serverRole.Id);
@@ -143,6 +145,7 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("clear")]
+            [Description("Clear a previously set Manager, Broker, Merchant or Buyer role")]
             public async Task ClearRole(BotRole botRole)
             {
                 UpdateRole(botRole, botRole <= BotRole.Merchant ? Context.GuildId : 0);

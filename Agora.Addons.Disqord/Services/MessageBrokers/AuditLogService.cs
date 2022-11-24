@@ -100,7 +100,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
         {
-            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, productListing.ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Anonymous 

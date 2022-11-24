@@ -172,7 +172,7 @@ namespace Agora.Addons.Disqord
             {
                 case CreateBidCommand command:
                     if (!settings.AllowShillBidding && currentUser.Equals(command.Showroom.Listings.First().Owner)) 
-                        return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in `Server Settings`.";
+                        return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in </server settings:1013361602499723275>.";
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
@@ -235,7 +235,8 @@ namespace Agora.Addons.Disqord
             {
                 WithdrawListingCommand command => await _userManager.IsAdministrator(currentUser) 
                                                || currentUser.Equals(command.Showroom.Listings.First().Owner),
-                UndoBidCommand command => await _userManager.IsAdministrator(currentUser) 
+                UndoBidCommand command => await _userManager.IsAdministrator(currentUser)
+                                       || command.Showroom.Listings.First() is VickreyAuction 
                                        || currentUser.Equals(command.Showroom.Listings.First().Owner) 
                                        || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
                 IProductListingBinder binder => await _userManager.IsBroker(currentUser) 

@@ -229,7 +229,7 @@ namespace Agora.Addons.Disqord.Extensions
         private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
         {
             StandardMarket market => embed.AddInlineField("Discounted Price", market.DiscountValue == 0
-                ? Markdown.Italics("No Disount Applied")
+                ? Markdown.Italics("No Discount Applied")
                 : (market.Product as MarketItem).CurrentPrice.ToString()),
             FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now
                 ? Markdown.Italics("Expired")

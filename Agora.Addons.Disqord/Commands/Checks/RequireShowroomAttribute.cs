@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Checks
             var listingType = $"{(context.Command as ApplicationCommand).Alias} {_roomType}";
 
             if (!settings.AllowedListings.Any(listing => listing.Equals(listingType, StringComparison.OrdinalIgnoreCase)))
-                return Results.Failure($"{listingType.Pascalize()} Listings are not allowed.{Environment.NewLine}Configure Allowed Listings using the `Server Settings` command.");
+                return Results.Failure($"{listingType.Pascalize()} Listings are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command.");
 
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);
             var showrooms = emporium.Showrooms.Where(x => x.ListingType.Equals(_roomType, StringComparison.OrdinalIgnoreCase));

@@ -62,7 +62,7 @@ namespace Agora.Addons.Disqord.Commands
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
             var rooms = emporium.Showrooms.Where(x => x.Id.Value == ShowroomId.Value).Select(x => x.ListingType).ToArray();
 
-            if (rooms.Length == 0) throw new InvalidOperationException("Room not found in `Server Rooms` list");
+            if (rooms.Length == 0) throw new InvalidOperationException("Room not found in </server rooms:1013361602499723275> list");
 
             if (rooms.Length == 1) listing = rooms[0];
             else

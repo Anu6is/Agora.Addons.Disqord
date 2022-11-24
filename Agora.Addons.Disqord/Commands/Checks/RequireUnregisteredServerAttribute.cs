@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Checks
 
             if (emporium == null) return Results.Success;
 
-            return Results.Failure("Setup Previously Completed: Execute the command `Server Settings` to edit or `Server Reset` to delete.");
+            return Results.Failure("Setup Previously Completed: Execute the command </server settings:1013361602499723275> to edit or </server reset:1013361602499723275> to delete.");
         }
     }
 }

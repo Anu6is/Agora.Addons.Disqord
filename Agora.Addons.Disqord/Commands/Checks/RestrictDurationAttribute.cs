@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Checks
             var duration = (TimeSpan)argument;
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId.Value);
 
-            if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+            if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var minDuration = settings.MinimumDuration.TotalSeconds;
             var maxDuration = settings.MaximumDuration.TotalSeconds;

@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var settings = await context.Services.CreateScope().ServiceProvider.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
 
             if (settings == null)
-                return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+                return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             if (settings.EconomyType.Equals(_economyType, StringComparison.OrdinalIgnoreCase))
                 return Results.Success;

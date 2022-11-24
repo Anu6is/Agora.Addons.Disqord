@@ -16,7 +16,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var userManager = context.Services.GetRequiredService<IUserManager>();
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
 
-            if (settings == null) return Results.Failure("Setup Required: Please execute the `Server Setup` command.");
+            if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var validBuyer = await userManager.ValidateBuyerAsync(EmporiumUser.Create(new EmporiumId(context.GuildId), ReferenceNumber.Create(context.AuthorId)));
 

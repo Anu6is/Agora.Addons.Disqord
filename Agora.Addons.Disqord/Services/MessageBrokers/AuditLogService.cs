@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Attributes;
+using Agora.Shared.Cache;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -21,6 +22,7 @@ namespace Agora.Addons.Disqord
     public sealed class AuditLogService : AgoraService, IAuditLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
@@ -28,11 +30,13 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public AuditLogService(DiscordBotBase bot,
+                               IGuildSettingsService settingsService,
                                ICommandContextAccessor commandAccessor,
                                IInteractionContextAccessor interactionAccessor,
                                ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
         }
@@ -68,9 +72,9 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SteelBlue);
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
         }
 
         public ValueTask<ReferenceNumber> LogListingUpdatedAsync(Listing productListing)
@@ -93,9 +97,9 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.OrangeRed);
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
         }
 
         public async ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
@@ -125,9 +129,9 @@ namespace Agora.Addons.Disqord
             if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
                 embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Attached Message From")} {Mention.User(submitter)}: {tradeOffer.Details}"));
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
+            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
 
         }
 
@@ -162,9 +166,9 @@ namespace Agora.Addons.Disqord
             if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
                 embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Reason:")} {tradeOffer.Details}"));
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
+            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
         }
 
         public ValueTask<ReferenceNumber> LogOfferAcceptedAsync(Listing productListing, Offer offer)
@@ -199,9 +203,9 @@ namespace Agora.Addons.Disqord
                                         .WithColor(Color.Teal);
 
             var localMessage = new LocalMessage().AddEmbed(embed);
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
+            var id = await TrySendMessageAsync(ShowroomId.Value, localMessage);
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
         }
 
         public async ValueTask<ReferenceNumber> LogListingExpiredAsync(Listing productListing)
@@ -223,9 +227,9 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SlateGray);
 
-            var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(message.Id);
+            return ReferenceNumber.Create(id);
         }
 
         private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
@@ -252,7 +256,7 @@ namespace Agora.Addons.Disqord
                     var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
 
                     if (settings.AuditLogChannelId != 0)
-                        await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                        await TrySendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
                     else if (settings.ResultLogChannelId != 0)
                         await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
                 }
@@ -261,6 +265,25 @@ namespace Agora.Addons.Disqord
             }
 
             return;
+        }
+
+        private async Task<Snowflake> TrySendMessageAsync(Snowflake channelId, LocalMessage message)
+        {
+            try
+            {
+                var msg = await _agora.SendMessageAsync(channelId, message);
+                return msg.Id;
+            }
+            catch (Exception)
+            {
+                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+
+                settings.AuditLogChannelId = 0;
+
+                await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
+            }
+
+            return 0;
         }
     }
 }

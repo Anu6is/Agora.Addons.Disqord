@@ -9,7 +9,9 @@ namespace Agora.Addons.Disqord.Parsers
     {
         public override ValueTask<ITypeParserResult<TValueObject>> ParseAsync(IDiscordGuildCommandContext context, IParameter parameter, ReadOnlyMemory<char> value)
         {
-            var result = (TValueObject)typeof(TValueObject).GetMethod("Create").Invoke(null, new object[] { int.Parse(value.Span) });
+            if (!int.TryParse(value.Span, out var number)) return Failure("Invalid value provided");
+
+            var result = (TValueObject)typeof(TValueObject).GetMethod("Create").Invoke(null, new object[] { number });
 
             return Success(result);
         }

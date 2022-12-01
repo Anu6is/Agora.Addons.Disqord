@@ -171,7 +171,11 @@ namespace Agora.Addons.Disqord
             switch (request)
             {
                 case CreateBidCommand command:
-                    if (!settings.AllowShillBidding && currentUser.Equals(command.Showroom.Listings.First().Owner)) 
+                    var listing = command.Showroom.Listings.FirstOrDefault();
+
+                    if (listing == null) return "Invalid Action: Listing is no longer available";
+
+                    if (!settings.AllowShillBidding && currentUser.Equals(listing.Owner)) 
                         return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in </server settings:1013361602499723275>.";
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
@@ -179,7 +183,7 @@ namespace Agora.Addons.Disqord
                         if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
 
                         var cmd = command as CreateBidCommand;
-                        var item = cmd.Showroom.Listings.First().Product as AuctionItem;
+                        var item = listing.Product as AuctionItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
 
@@ -196,7 +200,11 @@ namespace Agora.Addons.Disqord
                     break;
 
                 case CreatePaymentCommand command:
-                    if (currentUser.Equals(command.Showroom.Listings.First().Owner))
+                    var sale = command.Showroom.Listings.FirstOrDefault();
+
+                    if (sale == null) return "Invalid Action: Listing is no longer available";
+
+                    if (currentUser.Equals(sale.Owner))
                         return "Transaction Denied: you cannot purchase an item you listed.";
 
                     var validPurchase = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
@@ -214,12 +222,12 @@ namespace Agora.Addons.Disqord
                     if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
                     break;
                 case CreateDealCommand command:
-                    var listing = command.Showroom.Listings.First();
+                    var trade = command.Showroom.Listings.First();
 
-                    if (currentUser.Equals(listing.Owner)) 
+                    if (currentUser.Equals(trade.Owner)) 
                         return "Transaction Denied: you cannot trade with yourself.";
 
-                    if (listing.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
+                    if (trade.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
                         return "Invalid Action: You already made an offer on this item.";
                     break;
                 default:

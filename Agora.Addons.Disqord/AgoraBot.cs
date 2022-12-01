@@ -70,12 +70,10 @@ namespace Agora.Addons.Disqord
                 if (result is ChecksFailedResult checksFailedResult)
                     failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
                 
-                Logger.LogError("Failed to log {type} exception {result} for {command} in {guild} with {args}",
+                Logger.LogError("Failed to log {type} exception {result} for {command}",
                                 result.GetType(),
                                 failureReason ?? "no reason",
-                                context.Command == null ? "non command action" : context.Command.Name,
-                                context.GuildId.GetValueOrDefault(),
-                                context.RawArguments == null ? "no args" : string.Join(",", context.RawArguments.Select(x => $"key: {x.Key} | value:{string.Join("", x.Value)}")));
+                                context.Command == null ? "non command action" : context.Command.Name);
             }
 
             return;

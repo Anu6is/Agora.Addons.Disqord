@@ -151,7 +151,8 @@ namespace Agora.Addons.Disqord
 
             await CheckPermissionsAsync(EmporiumId.Value,
                                         ShowroomId.Value,
-                                        Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
+                                        Permissions.SendMessages | Permissions.SendEmbeds | 
+                                        Permissions.ManageThreads | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
 
             var duration = listing.ScheduledPeriod.Duration switch
             {
@@ -268,7 +269,15 @@ namespace Agora.Addons.Disqord
 
             if (channel is CachedCategoryChannel or CachedForumChannel) return;
 
-            await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
+            try
+            {
+                await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to remove product listing {id} in {channel}.", productListing.Product.ReferenceNumber.Value, ShowroomId.Value);
+            }
+
             return;
         }
 
@@ -309,8 +318,8 @@ namespace Agora.Addons.Disqord
 
         private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads);
-            
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.ManageChannels | Permissions.ManageMessages);
+
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
 
             var type = productListing.Type.ToString().Replace("Market", "Sale");

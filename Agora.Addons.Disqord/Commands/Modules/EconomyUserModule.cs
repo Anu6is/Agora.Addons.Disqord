@@ -68,54 +68,54 @@ namespace Agora.Addons.Disqord.Commands
     //[RequireSetup]
     //[RequireBuyer]
     //[SlashGroup("trade")]
-    //public sealed class EconomyUserTradeAlertModule : AgoraModuleBase
-    //{
-    //    private readonly IUserProfileService _profileCache;
+    public sealed class EconomyUserTradeAlertModule : AgoraModuleBase
+    {
+        private readonly IUserProfileService _profileCache;
 
-    //    public EconomyUserTradeAlertModule(IUserProfileService userProfile)
-    //    {
-    //        _profileCache = userProfile;
-    //    }
+        public EconomyUserTradeAlertModule(IUserProfileService userProfile)
+        {
+            _profileCache = userProfile;
+        }
 
-    //    [SlashCommand("alerts")]
-    //    [Description("Enable/disable trade deal notifications via Direct Messages")]
-    //    public async Task<IResult> DealAlerts()
-    //    {
-    //        var profile = (UserProfile)await _profileCache.GetUserProfileAsync(Context.GuildId, Context.AuthorId);
-    //        var enableAlerts = !profile.TradeDealAlerts;
+        //[SlashCommand("alerts")]
+        //[Description("Enable/disable trade deal notifications via Direct Messages")]
+        public async Task<IResult> DealAlerts()
+        {
+            var profile = (UserProfile)await _profileCache.GetUserProfileAsync(Context.GuildId, Context.AuthorId);
+            var enableAlerts = !profile.TradeDealAlerts;
 
-    //        if (enableAlerts && !await DirectMessagesEnabledAsync())
-    //            return Response(new LocalInteractionMessageResponse()
-    //                    .WithIsEphemeral()
-    //                    .AddEmbed(new LocalEmbed().WithDefaultColor()
-    //                    .WithDescription($"Direct Messages must be enabled. Review your privacy settings for this server.")));
+            if (enableAlerts && !await DirectMessagesEnabledAsync())
+                return Response(new LocalInteractionMessageResponse()
+                        .WithIsEphemeral()
+                        .AddEmbed(new LocalEmbed().WithDefaultColor()
+                        .WithDescription($"Direct Messages must be enabled. Review your privacy settings for this server.")));
 
-    //        profile.SetTradeDealNotifications(enableAlerts);
+            profile.SetTradeDealNotifications(enableAlerts);
 
-    //        await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
+            await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
 
-    //        return Response(new LocalInteractionMessageResponse()
-    //                .WithIsEphemeral()
-    //                .AddEmbed(new LocalEmbed()
-    //                    .WithColor(profile.TradeDealAlerts ? Color.Teal : Color.Red)
-    //                    .WithDescription($"Trade notifications {Markdown.Bold(profile.TradeDealAlerts ? "ENABLED" : "DISABLED")}")));
-    //    }
+            return Response(new LocalInteractionMessageResponse()
+                    .WithIsEphemeral()
+                    .AddEmbed(new LocalEmbed()
+                        .WithColor(profile.TradeDealAlerts ? Color.Teal : Color.Red)
+                        .WithDescription($"Trade notifications {Markdown.Bold(profile.TradeDealAlerts ? "ENABLED" : "DISABLED")}")));
+        }
 
-    //    private async Task<bool> DirectMessagesEnabledAsync()
-    //    {
-    //        bool enabled = true;
+        private async Task<bool> DirectMessagesEnabledAsync()
+        {
+            bool enabled = true;
 
-    //        try
-    //        {
-    //            await Context.Author.SendMessageAsync(new LocalMessage().WithContent("Trade notifications will be sent via Direct Messages"));
-    //        }
-    //        catch (Exception)
-    //        {
-    //            enabled = false;
-    //        }
-    //        return enabled;
-    //    }
-    //}
+            try
+            {
+                await Context.Author.SendMessageAsync(new LocalMessage().WithContent("Trade notifications will be sent via Direct Messages"));
+            }
+            catch (Exception)
+            {
+                enabled = false;
+            }
+            return enabled;
+        }
+    }
 
     [RequireSetup]
     [RequireBuyer]

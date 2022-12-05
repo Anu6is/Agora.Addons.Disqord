@@ -221,9 +221,6 @@ namespace Agora.Addons.Disqord.Commands
                 return;
             }
 
-            //open
-            //Specify what you have to offer and accept the best conunter-offer
-
             //reverse 
             //Specify what you are looking for and accept best proposal
         }

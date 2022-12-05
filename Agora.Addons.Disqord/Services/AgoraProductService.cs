@@ -29,7 +29,8 @@ namespace Agora.Addons.Disqord
             var embed = message.Embeds[0];
             var owner = embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner"))?.Value;
 
-            if (owner == null || !Mention.TryParseUser(owner, out var userId)) return null;
+            if (owner == null) return null;            
+            if (!Mention.TryParseUser(owner, out var userId) && !owner.Equals("***Anonymous***")) return null;
 
             return new CachedEmporiumProduct() { OwnerId = userId, ProductId = productId, ListingType = embed.Title.Split(':').First() };
         }

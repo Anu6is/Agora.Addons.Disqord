@@ -30,7 +30,11 @@ namespace Agora.Addons.Disqord.Menus.View
             
             foreach (var currency in _currencies)
             {
-                var option = new LocalSelectionComponentOption($"Symbol: {currency.Symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
+                var symbol = currency.Symbol;
+
+                if (symbol.StartsWith("<:") && symbol.IndexOf(":", 2) > 0) symbol = symbol.Split(':')[1];
+                
+                var option = new LocalSelectionComponentOption($"Symbol: {symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
                 selection.Options.Add(option);
             }
         }

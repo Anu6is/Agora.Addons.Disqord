@@ -33,7 +33,7 @@ namespace Agora.Addons.Disqord.Checks
                 }
 
                 if (!emporium.Showrooms.Any(x => x.Id.Value.Equals(textChannel.CategoryId.GetValueOrDefault().RawValue)))
-                    return Results.Failure("This command can only be used in a thread/channel linked to an item.");
+                    return Results.Failure("This command can only be used in a thread linked to an item.");
 
                 var pinnedMessages = await textChannel.FetchPinnedMessagesAsync();
                 var productMessage = pinnedMessages.FirstOrDefault(x =>

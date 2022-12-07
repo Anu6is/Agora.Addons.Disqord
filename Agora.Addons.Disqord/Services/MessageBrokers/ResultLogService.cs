@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Attributes;
+using Agora.Shared.Cache;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -20,6 +21,7 @@ namespace Agora.Addons.Disqord
     public sealed class ResultLogService : AgoraService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
 
@@ -27,12 +29,14 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public ResultLogService(DiscordBotBase bot,
+                                IGuildSettingsService settingsService,
                                 ICommandContextAccessor commandAccessor,
                                 IInteractionContextAccessor interactionAccessor,
                                 ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
             _commandAccessor = commandAccessor;
+            _settingsService = settingsService;
             _interactionAccessor = interactionAccessor;
         }
 
@@ -134,7 +138,15 @@ namespace Agora.Addons.Disqord
             var channel = _agora.GetChannel(guildId, channelId);
 
             if (channel == null)
+            {
+                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+
+                settings.ResultLogChannelId = 0;
+
+                await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
+
                 throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+            }
 
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 

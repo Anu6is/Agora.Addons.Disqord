@@ -238,7 +238,11 @@ namespace Agora.Addons.Disqord
             var channel = _agora.GetChannel(guildId, channelId);
 
             if (channel == null)
+            {
+                await ClearChannelSetting();
+
                 throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+            }
 
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
@@ -276,14 +280,19 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception)
             {
-                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
-
-                settings.AuditLogChannelId = 0;
-
-                await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
+                await ClearChannelSetting();
             }
 
             return 0;
+        }
+
+        private async Task ClearChannelSetting()
+        {
+            var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+
+            settings.AuditLogChannelId = 0;
+
+            await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
         }
     }
 }

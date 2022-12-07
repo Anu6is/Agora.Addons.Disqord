@@ -36,7 +36,11 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                _logger.LogDebug("{Author} selected {button} in {guild}", interaction.Author.Name, interaction.CustomId, interaction.GuildId);
+                _logger.LogDebug("{Author} selected {button} in {guild} for product {reference}",
+                                 interaction.Author.Name,
+                                 interaction.CustomId,
+                                 interaction.GuildId,
+                                 interaction.Message.Id);
                 
                 using var scope = _scopeFactory.CreateScope();
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);

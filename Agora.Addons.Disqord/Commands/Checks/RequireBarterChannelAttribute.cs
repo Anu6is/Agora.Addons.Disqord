@@ -42,6 +42,9 @@ namespace Agora.Addons.Disqord.Checks
                         && x.Embeds.FirstOrDefault().Footer.Text.StartsWith("Reference Code:");
                 });
 
+                if (productMessage == null)
+                    return Results.Failure("Unable to locate pinned product listing in this channel");
+
                 product = await cache.GetProductAsync(context.GuildId, productMessage.ChannelId, productMessage.Id, uniqueRoom: true);
             }
             else if (commandChannel is IThreadChannel thread)

@@ -20,7 +20,7 @@ namespace Agora.Addons.Disqord.Commands.View
         private readonly ulong _emporiumId;
         private readonly ulong _showroomId;
         private readonly ulong _reference;
-        private Listing _listing;
+        private readonly Listing _listing;
 
         private Deal _selectedOffer;
 
@@ -254,7 +254,7 @@ namespace Agora.Addons.Disqord.Commands.View
 
         protected override string GetCustomId(InteractableViewComponent component)
         {
-            if (component is ButtonViewComponent buttonComponent) return buttonComponent.Label;
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
         }

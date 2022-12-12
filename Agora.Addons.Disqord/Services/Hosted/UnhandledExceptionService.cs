@@ -25,9 +25,7 @@ namespace Agora.Addons.Disqord
 
         public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
         {
-            var context = commandContext as IDiscordGuildCommandContext;
-
-            if (context == null) return default;
+            if (commandContext is not IDiscordGuildCommandContext context) return default;
 
             var command = context.Command as ApplicationCommand;
             var guild = Bot.GetGuild(context.GuildId);
@@ -64,12 +62,10 @@ namespace Agora.Addons.Disqord
                     break;
             }
 
-            if (_hub == null) return default;
-
             _hub.CaptureEvent(new SentryEvent()
             {
-                ServerName = guild.Name,
-                Logger = $"{guild.Name}.{channel.Name}.{alias}",
+                ServerName = guild?.Name,
+                Logger = $"{guild?.Name}.{channel?.Name}.{alias}",
                 Message = new SentryMessage() { Message = failureReason },
             }, scope =>
             {

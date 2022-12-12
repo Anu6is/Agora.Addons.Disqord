@@ -36,18 +36,21 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                _logger.LogDebug("{Author} selected {button} in {guild} for product {reference}",
+                _logger.LogDebug("{Author} selected {button} in {guild}",
                                  interaction.Author.Name,
                                  interaction.CustomId,
-                                 interaction.GuildId,
-                                 interaction.Message.Id);
-                
+                                 interaction.GuildId);
+
+                if (interaction.CustomId.StartsWith("#")) return;
+
                 using var scope = _scopeFactory.CreateScope();
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
                 
                 var roomId = await DetermineShowroomAsync(args);
 
                 if (roomId == 0) return;
+                if (!_modalRedirect.ContainsKey(interaction.CustomId) && !_confirmationRequired.ContainsKey(interaction.CustomId)) 
+                    await interaction.Response().DeferAsync();
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -145,10 +148,7 @@ namespace Agora.Addons.Disqord
 
             var confirmed = response != null && response.CustomId.Contains("confirm");
 
-            if (response == null)
-                await interaction.Followup().ModifyResponseAsync(x => x.Components = components);
-            else
-                await response.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents(components));
+            await interaction.Followup().ModifyResponseAsync(x => x.Components = components);
 
             return confirmed;
         }

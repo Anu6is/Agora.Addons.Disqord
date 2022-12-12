@@ -5,11 +5,6 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -67,6 +62,13 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
 
             return;
+        }
+
+        protected override string GetCustomId(InteractableViewComponent component)
+        {
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+
+            return base.GetCustomId(component);
         }
     }
 }

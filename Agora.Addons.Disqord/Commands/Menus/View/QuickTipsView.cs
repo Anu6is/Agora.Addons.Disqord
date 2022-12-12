@@ -45,7 +45,7 @@ namespace Agora.Addons.Disqord.Commands
 
         protected override string GetCustomId(InteractableViewComponent component)
         {
-            if (component is ButtonViewComponent buttonComponent) return buttonComponent.Label;
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
         }

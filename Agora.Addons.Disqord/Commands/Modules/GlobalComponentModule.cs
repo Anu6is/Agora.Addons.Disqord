@@ -6,7 +6,7 @@ namespace Agora.Addons.Disqord.Commands
 {
     public sealed class GlobalComponentModule : DiscordComponentModuleBase
     {
-        [ButtonCommand("Close")]
+        [ButtonCommand("#Close")]
         public async Task CloseMessage()
         {
             if (!Context.Interaction.Response().HasResponded) await Deferral();

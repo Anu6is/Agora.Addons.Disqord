@@ -1,12 +1,22 @@
-﻿using Disqord;
+﻿using Ardalis.Specification;
+using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
+using Emporia.Application.Common;
+using Emporia.Application.Features.Commands;
 using Emporia.Application.Features.Queries;
+using Emporia.Application.Specifications;
+using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord.Features.MessageBroker;
+using Emporia.Extensions.Discord.Specs;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
+using System.Threading;
+using System.Timers;
 
 namespace Agora.Addons.Disqord
 {
@@ -41,7 +51,7 @@ namespace Agora.Addons.Disqord
 
             await Bot.WaitUntilReadyAsync(stoppingToken);
 
-            await ResetLiveAuctionsAsync();
+            await ResetLiveAuctionsAsync(stoppingToken);
 
             _logger.LogInformation("Initialized...updating status");
 
@@ -50,22 +60,45 @@ namespace Agora.Addons.Disqord
                 foreach (var activity in _activities)
                 {
                     await Client.SetPresenceAsync(UserStatus.Online, activity, cancellationToken: stoppingToken);
-                    await Task.Delay(TimeSpan.FromMinutes(_random.Next(5, 30)), stoppingToken);
+                    await Task.Delay(TimeSpan.FromMinutes(_random.Next(5, 15)), stoppingToken);
                 }
             }
 
             return;
         }
 
-        //TODO - live auction reset
-        private Task ResetLiveAuctionsAsync()
+        private async Task ResetLiveAuctionsAsync(CancellationToken cancellationToken)
         {
-            //get all active live auctions
-            
-            //get time since last bid 
-            //if expired ? end : reset
+            using var scope = Bot.Services.CreateScope();
+            var dataAccessor = scope.ServiceProvider.GetRequiredService<IDataAccessor>();
 
-            return Task.CompletedTask;
+            var auctions = await dataAccessor.Transaction<IReadRepository<LiveAuction>>().ListAsync(cancellationToken);
+
+            foreach (var auction in auctions)
+            {
+                if (auction.CurrentOffer is not { } offer) continue;
+
+                var expiration = offer.SubmittedOn.Add(auction.Timeout).Subtract(TimeSpan.FromSeconds(1));
+                var countdown = expiration > DateTimeOffset.UtcNow
+                    ? expiration.Subtract(DateTimeOffset.UtcNow)
+                    : TimeSpan.FromSeconds(_random.Next(5, 10));
+
+                try
+                {
+                    _logger.LogInformation("Reset timout for live auction {auction} to {countdown}", auction.Id, countdown);
+
+                    using var timerScope = Bot.Services.CreateScope();
+                    var timer = timerScope.ServiceProvider.GetRequiredService<IAuctionTimer>();
+
+                    await timer.Reset(auction, countdown);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to reset Live Auction {auction} ", auction.Id);
+                }
+            }            
+
+            return;
         }
     }
 }

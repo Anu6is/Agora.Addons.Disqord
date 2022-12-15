@@ -151,7 +151,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 AddSubcategoryComponents();
 
-                var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Skip(1).Count();
+                var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Where(x => !x.Title.Equals(_selectedCategory)).Count();
 
                 MessageTemplate = message =>
                 {
@@ -301,7 +301,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var removeSubcategory = new ButtonViewComponent(RemoveSubCategory) { Label = "Remove Subcategory", Style = LocalButtonComponentStyle.Danger, Row = 1, Position = 0 };
             var selection = new SelectionViewComponent(SelectSubcategory) { MaximumSelectedOptions = 1, Placeholder = "Select a Subcategory", Row = 2 };
-            var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Skip(1).ToArray();
+            var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Where(x => !x.Title.Equals(_selectedCategory)).ToArray();
 
             if (subcategories.Length == 0)
                 selection.Options.Add(new LocalSelectionComponentOption("No subcategories Exist", "0"));

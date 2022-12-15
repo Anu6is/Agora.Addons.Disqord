@@ -24,13 +24,13 @@ namespace Agora.Addons.Disqord.Checks
             
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
             
-            _maxDuration = Math.Min(_maxDuration, settings.MaximumDuration.TotalSeconds);
+            var maximum = Math.Min(_maxDuration, settings.MaximumDuration.TotalSeconds);
 
             if (Math.Round(duration.Add(TimeSpan.FromSeconds(1)).TotalSeconds, 0) < _minDuration)
                 return Results.Failure($"The provided time is too short. Minimum duration is {TimeSpan.FromSeconds(_minDuration).Humanize()}");
 
-            if (Math.Round(duration.TotalSeconds, 0) > _maxDuration)
-                return Results.Failure($"The provided time is too long. Maximum duration is {TimeSpan.FromSeconds(_maxDuration).Humanize()}");
+            if (Math.Round(duration.TotalSeconds, 0) > maximum)
+                return Results.Failure($"The provided time is too long. Maximum duration is {TimeSpan.FromSeconds(maximum).Humanize()}");
 
             return Results.Success;
         }

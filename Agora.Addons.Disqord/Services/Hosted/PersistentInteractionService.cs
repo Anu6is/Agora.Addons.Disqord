@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                _logger.LogDebug("{Author} selected {button} in {guild}",
+                _logger.LogInformation("{Author} selected {button} in {guild}",
                                  interaction.Author.Name,
                                  interaction.CustomId,
                                  interaction.GuildId);
@@ -181,6 +181,7 @@ namespace Agora.Addons.Disqord
         {
             var message = ex switch
             {
+                TimeoutException => null,
                 ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
                 { } when ex.Message.Contains("interaction has already been", StringComparison.OrdinalIgnoreCase) => null,

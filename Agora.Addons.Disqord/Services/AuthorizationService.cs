@@ -264,7 +264,7 @@ namespace Agora.Addons.Disqord
         {
             var isOwner = request switch
             {
-                AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.First().Owner),
+                AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 _ => true
             };
 

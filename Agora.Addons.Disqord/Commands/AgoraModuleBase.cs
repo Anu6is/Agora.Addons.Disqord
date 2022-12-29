@@ -65,7 +65,7 @@ namespace Agora.Addons.Disqord.Commands
             if (Context.Command is ApplicationCommand command)
             {
                 var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
-                Logger.LogDebug("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
+                Logger.LogInformation("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
             }
 
             await base.OnBeforeExecuted();

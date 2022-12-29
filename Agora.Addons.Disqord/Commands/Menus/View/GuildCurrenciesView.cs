@@ -206,6 +206,12 @@ namespace Agora.Addons.Disqord.Menus.View
                 var emojis = bot.GetGuild(_context.Guild.Id).Emojis.Values;
                 var emoji = emojis.FirstOrDefault(x => x.Name.Equals(code.Trim(':'), StringComparison.OrdinalIgnoreCase));
 
+                if (emoji == null)
+                {
+                    emojis = await bot.FetchGuildEmojisAsync(_context.Guild.Id);
+                    emoji = emojis.FirstOrDefault(x => x.Name.Equals(code.Trim(':'), StringComparison.OrdinalIgnoreCase));
+                }
+
                 if (emoji != null) symbol = emoji.ToString();
             }
 

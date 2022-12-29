@@ -12,6 +12,7 @@ using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -96,8 +97,11 @@ namespace Agora.Addons.Disqord.Menus.View
 
             try
             {
-                var opensAt = opening.IsNull() ? Time.From(room.ActiveHours.OpensAt) : Time.From(opening);
-                var closesAt = closing.IsNull() ? Time.From(room.ActiveHours.ClosesAt) : Time.From(closing);
+                var openAt = room.ActiveHours == null ? TimeSpan.Zero : room.ActiveHours.OpensAt;
+                var closeAt = room.ActiveHours == null ? TimeSpan.Zero : room.ActiveHours.ClosesAt;
+
+                var opensAt = opening.IsNull() ? Time.From(openAt) : Time.From(opening);
+                var closesAt = closing.IsNull() ? Time.From(closeAt) : Time.From(closing);
 
                 room.SetBusinessHours(opensAt, closesAt);
 

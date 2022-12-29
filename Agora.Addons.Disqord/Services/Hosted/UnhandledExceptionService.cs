@@ -149,18 +149,39 @@ namespace Agora.Addons.Disqord
 
         private class SentryEventProcessor : ISentryEventProcessor
         {
+            private const string MultipleCollectionWarning = "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning";
+            private const string BoolWithDefaultWarning = "Microsoft.EntityFrameworkCore.Model.Validation.BoolWithDefaultWarning";
+            private const string ChecksFailedResult = "ChecksFailedResult";
+            private const string ParameterChecksFailedResult = "ParameterChecksFailedResult";
+            private const string TypeParseFailedResult = "TypeParseFailedResult";
+            private const string ValidationException = "ValidationException";
+            private const string UnauthorizedAccessException = "UnauthorizedAccessException";
+            private const string FormatException = "FormatException";
+            private const string NoMatchFoundException = "Humanizer.NoMatchFoundException";
+            private const string WebSocketClosedException = "Disqord.WebSocket.WebSocketClosedException";
+            private const string InvalidOperationException = "System.InvalidOperationException";
+
             public SentryEvent Process(SentryEvent @event)
             {
                 if (@event.Tags.TryGetValue("eventId", out var id))
                 {
-                    if (id == "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning") return null;
-                    if (id == "ChecksFailedResult" || id == "ParameterChecksFailedResult" || id == "TypeParseFailedResult") return null;
-                    if (id == "ValidationException" || id == "UnauthorizedAccessException") return null;
-                    if (id == "FormatException") return null;
+                    if (id == MultipleCollectionWarning) return null;
+                    if (id == BoolWithDefaultWarning) return null;
+                    if (id == ChecksFailedResult || id == ParameterChecksFailedResult || id == TypeParseFailedResult) return null;
+                    if (id == ValidationException || id == UnauthorizedAccessException) return null;
+                    if (id == FormatException) return null;
                 };
 
-                if (@event.SentryExceptions.Any(e => e.Type.Equals("System.InvalidOperationException") && e.Value.Contains("DefaultBotCommandsSetup")))
-                    return @event;
+                if (@event.SentryExceptions.Any(e => e.Type.Equals(NoMatchFoundException) || e.Type.Equals(WebSocketClosedException))) return null;
+
+                var invalidOperation = @event.SentryExceptions.FirstOrDefault(e => e.Type.Equals(InvalidOperationException));
+
+                if (invalidOperation != null)
+                {
+                    if (invalidOperation.Value.Contains("DefaultBotCommandsSetup")) return @event;
+                    if (invalidOperation.Value.Contains("The bot lacks the necessary permissions")) return null;
+                    if (invalidOperation.Value.Contains("This interaction has already been responded to")) return null;
+                }
 
                 if (@event.Level == SentryLevel.Error)
                 {

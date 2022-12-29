@@ -73,6 +73,8 @@ namespace Agora.Addons.Disqord
             var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
             var delivered = await SendHiddenMessage(productListing, message);
 
+            if (message == null) return null;
+
             if (!delivered) await message.ModifyAsync(x =>
             {
                 x.Content = participants;

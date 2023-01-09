@@ -247,6 +247,10 @@ namespace Agora.Addons.Disqord
                                        || command.Showroom.Listings.First() is VickreyAuction 
                                        || currentUser.Equals(command.Showroom.Listings.First().Owner) 
                                        || command.Bidder.Id.Equals(command.Showroom.Listings.First().CurrentOffer.UserId),
+                ScheduleListingCommand command => await _userManager.IsAdministrator(currentUser) 
+                                               || currentUser.Equals(command.Showroom.Listings.First().Owner),
+                UnscheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
+                                               || currentUser.Equals(command.Showroom.Listings.First().Owner),
                 IProductListingBinder binder => await _userManager.IsBroker(currentUser) 
                                              || currentUser.Equals(binder.Showroom.Listings.First().Owner), 
                 _ => false

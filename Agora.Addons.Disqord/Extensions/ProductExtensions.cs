@@ -9,6 +9,9 @@ namespace Agora.Addons.Disqord.Extensions
 {
     public static class ProductExtensions
     {
+        private const ulong ScheduledEmoteId = 397165177545424926;
+        private static string ScheduledEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduledEmoteId);
+
         public static LocalEmbed ToEmbed(this Listing listing)
         {
             return new LocalEmbed
@@ -19,6 +22,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode.Code()}")
+                                               .WithIconUrl(listing.IsScheduled ? ScheduledEmoteUrl : string.Empty)
             }
             .WithProductDetails(listing)
             .WithDefaultColor();

@@ -93,7 +93,7 @@ namespace Agora.Addons.Disqord
 
             if (owner != productListing.User.ReferenceNumber.Value) user = $"by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
-            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold($"{quantity}{title}")} hosted by {Mention.User(owner)} has been {Markdown.Underline("withrawn")} {user}")
+            var embed = new LocalEmbed().WithDescription($"{Markdown.Bold($"{quantity}{title}")} hosted by {Mention.User(owner)} has been {Markdown.Underline("withdrawn")} {user}")
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.OrangeRed);
 

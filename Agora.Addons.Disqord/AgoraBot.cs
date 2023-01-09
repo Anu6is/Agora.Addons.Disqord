@@ -174,18 +174,15 @@ namespace Agora.Addons.Disqord
             return default;
         }
 
-        private static object GetRateLimitBucketKey(IDiscordCommandContext context, string bucketType)
+        private static object GetRateLimitBucketKey(IDiscordCommandContext context, string bucketType) => bucketType switch
         {
-            return bucketType switch
-            {
-                "User" => context.Author.Id,
-                "Member" => (context.GuildId, context.Author.Id),
-                "Guild" => context.GuildId ?? context.Author.Id,
-                "Channel" => context.ChannelId,
-                "News" => context.Bot.GetChannel(context.GuildId.Value, context.ChannelId).Type == ChannelType.News ? context.ChannelId : null,
-                _ => throw new ArgumentOutOfRangeException(nameof(bucketType))
-            };
-        }
+            "User" => context.Author.Id,
+            "Member" => (context.GuildId, context.Author.Id),
+            "Guild" => context.GuildId ?? context.Author.Id,
+            "Channel" => context.ChannelId,
+            "News" => context.Bot.GetChannel(context.GuildId.Value, context.ChannelId).Type == ChannelType.News ? context.ChannelId : null,
+            _ => throw new ArgumentOutOfRangeException(nameof(bucketType))
+        };
 
         protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)
         {

@@ -83,7 +83,8 @@ namespace Agora.Addons.Disqord.Extensions
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
-            var absenteeBid = settings.AllowAbsenteeBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            //var absenteeBid = settings.AllowAbsenteeBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var confirmation = settings.TransactionConfirmation ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var listingRecall = settings.AllowListingRecall ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var bidAcceptance = settings.AllowAcceptingOffer ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
@@ -111,7 +112,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{shillBid} Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
-                .AddInlineField($"{absenteeBid} Absentee Bidding", settings.AllowAbsenteeBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddInlineField($"{confirmation} Confirm Transactions", settings.TransactionConfirmation ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{listingRecall} Recall Listings", settings.AllowListingRecall ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))

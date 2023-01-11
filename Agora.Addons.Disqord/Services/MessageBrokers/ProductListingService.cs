@@ -88,50 +88,10 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                if (_interactionAccessor.Context == null
-                    || (_interactionAccessor.Context.Interaction is IComponentInteraction component 
-                    && component.Message.Id != productListing.Product.ReferenceNumber.Value))
-                {
-                    await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
-                    {
-                        x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
-                    });
-                }
-                else
-                {
-                    var interaction = _interactionAccessor.Context.Interaction;
-
-                    if (interaction.Response().HasResponded)
-                        await interaction.Followup().ModifyResponseAsync(x =>
-                        {
-                            x.Embeds = productEmbeds;
-                            x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
-                        });
-                    else
-                        await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
-                        {
-                            Embeds = productEmbeds,
-                            Components = productListing.Buttons(settings.AllowAcceptingOffer)
-                        });
-                }
+                await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
                 if (channel is IForumChannel forumChannel && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked))
-                {
-                    forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
-
-                    var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
-                    var active = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
-                    var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
-
-                    if (active != null && !thread.TagIds.Contains(active.Value))
-                    {
-                        await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
-                        {
-                            x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault()).Append(active.Value).ToArray();
-                        });
-                    }
-                }
+                    forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
                 return productListing.Product.ReferenceNumber;
             }
@@ -141,6 +101,56 @@ namespace Agora.Addons.Disqord
             }
 
             return null;
+        }
+
+        private async Task<IForumChannel> UpdateForumTagAsync(Listing productListing, IForumChannel forumChannel)
+        {
+            forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
+
+            var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
+            var active = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
+            var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
+
+            if (active != null && !thread.TagIds.Contains(active.Value))
+            {
+                await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                {
+                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault()).Append(active.Value).ToArray();
+                });
+            }
+
+            return forumChannel;
+        }
+
+        private async Task RefreshProductListingAsync(Listing productListing, List<LocalEmbed> productEmbeds, ulong channelId, IDiscordGuildSettings settings)
+        {
+            if (_interactionAccessor.Context == null
+                || (_interactionAccessor.Context.Interaction is IComponentInteraction component
+                && component.Message.Id != productListing.Product.ReferenceNumber.Value))
+            {
+                await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
+                {
+                    x.Embeds = productEmbeds;
+                    x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
+                });
+            }
+            else
+            {
+                var interaction = _interactionAccessor.Context.Interaction;
+
+                if (interaction.Response().HasResponded)
+                    await interaction.Followup().ModifyResponseAsync(x =>
+                    {
+                        x.Embeds = productEmbeds;
+                        x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
+                    });
+                else
+                    await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
+                    {
+                        Embeds = productEmbeds,
+                        Components = productListing.Buttons(settings.AllowAcceptingOffer)
+                    });
+            }
         }
 
         public async ValueTask<ReferenceNumber> OpenBarteringChannelAsync(Listing listing)
@@ -201,9 +211,9 @@ namespace Agora.Addons.Disqord
                         var interaction = _interactionAccessor.Context.Interaction;
 
                         if (interaction.Response().HasResponded)
-                            await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithContent("Success!").WithIsEphemeral());
+                            await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithContent("Transaction Closed!").WithIsEphemeral());
                         else
-                            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Success!").WithIsEphemeral(true));
+                            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Transaction Closed!").WithIsEphemeral(true));
                     }
 
                     if (_agora.GetChannel(EmporiumId.Value, channelId) is not CachedThreadChannel post) return;
@@ -406,6 +416,25 @@ namespace Agora.Addons.Disqord
             }
 
             return categorization;
+        }
+
+        public async ValueTask NotifyPendingListingAsync(Listing productListing)
+        {
+            var channelReference = productListing.ReferenceCode.Reference();
+            var channelId = channelReference == 0 ? productListing.Product.ReferenceNumber.Value : channelReference;
+            var messageId = productListing.Product.ReferenceNumber.Value;
+
+            var showroom = (IMessageChannel)_agora.GetChannel(EmporiumId.Value, channelId);
+
+            await showroom.SendMessageAsync(
+                new LocalMessage()
+                    .WithContent(Mention.User(productListing.Owner.ReferenceNumber.Value))
+                    .AddEmbed(
+                        new LocalEmbed()
+                            .WithDefaultColor()
+                            .WithDescription($"Action required for pending [transaction]({Discord.MessageJumpLink(EmporiumId.Value, channelId, messageId)})")));
+
+            return;
         }
     }
 }

@@ -8,12 +8,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    public class BiddingAllowanceView : ServerSettingsView
+    public class TransactionConfirmationView : ServerSettingsView
     {
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
 
-        public BiddingAllowanceView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
+        public TransactionConfirmationView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
         {
             _context = context;
             _settings = context.Settings.DeepClone();
@@ -21,17 +21,17 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+                    button.Label = $"{(_settings.TransactionConfirmation ? "Disable" : "Enable")} Transaction Confirmation";
             }
         }
 
-        [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
-        public ValueTask ShillBidding(ButtonEventArgs e)
+        [Button(Label = "Transaction Confirmation", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
+        public ValueTask ConfirmTransactions(ButtonEventArgs e)
         {
-            _settings.AllowShillBidding = !_settings.AllowShillBidding;
-            e.Button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+            _settings.TransactionConfirmation = !_settings.TransactionConfirmation;
+            e.Button.Label = $"{(_settings.TransactionConfirmation ? "Disable" : "Enable")} Transaction Confirmation";
 
-            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Confirm Transactions"));
 
             ReportChanges();
 
@@ -39,13 +39,13 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
-        public async ValueTask SaveBidingOptions(ButtonEventArgs e)
+        public async ValueTask SaveOptions(ButtonEventArgs e)
         {
-            if (_settings.AllowShillBidding == _context.Settings.AllowShillBidding) return;
+            if (_settings.TransactionConfirmation == _context.Settings.TransactionConfirmation) return;
 
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-            settings.AllowShillBidding = _settings.AllowShillBidding;
+            settings.TransactionConfirmation = _settings.TransactionConfirmation;
 
             using var scope = _context.Services.CreateScope();
             {

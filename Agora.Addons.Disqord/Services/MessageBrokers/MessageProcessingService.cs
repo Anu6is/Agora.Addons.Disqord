@@ -19,9 +19,14 @@ namespace Agora.Addons.Disqord
             _agora = bot;
         }
 
-        public async Task<ulong> SendMesssageAsync(ulong channelId, string message)
+        public async Task<ulong> SendMesssageAsync(ulong channelId, string message, ulong mention = 0)
         {
-            var sentMessage = await _agora.SendMessageAsync(channelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithDefaultColor()));
+            var localMessage = new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithDefaultColor());
+
+            if (mention != 0) localMessage.WithContent($"<@{mention}>");
+
+            var sentMessage = await _agora.SendMessageAsync(channelId, localMessage);
+
             return sentMessage.Id;
         }
 

@@ -10,7 +10,7 @@ namespace Agora.Addons.Disqord.Extensions
     public static class ProductExtensions
     {
         private const ulong ScheduledEmoteId = 397165177545424926;
-        private static string ScheduledEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduledEmoteId);
+        private static readonly string ScheduledEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduledEmoteId);
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
@@ -22,7 +22,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode.Code()}")
-                                               .WithIconUrl(listing.IsScheduled ? ScheduledEmoteUrl : string.Empty)
+                                               .WithIconUrl(listing.IsScheduled ? ScheduledEmoteUrl : null)
             }
             .WithProductDetails(listing)
             .WithDefaultColor();
@@ -31,6 +31,15 @@ namespace Agora.Addons.Disqord.Extensions
         public static LocalRowComponent[] Buttons(this Listing listing, bool allowBidAccept)
         {
             var type = listing.Type.ToString();
+
+            if (listing.Status == ListingStatus.Sold)
+            {
+                var relist = LocalComponent.Button($"revert{type}", "Revert Transaction").WithStyle(LocalButtonComponentStyle.Danger);
+                var confirm = LocalComponent.Button($"confirm{type}", "Confirm Transaction").WithStyle(LocalButtonComponentStyle.Success);
+
+                return new LocalRowComponent[] { LocalComponent.Row(relist, confirm) };
+            }
+
             var edit = LocalComponent.Button($"edit{type}", "Edit").WithStyle(LocalButtonComponentStyle.Primary);
             var extend = LocalComponent.Button($"extend{type}", "Extend").WithStyle(LocalButtonComponentStyle.Primary);
             var withdraw = LocalComponent.Button($"withdraw{type}", "Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
@@ -118,7 +127,9 @@ namespace Agora.Addons.Disqord.Extensions
                                                                      : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expiration", listing.Status == ListingStatus.Sold 
+                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||" 
+                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                         .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
@@ -127,14 +138,18 @@ namespace Agora.Addons.Disqord.Extensions
                                           .AddPriceDetailField(listing)
                                           .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                           .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                          .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                          .AddInlineField("Expiration", listing.Status == ListingStatus.Sold
+                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||"
+                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                           .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
             TradeItem tradeItem => embed.AddTradeOfferFields(listing)
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expiration", listing.Status == ListingStatus.Sold
+                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||"
+                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                         .AddField("Item Owner", listing.Anonymous
                                                                 ? Markdown.BoldItalics("Anonymous")
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),

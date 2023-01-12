@@ -90,7 +90,8 @@ namespace Agora.Addons.Disqord
             {
                 await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
-                if (channel is IForumChannel forumChannel && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked))
+                if (channel is IForumChannel forumChannel 
+                    && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
                     forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
                 return productListing.Product.ReferenceNumber;
@@ -105,17 +106,29 @@ namespace Agora.Addons.Disqord
 
         private async Task<IForumChannel> UpdateForumTagAsync(Listing productListing, IForumChannel forumChannel)
         {
-            forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
+            forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold);
 
             var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
             var active = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
+            var locked = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Locked", StringComparison.OrdinalIgnoreCase))?.Id;
             var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
 
-            if (active != null && !thread.TagIds.Contains(active.Value))
+            if (active != null && !thread.TagIds.Contains(active.Value) && productListing.Status != ListingStatus.Sold)
             {
+                if (active == null) return forumChannel;
+
                 await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
                 {
-                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault()).Append(active.Value).ToArray();
+                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(active.Value).ToArray();
+                });
+            }
+            else if (productListing.Status == ListingStatus.Sold)
+            {
+                if (locked == null) return forumChannel;
+
+                await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                {
+                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault()).Append(locked.Value).ToArray();
                 });
             }
 
@@ -245,28 +258,29 @@ namespace Agora.Addons.Disqord
 
         private async Task<IForumChannel> TagClosedPostAsync(Listing productListing, IForumChannel forum, CachedThreadChannel post)
         {
-            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Expired, AgoraTag.Sold);
+            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold);
 
             var active = forum.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
+            var locked = forum.Tags.FirstOrDefault(x => x.Name.Equals("Locked", StringComparison.OrdinalIgnoreCase))?.Id;
 
             if (productListing.Status == ListingStatus.Sold)
             {
-                var sold = forum.Tags.First(x => x.Name.Equals("Sold", StringComparison.OrdinalIgnoreCase)).Id;
+                var sold = forum.Tags.FirstOrDefault(x => x.Name.Equals("Sold", StringComparison.OrdinalIgnoreCase))?.Id;
 
-                if (!post.TagIds.Contains(sold))
+                if (sold.HasValue && !post.TagIds.Contains(sold.Value))
                     await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
                     {
-                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault()).Append(sold).ToArray();
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(sold.Value).ToArray();
                     });
             }
             else if (productListing.Status == ListingStatus.Expired)
             {
-                var expired = forum.Tags.First(x => x.Name.Equals("Expired", StringComparison.OrdinalIgnoreCase)).Id;
+                var expired = forum.Tags.FirstOrDefault(x => x.Name.Equals("Expired", StringComparison.OrdinalIgnoreCase))?.Id;
 
-                if (!post.TagIds.Contains(expired))
+                if (expired.HasValue && !post.TagIds.Contains(expired.Value))
                     await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
                     {
-                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault()).Append(expired).ToArray();
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(expired.Value).ToArray();
                     });
             }
 
@@ -342,7 +356,7 @@ namespace Agora.Addons.Disqord
             var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
-                x.TagIds = tags;
+                x.TagIds = tags.Take(20).ToArray();
             });
 
             await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
@@ -365,7 +379,7 @@ namespace Agora.Addons.Disqord
             }
 
             if (tagAdded) 
-                return await forum.ModifyAsync(x => x.Tags = tags.ToArray());
+                return await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
 
             return forum;
         }
@@ -384,7 +398,7 @@ namespace Agora.Addons.Disqord
             }
 
             if (tagAdded) 
-                forum = await forum.ModifyAsync(x => x.Tags = tags.ToArray());
+                forum = await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
 
             return forum.Tags.Where(x => tagNames.Any(name => name.Trim().Equals(x.Name))).Select(x => x.Id);
         }
@@ -424,7 +438,10 @@ namespace Agora.Addons.Disqord
             var channelId = channelReference == 0 ? productListing.Product.ReferenceNumber.Value : channelReference;
             var messageId = productListing.Product.ReferenceNumber.Value;
 
+            var offer = productListing.CurrentOffer;
             var showroom = (IMessageChannel)_agora.GetChannel(EmporiumId.Value, channelId);
+            var prompt = $"Action required for pending [transaction]({Discord.MessageJumpLink(EmporiumId.Value, channelId, messageId)})";
+            var submission = $"Review offer submitted by {Mention.User(offer.UserReference.Value)} -> {Markdown.Bold(offer.Submission)}.";
 
             await showroom.SendMessageAsync(
                 new LocalMessage()
@@ -432,7 +449,7 @@ namespace Agora.Addons.Disqord
                     .AddEmbed(
                         new LocalEmbed()
                             .WithDefaultColor()
-                            .WithDescription($"Action required for pending [transaction]({Discord.MessageJumpLink(EmporiumId.Value, channelId, messageId)})")));
+                            .WithDescription(prompt + Environment.NewLine + submission)));
 
             return;
         }

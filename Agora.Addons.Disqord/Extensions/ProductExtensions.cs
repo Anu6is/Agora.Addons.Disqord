@@ -127,9 +127,7 @@ namespace Agora.Addons.Disqord.Extensions
                                                                      : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expiration", listing.Status == ListingStatus.Sold 
-                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||" 
-                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                         .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
@@ -138,18 +136,14 @@ namespace Agora.Addons.Disqord.Extensions
                                           .AddPriceDetailField(listing)
                                           .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                           .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                          .AddInlineField("Expiration", listing.Status == ListingStatus.Sold
-                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||"
-                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                          .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                           .AddInlineField("Item Owner", listing.Anonymous
                                                                     ? Markdown.BoldItalics("Anonymous")
                                                                     : Mention.User(listing.Owner.ReferenceNumber.Value)),
             TradeItem tradeItem => embed.AddTradeOfferFields(listing)
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
-                                        .AddInlineField("Expiration", listing.Status == ListingStatus.Sold
-                                                                    ? $"||{Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime)}||"
-                                                                    : Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                        .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
                                         .AddField("Item Owner", listing.Anonymous
                                                                 ? Markdown.BoldItalics("Anonymous")
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),

@@ -123,6 +123,7 @@ namespace Agora.Addons.Disqord
             switch (request)
             {
                 case AcceptListingCommand command:
+                    if (command.ListingType != ListingType.Auction.ToString()) return string.Empty;
                     if (!settings.AllowAcceptingOffer) return "Invalid Operation: This action has been disabled.";
 
                     var canAcceptFrom = command.Showroom.Listings.First().ScheduledPeriod.ScheduledStart.Add(settings.MinimumDuration).ToUniversalTime();
@@ -132,9 +133,13 @@ namespace Agora.Addons.Disqord
                     if (canAcceptFrom > SystemClock.Now)
                         return $"Invalid Operation: Item has to be listed for at least {duration}. {remaining} remaining.";
                     break;
+                case RevertTransactionCommand command:
+                    if (!settings.TransactionConfirmation) return "Invalid Operation: This action has been disabled.";
+                    break;
                 case WithdrawListingCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
+                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null) 
+                        return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
                     break;
                 case UndoBidCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
@@ -153,9 +158,14 @@ namespace Agora.Addons.Disqord
                     if (currentOffer.SubmittedOn.ToUniversalTime().Add(settings.BiddingRecallLimit) < SystemClock.Now)
                         return $"Invalid Operation: This action is no longer available. Bids can only be withdrawn up to {limit} after submission.";
                     break;
+                case UpdateMarketItemCommand command:
+                    if (command.Showroom.Listings.First().Status >= ListingStatus.Locked)
+                        return $"Invalid Operation: This action is no longer available. Changes cannot be made once an offer was previously submitted.";
+                    break;
                 case IProductListingBinder command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (command.Showroom.Listings.First().CurrentOffer != null) return "Invalid Operation: Updates cannot be made once an offer has been submitted.";
+                    if (command.Showroom.Listings.First().CurrentOffer != null) 
+                        return "Invalid Operation: Updates cannot be made once an offer has been submitted.";
                     break;
                 default:
                     break;
@@ -269,6 +279,7 @@ namespace Agora.Addons.Disqord
             var isOwner = request switch
             {
                 AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
+                RevertTransactionCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 _ => true
             };
 

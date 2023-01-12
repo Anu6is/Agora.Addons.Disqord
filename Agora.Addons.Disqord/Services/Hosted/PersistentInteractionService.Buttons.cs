@@ -93,6 +93,8 @@ namespace Agora.Addons.Disqord
             return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
                 .WithTitle("Edit Market Listing")
                 .WithComponents(
+                    LocalComponent.Row(LocalComponent.TextInput("title", "Update Title", TextInputComponentStyle.Short).WithPlaceholder("Item title").WithIsRequired(false)),
+                    LocalComponent.Row(LocalComponent.TextInput("price", "Update Price", TextInputComponentStyle.Short).WithPlaceholder("Item price").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("image", "Update Image", TextInputComponentStyle.Short).WithPlaceholder("Insert image url").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("description", "Update Description", TextInputComponentStyle.Paragraph).WithPlaceholder("Item description").WithMaximumInputLength(500).WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("message", "Update Buyer's Note", TextInputComponentStyle.Paragraph).WithPlaceholder("Hidden message").WithMaximumInputLength(250).WithIsRequired(false)));

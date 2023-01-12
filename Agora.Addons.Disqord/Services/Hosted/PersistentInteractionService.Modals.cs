@@ -123,8 +123,12 @@ namespace Agora.Addons.Disqord
                 .Where(component => component is not null)
                 .ToDictionary(key => key.CustomId, value => value.Value);
 
+            _ = decimal.TryParse(rows["price"], out var price);
+
             return new UpdateMarketItemCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])))
             {
+                Title = rows["title"].IsNull() ? null : ProductTitle.Create(rows["title"]),
+                Price = rows["price"].IsNull() ? 0 : price,
                 ImageUrls = rows["image"].IsNull() ? null : new[] { rows["image"] },
                 Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
                 Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),

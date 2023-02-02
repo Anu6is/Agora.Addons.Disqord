@@ -418,7 +418,7 @@ namespace Agora.Addons.Disqord
         private async Task<string> GetCategoryAsync(Listing productListing)
         {
             string categorization = string.Empty;
-            var subcategoryId = productListing.Product.SubCategoryId;
+            var subcategoryId = productListing.Product?.SubCategoryId;
 
             if (subcategoryId != null)
             {

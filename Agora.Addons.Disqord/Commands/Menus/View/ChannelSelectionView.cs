@@ -68,7 +68,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (AllowAutoGeneration)
                     textSelection.Options.Add(new LocalSelectionComponentOption("Auto-Generate showrooms", category.ToString()));
 
-                channels.Take(25).Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
+                channels.Take(25 - (AllowAutoGeneration ? 1 : 0)).Select(channel => new LocalSelectionComponentOption(channel.Name, channel.Id.ToString())).ToList()
                     .ForEach(component => textSelection.Options.Add(component));
 
                 if (textSelection.Options.Count > 0)

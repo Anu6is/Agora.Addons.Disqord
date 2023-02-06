@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord.Menus.View
             if (_currencies.Count == 0)
                 _selection.Options.Add(new LocalSelectionComponentOption("No Currencies Exist", "0"));
 
-            foreach (var currency in _currencies)
+            foreach (var currency in _currencies.Take(25))
                 _selection.Options.Add(new LocalSelectionComponentOption(currency.Code, Guid.NewGuid().ToString()));
         }
 
@@ -164,6 +164,14 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 0)]
         public async ValueTask AddCurrency(ButtonEventArgs e)
         {
+            if (_currencies.Count == 25)
+            {
+                await e.Interaction.Response().SendMessageAsync(
+                    new LocalInteractionMessageResponse()
+                        .AddEmbed(new LocalEmbed().WithDescription("Currency limit reached. Only 25 currencies can be registered!").WithDefaultColor()));
+                return;
+            }
+
             var response = new LocalInteractionModalResponse()
                 .WithCustomId(e.Interaction.Message.Id.ToString())
                 .WithTitle($"Create a Currency")

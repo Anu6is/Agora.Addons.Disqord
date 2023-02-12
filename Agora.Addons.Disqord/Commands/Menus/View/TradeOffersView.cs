@@ -194,7 +194,7 @@ namespace Agora.Addons.Disqord.Commands.View
             var owner = _listing.Owner.ReferenceNumber.Value;
             var trader = _selectedOffer.UserReference.Value;
 
-            var channel = await Menu.Client.CreateTextChannelAsync(_emporiumId, $"negotiate-trade-{_listing.ReferenceCode.Code()}", x => 
+            var channel = await Menu.Client.CreateTextChannelAsync(_emporiumId, $"trade-{_listing.ReferenceCode.Code()}-negotiations", x => 
             {
                 x.CategoryId = categoryId.Value;
                 x.Overwrites = new[]
@@ -211,8 +211,8 @@ namespace Agora.Addons.Disqord.Commands.View
                     .WithContent($"{Mention.User(trader)}, {Mention.User(owner)} would like to open negotiations for {Markdown.Bold(_listing.Product.Title)}")
                     .WithComponents(LocalComponent.Row(
                         LocalComponent.LinkButton(Discord.MessageJumpLink(_emporiumId, _showroomId, _reference), "View Item"),
-                        LocalComponent.Button($"closeNegotiations:{trader}:{owner}:{_showroomId}:{_reference}", "Reject").WithStyle(LocalButtonComponentStyle.Danger),
-                        LocalComponent.Button($"openNegotiations:{trader}:{owner}", "Accept").WithStyle(LocalButtonComponentStyle.Success))));
+                        LocalComponent.Button($"#closeNegotiations:{trader}:{owner}:{_showroomId}:{_reference}", "Reject").WithStyle(LocalButtonComponentStyle.Danger),
+                        LocalComponent.Button($"#openNegotiations:{trader}:{owner}:{_showroomId}:{_reference}", "Accept").WithStyle(LocalButtonComponentStyle.Success))));
 
             await args.Interaction.Response()
                 .SendMessageAsync(new LocalInteractionMessageResponse().WithContent($"Negotiation channel ({channel.Mention}) created").WithIsEphemeral());

@@ -57,6 +57,9 @@ namespace Agora.Addons.Disqord
             if (result is ExceptionResult err &&  err.Exception is ValidationException or UnauthorizedAccessException) 
                 localMessageBase.Components = new List<LocalRowComponent>();
 
+            if (result is ChecksFailedResult || result is ParameterChecksFailedResult)
+                localMessageBase.Components = new List<LocalRowComponent>();
+
             if (!FormatFailureMessage(context, localMessageBase, result)) return;
 
             try
@@ -97,7 +100,7 @@ namespace Agora.Addons.Disqord
                 {
                     ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                     UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
-                    _ => executionFailedResult.Exception.Message
+                    _ => executionFailedResult.Exception.Message.Replace("parameter", "")
                 };
 
             if (result is CommandRateLimitedResult rateLimitedResult)
@@ -136,6 +139,8 @@ namespace Agora.Addons.Disqord
             var module = context.Command.Module as ApplicationModule;
             var parent = module?.Parent as ApplicationModule;
             var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
+
+            if (alias.IndexOf(':') > 0) alias = alias[..alias.IndexOf(":")];
             
             if (result is OverloadsFailedResult overloadsFailedResult)
             {

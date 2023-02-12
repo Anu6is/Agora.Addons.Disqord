@@ -60,9 +60,9 @@ namespace Agora.Addons.Disqord.Events
                 var showroomId = notification.Listing.ShowroomId.Value;
                 var reference = notification.Listing.Product.ReferenceNumber.Value;
                 var linkButton = LocalComponent.LinkButton(link, "View Item");
-                var rejectButton = LocalComponent.Button($"reject:{emporiumId}:{showroomId}:{reference}:{trader}", "Reject Offer").WithStyle(LocalButtonComponentStyle.Danger);
-                var negotiateButton = LocalComponent.Button($"negotiate:{emporiumId}:{showroomId}:{reference}:{trader}", "Negotiate Offer").WithStyle(LocalButtonComponentStyle.Primary);
-                var acceptButton = LocalComponent.Button($"acknowledge:{emporiumId}:{showroomId}:{reference}:{trader}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success);
+                var rejectButton = LocalComponent.Button($"#reject:{emporiumId}:{showroomId}:{reference}:{trader}", "Reject Offer").WithStyle(LocalButtonComponentStyle.Danger);
+                var negotiateButton = LocalComponent.Button($"#negotiate:{emporiumId}:{showroomId}:{reference}:{trader}", "Negotiate Offer").WithStyle(LocalButtonComponentStyle.Primary);
+                var acceptButton = LocalComponent.Button($"#acknowledge:{emporiumId}:{showroomId}:{reference}:{trader}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success);
 
                 var row1 = LocalComponent.Row(linkButton, rejectButton, negotiateButton, acceptButton);
 

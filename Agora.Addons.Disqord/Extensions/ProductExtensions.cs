@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord.Extensions
             else if (listing is StandardTrade trade)
             {
                 if (trade.AllowOffers && listing.Product is TradeItem item) 
-                    firstRowButtons.AddComponent(LocalComponent.Button($"offers", "View Offers")
+                    firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
                                                                .WithStyle(LocalButtonComponentStyle.Primary)
                                                                .WithIsDisabled(!item.Offers.Any()));
 

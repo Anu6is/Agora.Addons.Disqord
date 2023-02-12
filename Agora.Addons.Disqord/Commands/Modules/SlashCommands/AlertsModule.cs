@@ -63,8 +63,8 @@ namespace Agora.Addons.Disqord.Commands
         }
     }
 
-    //[RequireSetup]
-    //[RequireBuyer]
+    [RequireSetup]
+    [RequireBuyer]
     //[SlashGroup("trade")]
     public sealed class TradeOfferAlertModule : AgoraModuleBase
     {

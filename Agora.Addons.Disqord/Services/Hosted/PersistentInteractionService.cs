@@ -87,7 +87,6 @@ namespace Agora.Addons.Disqord
             catch (Exception ex)
             {
                 await SendErrorResponseAsync(args, modalInteraction as IInteraction ?? interaction, scope, ex);
-                throw;
             }
         }
 

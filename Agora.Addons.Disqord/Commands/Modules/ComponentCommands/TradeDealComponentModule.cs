@@ -32,7 +32,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
             _userService = userService;
         }
 
-        [ButtonCommand("offers")]
+        [ButtonCommand("#offers")]
         public async Task<IResult> ViewOffers()
         {
             await Deferral();
@@ -58,7 +58,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
             return View(new TradeOffersView(response.Data.Listing, item.Offers.OrderBy(x => x.SubmittedOn).ToArray()));
         }
 
-        [ButtonCommand("closeNegotiations:*:*:*:*")]
+        [ButtonCommand("#closeNegotiations:*:*:*:*")]
         public async Task RejectNegotiations([RequireInvoker] Snowflake user, Snowflake owner, Snowflake showroomId, Snowflake reference)
         {
             try
@@ -76,7 +76,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
             await Context.Bot.GetChannel(Context.GuildId.Value, Context.ChannelId).DeleteAsync();
         }
 
-        [ButtonCommand("openNegotiations:*:*:*:*")]
+        [ButtonCommand("#openNegotiations:*:*:*:*")]
         public async Task OpenNegotiations([RequireInvoker] Snowflake user, Snowflake owner, Snowflake showroomId, Snowflake reference)
         {
             await Context.Bot.ModifyTextChannelAsync(Context.ChannelId, x =>
@@ -98,13 +98,16 @@ namespace Agora.Addons.Disqord.Commands.Modules
             await Context.Interaction.Followup().DeleteAsync((Context.Interaction as IComponentInteraction).Message.Id);
 
             var message = await Context.Interaction.Followup().FetchResponseAsync();
+            var currentMember = Bot.GetCurrentMember(Context.GuildId.Value);
+            var channel = Bot.GetChannel(Context.GuildId.Value, message.ChannelId);
+            var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
-            await message.PinAsync();
+            if (channelPerms.HasFlag(Permissions.ManageMessages)) await message.PinAsync();
 
             return;
         }
 
-        [ButtonCommand("reject:*:*:*:*")]
+        [ButtonCommand("#reject:*:*:*:*")]
         public async Task RejectOffer(ulong guildId, ulong channelId, ulong messageId, ulong userId)
         {
             var interaction = Context.Interaction as IComponentInteraction;
@@ -151,7 +154,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
 
         }
 
-        [ButtonCommand("negotiate:*:*:*:*")]
+        [ButtonCommand("#negotiate:*:*:*:*")]
         public async Task<IResult> NegotiateOffer([RequireGuildPermissions(Permissions.ManageChannels | Permissions.ManageRoles)] ulong guildId,
                                                   ulong channelId,
                                                   ulong messageId,
@@ -174,7 +177,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
             var listing = response.Data.Listing;
             var owner = Context.AuthorId;
 
-            var channel = await Context.Bot.CreateTextChannelAsync(guildId, $"negotiate-trade-{listing.ReferenceCode.Code()}", x =>
+            var channel = await Context.Bot.CreateTextChannelAsync(guildId, $"trade-{listing.ReferenceCode.Code()}-negotiations", x =>
             {
                 x.CategoryId = categoryId.Value;
                 x.Overwrites = new[]
@@ -191,8 +194,8 @@ namespace Agora.Addons.Disqord.Commands.Modules
                     .WithContent($"{Mention.User(userId)}, {Mention.User(owner)} would like to open negotiations for {Markdown.Bold(listing.Product.Title)}")
                     .WithComponents(LocalComponent.Row(
                         LocalComponent.LinkButton(Discord.MessageJumpLink(guildId, channelId, messageId), "View Item"),
-                        LocalComponent.Button($"closeNegotiations:{userId}:{owner}:{channelId}:{messageId}", "Reject").WithStyle(LocalButtonComponentStyle.Danger),
-                        LocalComponent.Button($"openNegotiations:{userId}:{owner}:{channelId}:{messageId}", "Accept").WithStyle(LocalButtonComponentStyle.Success))));
+                        LocalComponent.Button($"#closeNegotiations:{userId}:{owner}:{channelId}:{messageId}", "Reject").WithStyle(LocalButtonComponentStyle.Danger),
+                        LocalComponent.Button($"#openNegotiations:{userId}:{owner}:{channelId}:{messageId}", "Accept").WithStyle(LocalButtonComponentStyle.Success))));
 
             await Context.Interaction.Followup().ModifyResponseAsync(x =>
             {
@@ -203,7 +206,7 @@ namespace Agora.Addons.Disqord.Commands.Modules
             return Results.Success;
         }
 
-        [ButtonCommand("acknowledge:*:*:*:*")]
+        [ButtonCommand("#acknowledge:*:*:*:*")]
         public async Task<IResult> AcceptOffer(ulong guildId, ulong channelId, ulong messageId, ulong userId)
         {
             await Deferral();

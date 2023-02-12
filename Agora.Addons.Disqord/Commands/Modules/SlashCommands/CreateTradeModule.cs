@@ -167,20 +167,13 @@ namespace Agora.Addons.Disqord.Commands
 
             [AutoComplete("standard")]
             //[AutoComplete("open")]
-            public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
+            public async Task AutoCompleteAuction(AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 
                 if (emporium == null) return;
 
-                if (currency.IsFocused)
-                {
-                    if (currency.RawArgument == string.Empty)
-                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
-                    else
-                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
-                }
-                else if (category.IsFocused)
+                if (category.IsFocused)
                 {
                     if (!emporium.Categories.Any())
                         category.Choices.Add("No configured server categories exist.");

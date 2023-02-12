@@ -181,5 +181,12 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         public override ValueTask LockSelectionAsync() => default;
+
+        protected override string GetCustomId(InteractableViewComponent component)
+        {
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+
+            return base.GetCustomId(component);
+        }
     }
 }

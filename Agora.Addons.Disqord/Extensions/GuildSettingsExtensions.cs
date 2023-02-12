@@ -83,12 +83,14 @@ namespace Agora.Addons.Disqord.Extensions
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
-            //var absenteeBid = settings.AllowAbsenteeBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var confirmation = settings.TransactionConfirmation ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var listingRecall = settings.AllowListingRecall ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var bidAcceptance = settings.AllowAcceptingOffer ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
+            var minDuration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
+            var maxDuration = settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
+            var defaultDuration = settings.MinimumDurationDefault ? $"Minimum: {minDuration}" : $"Maximum: {maxDuration}";
             var missing = settings.FindMissingRequirement();
             var description = missing is null
                 ? Markdown.Italics("Select an option from the drop-down list to modify the selected setting.")
@@ -105,8 +107,9 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
                 .AddInlineBlankField()
-                .AddInlineField("Minimum Duration", settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
-                .AddInlineField("Maximum Duration", settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
+                .AddInlineField("Minimum Duration", minDuration)
+                .AddInlineField("Maximum Duration", maxDuration)
+                .AddInlineField("Default Duration", defaultDuration)
                 .AddField($"{bidAcceptance} Allow Bid Acceptance", settings.AllowAcceptingOffer ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))

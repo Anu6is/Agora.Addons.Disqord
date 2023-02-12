@@ -76,11 +76,12 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Code;
-                duration = duration == default ? Settings.MaximumDuration : duration;
+                duration = duration == default ? defaultDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -141,11 +142,12 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Code;
-                duration = duration == default ? Settings.MaximumDuration : duration;
+                duration = duration == default ? defaultDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
@@ -206,11 +208,12 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Code;
-                duration = duration == default ? Settings.MaximumDuration : duration;
+                duration = duration == default ? defaultDuration : duration;
 
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 

@@ -10,6 +10,7 @@ using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -20,9 +21,15 @@ namespace Agora.Addons.Disqord.Menus.View
         public ListingDurationView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions) : base(context, settingsOptions)
         {
             _context = context;
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                if (button.Position == 2)
+                    button.Label = $"Default to {(_context.Settings.MinimumDurationDefault ? "Max" : "Min")}";
+            }
         }
 
-        [Button(Label = "Set Duration Limits", Style = LocalButtonComponentStyle.Primary, Row = 4)]
+        [Button(Label = "Set Duration Limits", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public async ValueTask SetDuration(ButtonEventArgs e)
         {
             var modalResponse = new LocalInteractionModalResponse().WithCustomId(e.Interaction.Message.Id.ToString())
@@ -75,6 +82,34 @@ namespace Agora.Addons.Disqord.Menus.View
             await e.Interaction.Followup().ModifyResponseAsync(x => x.Embeds = new[] { settings.ToEmbed() });
 
             return;
+        }
+
+        [Button(Label = "Default to", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 4)]
+        public async ValueTask SetDefault(ButtonEventArgs e)
+        {
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
+
+            settings.MinimumDurationDefault = !settings.MinimumDurationDefault;
+
+            using var scope = _context.Services.CreateScope();
+            {
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
+            }
+
+            e.Button.Label = $"Default to {(_context.Settings.MinimumDurationDefault ? "Max" : "Min")}";
+
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Default Duration", new LocalEmoji("⏲️")));
+
+            ReportChanges();
+        }
+
+        protected override string GetCustomId(InteractableViewComponent component)
+        {
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+
+            return base.GetCustomId(component);
         }
     }
 }

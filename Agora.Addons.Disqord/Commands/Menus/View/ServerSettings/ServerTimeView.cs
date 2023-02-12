@@ -91,5 +91,12 @@ namespace Agora.Addons.Disqord.Menus.View
 
         private static string TimeFromOffset(TimeSpan offset, int shift = 0)
             => DateTimeOffset.UtcNow.ToOffset(offset).AddHours(shift).ToString("HH:mm");
+
+        protected override string GetCustomId(InteractableViewComponent component)
+        {
+            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+
+            return base.GetCustomId(component);
+        }
     }
 }

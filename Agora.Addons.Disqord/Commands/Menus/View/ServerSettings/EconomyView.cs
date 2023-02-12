@@ -9,6 +9,7 @@ using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.InteropServices;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -47,11 +48,9 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 if (!economyAccess)
                 {
-                    await RequestAuthorizationAsync(e.Interaction);
-
                     foreach (var option in e.Selection.Options) option.IsDefault = false;
 
-                    ReportChanges();
+                    await RequestAuthorizationAsync(e.Interaction);
 
                     return;
                 }
@@ -167,6 +166,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
         private async ValueTask RequestAuthorizationAsync(IInteraction interaction)
         {
+            var content = "Execute </server settings:1013361602499723275> **AFTER** Authorizing";
             var authUrl = _context.Services.GetRequiredService<IConfiguration>()["Url:UnbelievaBoat"];
             var message = $"{_context.Guild.Client.CurrentUser.Name} needs to be  {Markdown.Link("**Authorized**", authUrl)} with UnbelievaBoat in order to link economies.";
             var embed = new LocalEmbed()
@@ -178,7 +178,8 @@ namespace Agora.Addons.Disqord.Menus.View
                 Color = Color.Teal
             };
 
-            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed).WithIsEphemeral());
+            await (interaction as IComponentInteraction).Message.DeleteAsync();
+            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(content).AddEmbed(embed).WithIsEphemeral());
         }
     }
 }

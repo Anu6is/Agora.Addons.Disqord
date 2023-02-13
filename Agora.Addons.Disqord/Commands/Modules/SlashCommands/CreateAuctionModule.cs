@@ -54,7 +54,7 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("User with the highest bid wins when the auction ends.")]
-            public async Task CreateStandardAuction(
+            public async Task<IResult> CreateStandardAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
@@ -74,6 +74,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, maxBidIncrease == 0);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -117,13 +122,13 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Standard Auction successfully created!");
+                return Response("Standard Auction successfully created!");
             }
 
             [SlashCommand("sealed")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Bids are hidden. Winner pays the second highest bid.")]
-            public async Task CreateVickreyAuction(
+            public async Task<IResult> CreateVickreyAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
@@ -143,6 +148,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, maxBidIncrease == 0);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -186,13 +196,13 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Sealed-bid Auction successfully created!");
+                return Response("Sealed-bid Auction successfully created!");
             }
 
             [SlashCommand("live")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Auction ends if no bids are made during the timeout period.")]
-            public async Task CreateLiveAuction(
+            public async Task<IResult> CreateLiveAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
                 [Description("Max time between bids. Auction ends if no new bids. (example: 5m or 5 minutes)"), RestrictTimeout(5, 86400)] TimeSpan timeout,
@@ -212,6 +222,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, maxBidIncrease == 0);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -254,7 +269,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Live Auction successfully created!");
+                return Response("Live Auction successfully created!");
             }
 
             [AutoComplete("standard")]

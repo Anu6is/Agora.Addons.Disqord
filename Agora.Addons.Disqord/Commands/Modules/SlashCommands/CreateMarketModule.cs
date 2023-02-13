@@ -55,7 +55,7 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("List an item(s) for sale at a fixed price.")]
-            public async Task CreateStandarMarket(
+            public async Task<IResult> CreateStandarMarket(
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
@@ -73,6 +73,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -114,13 +119,13 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Standard Market successfully created!");
+                return Response("Standard Market successfully created!");
             }
 
             [SlashCommand("flash")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("List an item(s) with a timed discount.")]
-            public async Task CreateFlashMarket(
+            public async Task<IResult> CreateFlashMarket(
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("The type of discount to aplly."), Choice("Percent", 1), Choice("Amount", 2)] int discountType,
@@ -139,6 +144,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -180,13 +190,13 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Flash Market successfully created!");
+                return Response("Flash Market successfully created!");
             }
 
             [SlashCommand("bulk")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Users can purchase all or a portion of the listed item stock.")]
-            public async Task CreateBulkMarket(
+            public async Task<IResult> CreateBulkMarket(
                 [Description("Quantity available. Defaults to 1.")] Stock quantity,
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the complete bundle is being sold."), Minimum(0)] double totalPrice,
@@ -205,6 +215,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -246,7 +261,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Bulk Market successfully created!");
+                return Response("Bulk Market successfully created!");
             }
 
             [AutoComplete("standard")]

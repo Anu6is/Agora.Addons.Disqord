@@ -292,7 +292,7 @@ namespace Agora.Addons.Disqord
 
             settings.AuditLogChannelId = 0;
 
-            await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
+            await _settingsService.UpdateGuildSettingsAync(settings);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Commands.Menus.View;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
@@ -122,6 +123,24 @@ namespace Agora.Addons.Disqord.Commands
             SettingsService.Clear(Context.GuildId);
 
             return Response(new LocalInteractionMessageResponse().WithContent("Server reset successful!").WithIsEphemeral(true));
+        }
+
+        [RequireSetup]
+        [SlashGroup("listing")]
+        [Description("Configure rules for listings")]
+        public sealed class ListingCommands : AgoraModuleBase
+        {
+            public enum Listing { Auction = 0, Market = 2, Trade = 3}
+
+            [SlashCommand("requirements")]
+            [Description("Configure which optional listing values are required during creation")]
+            public async Task<IResult> ListingRequirements(Listing @for)
+            {
+                var requirements = await SettingsService.GetListingRequirementsAsync(Context.GuildId, (ListingType)@for);
+                var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
+
+                return View(new ListingRequirementsView((DefaultListingRequirements)requirements, settingsContext));
+            }
         }
 
         [RequireSetup]

@@ -145,7 +145,7 @@ namespace Agora.Addons.Disqord
 
                 settings.ResultLogChannelId = 0;
 
-                await (_settingsService as GuildSettingsCacheService).UpdateGuildSettingsAync(settings);
+                await _settingsService.UpdateGuildSettingsAync(settings);
 
                 throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
             }

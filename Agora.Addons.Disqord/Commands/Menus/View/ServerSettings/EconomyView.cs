@@ -9,7 +9,6 @@ using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.InteropServices;
 
 namespace Agora.Addons.Disqord.Menus.View
 {

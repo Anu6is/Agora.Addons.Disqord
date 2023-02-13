@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             if (e.SelectedEntities.Count == 1)
             {
-                var role = e.SelectedEntities.First();
+                var role = e.SelectedEntities[0];
                 var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
                 switch (_role)

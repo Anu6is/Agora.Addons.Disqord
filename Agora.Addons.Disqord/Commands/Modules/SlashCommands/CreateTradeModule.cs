@@ -54,7 +54,7 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("standard")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Specify what you have to offer and what you want in return")]
-            public async Task CreateStandardTrade(
+            public async Task<IResult> CreateStandardTrade(
                 [Description("Title of the item to be traded."), Maximum(75)] ProductTitle offering,
                 [Description("Title of the item you want in return."), Maximum(75)] string accepting,
                 [Description("Length of time the trade should last. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
@@ -68,6 +68,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -106,13 +111,13 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Standard Trade successfully created!");
+                return Response("Standard Trade successfully created!");
             }
 
             //[SlashCommand("open")]
             [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
             [Description("Specify what you have to offer and allow users to submit a counter offer")]
-            public async Task CreateOpenTrade(
+            public async Task<IResult> CreateOpenTrade(
                 [Description("Title of the item to be traded."), Maximum(75)] ProductTitle offering,
                 [Description("Title of the preferred item you want in return."), Maximum(75)] string accepting = "Best Offer",
                 [Description("Length of time the trade should last. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
@@ -126,6 +131,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -164,7 +174,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response("Open Trade successfully created!");
+                return Response("Open Trade successfully created!");
             }
 
             [AutoComplete("standard")]

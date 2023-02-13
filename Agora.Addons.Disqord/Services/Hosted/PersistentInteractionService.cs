@@ -142,7 +142,7 @@ namespace Agora.Addons.Disqord
                 .WaitForInteractionAsync<IComponentInteraction>(interaction.ChannelId,
                                                                 button => button.CustomId.StartsWith(interaction.Message.Id.ToString()) 
                                                                        && button.AuthorId == interaction.AuthorId,
-                                                                TimeSpan.FromSeconds(3),
+                                                                TimeSpan.FromSeconds(6),
                                                                 Client.StoppingToken);
 
             var confirmed = response != null && response.CustomId.Contains("confirm");

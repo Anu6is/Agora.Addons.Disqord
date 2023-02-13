@@ -74,7 +74,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 await Deferral(isEphemeral: true);
 
-                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
                 if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
@@ -145,7 +145,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 await Deferral(isEphemeral: true);
 
-                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
                 if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
@@ -216,7 +216,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 await Deferral(isEphemeral: true);
 
-                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Auction);
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
                 if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");

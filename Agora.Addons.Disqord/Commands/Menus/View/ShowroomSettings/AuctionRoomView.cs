@@ -109,11 +109,14 @@ namespace Agora.Addons.Disqord.Menus.View
                 var message = ex switch
                 {
                     ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                    ArgumentNullException => ex.Message,
                     FormatException => ex.Message,
                     _ => "An error occured while processing this action. If this persists, please contact support."
                 };
 
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+                if (message.Contains("contact support"))
+                    await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+
                 await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
 
                 return;
@@ -126,14 +129,6 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
 
             return;
-        }
-
-        [Button(Label = "View Settings", Style = LocalButtonComponentStyle.Success, Row = 4)]
-        public ValueTask ViewSettings(ButtonEventArgs e)
-        {
-            Menu.View = new MainSettingsView(Context);
-
-            return default;
         }
 
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)

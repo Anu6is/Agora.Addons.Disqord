@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord
         {
             await CheckPermissionsAsync(EmporiumId.Value,
                                         ShowroomId.Value,
-                                        Permissions.SendMessages | Permissions.SendEmbeds | Permissions.CreatePublicThreads);
+                                        Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
@@ -63,7 +63,11 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                if (channel is ITextChannel textChannel && textChannel.Type == ChannelType.News) await textChannel.CrosspostMessageAsync(response.Id);
+                if (channel is ITextChannel textChannel && textChannel.Type == ChannelType.News)
+                {
+                    await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
+                    await textChannel.CrosspostMessageAsync(response.Id);
+                }
             }
             catch (Exception) { }
 
@@ -174,7 +178,7 @@ namespace Agora.Addons.Disqord
 
             await CheckPermissionsAsync(EmporiumId.Value,
                                         ShowroomId.Value,
-                                        Permissions.SendMessages | Permissions.SendEmbeds | 
+                                        Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ReadMessageHistory |
                                         Permissions.ManageThreads | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
 
             var duration = listing.ScheduledPeriod.Duration switch
@@ -308,11 +312,7 @@ namespace Agora.Addons.Disqord
         private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
         {
             var currentMember = _agora.GetCurrentMember(guildId);
-            var channel = _agora.GetChannel(guildId, channelId);
-
-            if (channel == null)
-                throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
-
+            var channel = _agora.GetChannel(guildId, channelId) ?? throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
             if (!channelPerms.HasFlag(permissions))
@@ -342,7 +342,7 @@ namespace Agora.Addons.Disqord
 
         private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.ManageChannels | Permissions.ManageMessages);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessagesInThreads | Permissions.ManageChannels);
 
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
 
@@ -406,6 +406,7 @@ namespace Agora.Addons.Disqord
         private async ValueTask<ulong> CreateCategoryChannelAsync(Listing productListing)
         {
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels | Permissions.ManageMessages);
+
             var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value,
                                                                productListing.Product.Title.Value,
                                                                x => x.CategoryId = Optional.Create(new Snowflake(ShowroomId.Value)));

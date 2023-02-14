@@ -1,6 +1,5 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Attributes;
-using Agora.Shared.Cache;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -42,7 +41,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostListingSoldAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
@@ -86,7 +85,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostListingExpiredAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;

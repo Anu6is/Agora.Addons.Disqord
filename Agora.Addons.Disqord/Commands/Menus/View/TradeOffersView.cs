@@ -94,10 +94,7 @@ namespace Agora.Addons.Disqord.Commands.View
         }
 
         [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Row = 1)]
-        public async ValueTask CloseView(ButtonEventArgs e)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-        }
+        public ValueTask CloseView(ButtonEventArgs e) => default;
 
         [Selection(MaximumSelectedOptions = 1, Row = 2)]
         public ValueTask SelectOffer(SelectionEventArgs e)

@@ -80,7 +80,7 @@ namespace Agora.Addons.Disqord.Commands.Menus.View
         }
 
         [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary, Position = 4, Row = 4)]
-        public async ValueTask CloseView(ButtonEventArgs e) => await Task.Delay(TimeSpan.FromMilliseconds(500));
+        public ValueTask CloseView(ButtonEventArgs e) => default;
 
         protected override string GetCustomId(InteractableViewComponent component)
         {

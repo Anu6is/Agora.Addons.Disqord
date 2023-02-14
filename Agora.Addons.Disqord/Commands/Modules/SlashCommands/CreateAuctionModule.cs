@@ -22,7 +22,7 @@ namespace Agora.Addons.Disqord.Commands
     [SlashGroup("auction")]
     [RequireShowroom("Auction")]
     [Description("Add an item to be auctioned")]
-    [RequireBotPermissions(Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ManageThreads)]
+    [RequireBotPermissions(Permissions.SendMessages | Permissions.SendEmbeds)]
     public sealed class CreateAuctionModule : AgoraModuleBase
     {
         [SlashGroup("add")]

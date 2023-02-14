@@ -40,6 +40,8 @@ namespace Agora.Addons.Disqord
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new DeleteEmporiumCommand(new EmporiumId(emporium.EmporiumId)));
             }
 
+            _emporiumCache.Clear(e.GuildId);
+
             _logger.LogDebug("Removed data for {guild}", e.Guild.Name);
         }
 

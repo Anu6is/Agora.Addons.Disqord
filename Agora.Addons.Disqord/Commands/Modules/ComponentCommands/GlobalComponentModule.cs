@@ -9,9 +9,10 @@ namespace Agora.Addons.Disqord.Commands
         [ButtonCommand("#Close")]
         public async Task CloseMessage()
         {
-            if (!Context.Interaction.Response().HasResponded) await Deferral();
-
-            await Context.Interaction.Followup().DeleteAsync((Context.Interaction as IComponentInteraction).Message.Id);
+            if (Context.Interaction.Response().HasResponded)
+                await Context.Interaction.Followup().DeleteAsync((Context.Interaction as IComponentInteraction).Message.Id);
+            else
+                await (Context.Interaction as IComponentInteraction).Message.DeleteAsync();
         }                
     }
 }

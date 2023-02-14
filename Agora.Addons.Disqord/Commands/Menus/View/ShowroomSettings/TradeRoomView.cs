@@ -12,7 +12,6 @@ using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System.Globalization;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -129,14 +128,6 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
 
             return;
-        }
-
-        [Button(Label = "View Settings", Style = LocalButtonComponentStyle.Success, Row = 4)]
-        public ValueTask ViewSettings(ButtonEventArgs e)
-        {
-            Menu.View = new MainSettingsView(Context);
-
-            return default;
         }
 
         public async override ValueTask SaveChannelAsync(SelectionEventArgs e)

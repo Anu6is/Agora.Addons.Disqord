@@ -43,7 +43,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingCreatedAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var intermediary = string.Empty;
             var value = productListing.ValueTag.ToString();
@@ -84,7 +84,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingWithdrawnAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -104,7 +104,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
         {
-            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Anonymous 
@@ -137,7 +137,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var user = string.Empty;
             var title = productListing.Product.Title.ToString();
@@ -178,7 +178,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingSoldAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
             var value = productListing.CurrentOffer.Submission.ToString();
@@ -210,7 +210,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingExpiredAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessages | Permissions.SendEmbeds);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;

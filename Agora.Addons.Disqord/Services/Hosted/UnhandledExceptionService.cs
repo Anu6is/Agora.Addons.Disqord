@@ -4,9 +4,12 @@ using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
+using Disqord.Http;
+using Disqord.Rest;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Qmmands;
+using Qommon;
 using Sentry;
 using Sentry.Extensibility;
 
@@ -20,7 +23,7 @@ namespace Agora.Addons.Disqord
         {
             _hub = sentryHub;
 
-            SentrySdk.ConfigureScope(scope => scope.AddEventProcessor(new SentryEventProcessor()));
+            //SentrySdk.ConfigureScope(scope => scope.AddEventProcessor(new SentryEventProcessor()));
         }
 
         public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
@@ -145,6 +148,38 @@ namespace Agora.Addons.Disqord
             });
 
             return default;
+        }
+
+        public static SentryEvent BeforeSend(SentryEvent arg)
+        {
+            const string Acknowledged = "Interaction has already been acknowledged.";
+            const string Responded = "This interaction has already been responded to.";
+            const string Permissions = "The bot lacks the necessary permissions";
+
+            if (arg.Environment == "debug") return null;
+            if (arg.Exception is TimeoutException) return null;
+            if (arg.Exception is ValidationException) return null;
+            if (arg.Exception is UnauthorizedAccessException) return null;
+            if (arg.Exception is InteractionExpiredException) return null;
+            if (arg.Exception is RestApiException ex)
+            {
+                if (ex.StatusCode == HttpResponseStatusCode.Forbidden) return null;
+                if (ex.StatusCode == HttpResponseStatusCode.NotFound) return null;
+
+                if (ex.ErrorModel != null && ex.ErrorModel.Message.TryGetValue(out var message)) 
+                {
+                    if (message.Equals(Acknowledged)) return null;
+                } 
+            }
+            if (arg.Exception is InvalidOperationException op) 
+            {
+                if (op.Message.Equals(Responded)) return null;
+                if (op.Message.Contains(Permissions)) return null;
+            }
+
+            if (arg.Level == SentryLevel.Warning && arg.Logger != null && arg.Logger.Contains("Microsoft.EntityFrameworkCore.")) return null;
+
+            return arg;
         }
 
         private class SentryEventProcessor : ISentryEventProcessor

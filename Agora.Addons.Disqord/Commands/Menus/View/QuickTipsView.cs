@@ -41,7 +41,7 @@ namespace Agora.Addons.Disqord.Commands
         }
 
         [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary)]
-        public async ValueTask CloseView(ButtonEventArgs e) => await Task.Delay(TimeSpan.FromMilliseconds(500));
+        public ValueTask CloseView(ButtonEventArgs e) => default;
 
         protected override string GetCustomId(InteractableViewComponent component)
         {

@@ -12,6 +12,7 @@ using Qmmands;
 using Qommon;
 using Sentry;
 using Sentry.Extensibility;
+using static Disqord.Discord.Limits.Guild;
 
 namespace Agora.Addons.Disqord
 {
@@ -156,83 +157,110 @@ namespace Agora.Addons.Disqord
             const string Responded = "This interaction has already been responded to.";
             const string Permissions = "The bot lacks the necessary permissions";
 
-            if (arg.Environment == "debug") return null;
-            if (arg.Exception is TimeoutException) return null;
-            if (arg.Exception is ValidationException) return null;
-            if (arg.Exception is UnauthorizedAccessException) return null;
-            if (arg.Exception is InteractionExpiredException) return null;
-            if (arg.Exception is RestApiException ex)
-            {
-                if (ex.StatusCode == HttpResponseStatusCode.Forbidden) return null;
-                if (ex.StatusCode == HttpResponseStatusCode.NotFound) return null;
+            const string FormatException = "FormatException";
+            const string TimeoutException = "TimeoutException";
+            const string RestApiException = "RestApiException";
+            const string ChecksFailedResult = "ChecksFailedResult";
+            const string ValidationException = "ValidationException";
+            const string TypeParseFailedResult = "TypeParseFailedResult";
+            const string InvalidOperationException = "InvalidOperationException";
+            const string NoMatchFoundException = "Humanizer.NoMatchFoundException";
+            const string ParameterChecksFailedResult = "ParameterChecksFailedResult";
+            const string UnauthorizedAccessException = "UnauthorizedAccessException";
+            const string DbUpdateConcurrencyException = "DbUpdateConcurrencyException";
+            const string MultipleCollectionWarning = "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning";
+            const string BoolWithDefaultWarning = "Microsoft.EntityFrameworkCore.Model.Validation.BoolWithDefaultWarning";
 
-                if (ex.ErrorModel != null && ex.ErrorModel.Message.TryGetValue(out var message)) 
-                {
-                    if (message.Equals(Acknowledged)) return null;
-                } 
-            }
-            if (arg.Exception is InvalidOperationException op) 
+            if (arg.Environment == "debug") return null;
+            if (arg.Exception is not null)
             {
-                if (op.Message.Equals(Responded)) return null;
-                if (op.Message.Contains(Permissions)) return null;
+                if (arg.Exception is TimeoutException) return null;
+                if (arg.Exception is ValidationException) return null;
+                if (arg.Exception is UnauthorizedAccessException) return null;
+                if (arg.Exception is InteractionExpiredException) return null;
+                if (arg.Exception is Humanizer.NoMatchFoundException) return null;
+                if (arg.Exception is RestApiException ex)
+                {
+                    if (ex.StatusCode == HttpResponseStatusCode.Forbidden) return null;
+                    if (ex.StatusCode == HttpResponseStatusCode.NotFound) return null;
+
+                    if (ex.ErrorModel != null && ex.ErrorModel.Message.TryGetValue(out var message))
+                    {
+                        if (message.Equals(Acknowledged)) return null;
+                    }
+                }
+                if (arg.Exception is InvalidOperationException op)
+                {
+                    if (op.Message.Equals(Responded)) return null;
+                    if (op.Message.Contains(Permissions)) return null;
+                }
+            }
+
+            if (arg.Tags.TryGetValue("eventId", out var id))
+            {
+                if (id == ChecksFailedResult || id == ParameterChecksFailedResult || id == TypeParseFailedResult) return null;
+                if (id == MultipleCollectionWarning || id == BoolWithDefaultWarning) return null;
+                if (id == ValidationException || id == UnauthorizedAccessException) return null;
+                if (id == FormatException || id == NoMatchFoundException) return null;
+                if (id == DbUpdateConcurrencyException) return null;
+                if (id == InvalidOperationException) return null;
+                if (id == TimeoutException) return null;
+                if (id == RestApiException)
+                {
+                    
+                    Console.WriteLine($"{arg.TransactionName} FILTER MESSAGE: {arg.Message?.Message}");
+                }
             }
 
             if (arg.Level == SentryLevel.Warning && arg.Logger != null && arg.Logger.Contains("Microsoft.EntityFrameworkCore.")) return null;
+            if (arg.Level == SentryLevel.Error)
+            {
+                switch (arg.Logger)
+                {
+                    case "Disqord.Bot.DiscordBot": return null;
+                    case "Disqord.Hosting.DiscordClientMasterService": return null;
+                    default: break;
+                }
+            }
 
             return arg;
         }
 
-        private class SentryEventProcessor : ISentryEventProcessor
-        {
-            private const string MultipleCollectionWarning = "Microsoft.EntityFrameworkCore.Query.MultipleCollectionIncludeWarning";
-            private const string BoolWithDefaultWarning = "Microsoft.EntityFrameworkCore.Model.Validation.BoolWithDefaultWarning";
-            private const string ChecksFailedResult = "ChecksFailedResult";
-            private const string ParameterChecksFailedResult = "ParameterChecksFailedResult";
-            private const string TypeParseFailedResult = "TypeParseFailedResult";
-            private const string ValidationException = "ValidationException";
-            private const string UnauthorizedAccessException = "UnauthorizedAccessException";
-            private const string FormatException = "FormatException";
-            private const string NoMatchFoundException = "Humanizer.NoMatchFoundException";
-            private const string WebSocketClosedException = "Disqord.WebSocket.WebSocketClosedException";
-            private const string InvalidOperationException = "System.InvalidOperationException";
+        //private class SentryEventProcessor : ISentryEventProcessor
+        //{
 
-            public SentryEvent Process(SentryEvent @event)
-            {
-                if (@event.Tags.TryGetValue("eventId", out var id))
-                {
-                    if (id == MultipleCollectionWarning) return null;
-                    if (id == BoolWithDefaultWarning) return null;
-                    if (id == ChecksFailedResult || id == ParameterChecksFailedResult || id == TypeParseFailedResult) return null;
-                    if (id == ValidationException || id == UnauthorizedAccessException) return null;
-                    if (id == FormatException) return null;
-                };
 
-                if (@event.SentryExceptions.Any(e => e.Type.Equals(NoMatchFoundException) || e.Type.Equals(WebSocketClosedException))) return null;
+        //    private const string WebSocketClosedException = "Disqord.WebSocket.WebSocketClosedException";
 
-                var invalidOperation = @event.SentryExceptions.FirstOrDefault(e => e.Type.Equals(InvalidOperationException));
+        //    public SentryEvent Process(SentryEvent @event)
+        //    {
 
-                if (invalidOperation != null)
-                {
-                    if (invalidOperation.Value.Contains("DefaultBotCommandsSetup")) return @event;
-                    if (invalidOperation.Value.Contains("The bot lacks the necessary permissions")) return null;
-                    if (invalidOperation.Value.Contains("This interaction has already been responded to")) return null;
-                }
+        //        //if (@event.SentryExceptions.Any(e => e.Type.Equals(NoMatchFoundException) || e.Type.Equals(WebSocketClosedException))) return null;
 
-                if (@event.Level == SentryLevel.Error)
-                {
-                    switch (@event.Logger)
-                    {
-                        case "Disqord.Bot.DiscordBot":
-                            return null;
-                        case "Disqord.Hosting.DiscordClientMasterService":
-                            return null;
-                        default:
-                            break;
-                    }
-                }
+        //        //var invalidOperation = @event.SentryExceptions.FirstOrDefault(e => e.Type.Equals(InvalidOperationException));
 
-                return @event;
-            }
-        }
+        //        //if (invalidOperation != null)
+        //        //{
+        //        //    if (invalidOperation.Value.Contains("DefaultBotCommandsSetup")) return @event;
+        //        //    if (invalidOperation.Value.Contains("The bot lacks the necessary permissions")) return null;
+        //        //    if (invalidOperation.Value.Contains("This interaction has already been responded to")) return null;
+        //        //}
+
+        //        if (@event.Level == SentryLevel.Error)
+        //        {
+        //            switch (@event.Logger)
+        //            {
+        //                case "Disqord.Bot.DiscordBot":
+        //                    return null;
+        //                case "Disqord.Hosting.DiscordClientMasterService":
+        //                    return null;
+        //                default:
+        //                    break;
+        //            }
+        //        }
+
+        //        return @event;
+        //    }
+        //}
     }
 }

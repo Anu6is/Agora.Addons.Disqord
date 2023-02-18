@@ -14,6 +14,7 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
 using Qommon;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -64,7 +65,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("Sell immediately for this price."), Minimum(0)] double buyNowPrice = 0,
                 [Description("Do NOT sell unless bids exceed this price."), Minimum(0)] double reservePrice = 0,
-                [Description("Min amount bids can be increased by. Defaults to 1"), Minimum(0)] double minBidIncrease = 1,
+                [Description("Min amount bids can be increased by. Defaults to 1"), Minimum(0)] double minBidIncrease = 0,
                 [Description("Min amount bids can be increased by."), Minimum(0)] double maxBidIncrease = 0,
                 [Description("Scheduled start of the auction (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
@@ -89,8 +90,9 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
+                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
-
+                
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
@@ -104,7 +106,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = (decimal)minBidIncrease,
+                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease
                 };
 
@@ -163,6 +165,7 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
+                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -178,7 +181,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = (decimal)minBidIncrease,
+                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease
                 };
 
@@ -237,6 +240,7 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
+                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -252,7 +256,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = (decimal)minBidIncrease,
+                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease
                 };
 

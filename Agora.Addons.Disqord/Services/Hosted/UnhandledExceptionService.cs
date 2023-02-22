@@ -11,8 +11,6 @@ using Microsoft.Extensions.Logging;
 using Qmmands;
 using Qommon;
 using Sentry;
-using Sentry.Extensibility;
-using static Disqord.Discord.Limits.Guild;
 
 namespace Agora.Addons.Disqord
 {

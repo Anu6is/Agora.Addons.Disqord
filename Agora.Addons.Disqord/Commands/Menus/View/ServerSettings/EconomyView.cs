@@ -33,6 +33,7 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("Disable", Value = "Disabled", Description = "Users do not require a balance to purchase items.")]
         [SelectionOption("Basic", Value = "AuctionBot", Description = "Users require a server balance to purchase items.")]
         [SelectionOption("UnbelievaBoat", Value = "UnbelievaBoat", Description = "Users require an UnbelievaBoat balance to purchase items.")]
+        [SelectionOption("Raid-Helper", Value = "RaidHelper", Description = "Users require DKP to purchase items.")]
         public async ValueTask ListingsSelection(SelectionEventArgs e)
         {
             var selectedEconomy = e.SelectedOptions[0];
@@ -40,37 +41,43 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var component in EnumerateComponents().OfType<ButtonViewComponent>())
                 if (component.Label.Contains("Default Balance")) RemoveComponent(component);
 
-            if (selectedEconomy.Value == "UnbelievaBoat")
+            switch (selectedEconomy.Value.Value)
             {
-                var ubClient = _context.Services.GetRequiredService<UnbelievaClient>();
-                var economyAccess = await ubClient.HasPermissionAsync(_context.Guild.Id, ApplicationPermission.EditEconomy);
+                case "UnbelievaBoat":
+                    var ubClient = _context.Services.GetRequiredService<UnbelievaClient>();
+                    var economyAccess = await ubClient.HasPermissionAsync(_context.Guild.Id, ApplicationPermission.EditEconomy);
 
-                if (!economyAccess)
-                {
-                    foreach (var option in e.Selection.Options) option.IsDefault = false;
+                    if (!economyAccess)
+                    {
+                        foreach (var option in e.Selection.Options) option.IsDefault = false;
 
-                    await RequestAuthorizationAsync(e.Interaction);
+                        await RequestAuthorizationAsync(e.Interaction);
 
-                    return;
-                }
-            }
-            else if (selectedEconomy.Value == "AuctionBot")
-            {
-                AddComponent(new ButtonViewComponent(ClearDefaultBalance)
-                {
-                    Label = "Remove Default Balance",
-                    Position = 1,
-                    Row = 4,
-                    Style = LocalButtonComponentStyle.Danger,
-                    IsDisabled = _settings.DefaultBalance == 0
-                });
-                AddComponent(new ButtonViewComponent(SetDefaultBalance)
-                {
-                    Label = "Set Default Balance",
-                    Position = 2,
-                    Row = 4,
-                    Style = LocalButtonComponentStyle.Primary
-                });
+                        return;
+                    }
+                    break;
+                case "RaidHelper":
+                    await SetApiKeyAsync(e.Interaction);
+                    break;
+                case "AuctionBot":
+                    AddComponent(new ButtonViewComponent(ClearDefaultBalance)
+                    {
+                        Label = "Remove Default Balance",
+                        Position = 1,
+                        Row = 4,
+                        Style = LocalButtonComponentStyle.Danger,
+                        IsDisabled = _settings.DefaultBalance == 0
+                    });
+                    AddComponent(new ButtonViewComponent(SetDefaultBalance)
+                    {
+                        Label = "Set Default Balance",
+                        Position = 2,
+                        Row = 4,
+                        Style = LocalButtonComponentStyle.Primary
+                    });
+                    break;
+                default:
+                    break;
             }
 
             foreach (var option in e.Selection.Options) option.IsDefault = false;
@@ -179,6 +186,36 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await (interaction as IComponentInteraction).Message.DeleteAsync();
             await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(content).AddEmbed(embed).WithIsEphemeral());
+        }
+
+        private async ValueTask SetApiKeyAsync(IComponentInteraction interaction)
+        {
+            var modalResponse = new LocalInteractionModalResponse().WithCustomId(interaction.Message.Id.ToString())
+                .WithTitle("Set Api Key")
+                .WithComponents(
+                    LocalComponent.Row(
+                        LocalComponent.TextInput("apiKey", "Raid-Helper Api Key", TextInputComponentStyle.Short)
+                        .WithPlaceholder("Enter API key provided by Raid-Helper")));
+
+            await interaction.Response().SendModalAsync(modalResponse);
+
+            var response = await Menu.Interactivity.WaitForInteractionAsync(
+                interaction.ChannelId,
+                x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == modalResponse.CustomId,
+                TimeSpan.FromMinutes(5),
+                Menu.StoppingToken);
+
+            if (response == null) return;
+
+            var modal = response.Interaction as IModalSubmitInteraction;
+            var apiKey = modal.Components.OfType<IRowComponent>().First().Components.OfType<ITextInputComponent>().First().Value;
+
+            _settings.ExternalApiKeys[_context.Guild.Id.ToString()] = apiKey;
+
+            await modal.Response().SendMessageAsync(
+                new LocalInteractionMessageResponse()
+                    .WithContent($"Raid-Helper API key set to {apiKey}")
+                    .WithIsEphemeral());
         }
     }
 }

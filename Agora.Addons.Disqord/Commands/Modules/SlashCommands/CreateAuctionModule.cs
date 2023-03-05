@@ -14,6 +14,7 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
 using Qommon;
+using System.Security.Cryptography.X509Certificates;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Agora.Addons.Disqord.Commands
@@ -317,11 +318,15 @@ namespace Agora.Addons.Disqord.Commands
                         if (currentCategory?.SubCategories.Count > 1)
                         {
                             if (subcategory.RawArgument == string.Empty)
-                                subcategory.Choices.AddRange(currentCategory.SubCategories.Select(x => x.Title.Value).ToArray());
+                                subcategory.Choices.AddRange(
+                                    currentCategory.SubCategories.Where(s => s.Title.Value != currentCategory.Title.Value)
+                                                                 .Select(x => x.Title.Value)
+                                                                 .ToArray());
                             else
-                                subcategory.Choices.AddRange(currentCategory.SubCategories.Where(x => x.Title.Value.Contains(subcategory.RawArgument, StringComparison.OrdinalIgnoreCase))
-                                                                                          .Select(x => x.Title.Value)
-                                                                                          .ToArray());
+                                subcategory.Choices.AddRange(
+                                    currentCategory.SubCategories.Where(x => x.Title.Value != currentCategory.Title.Value && x.Title.Value.Contains(subcategory.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                 .Select(x => x.Title.Value)
+                                                                 .ToArray());
                         }
                         else
                         {

@@ -11,11 +11,13 @@ using Microsoft.Extensions.Logging;
 using Qmmands;
 using Qommon;
 using Sentry;
+using Serilog;
 
 namespace Agora.Addons.Disqord
 {
     public class UnhandledExceptionService : DiscordBotService
     {
+        private static readonly Serilog.ILogger _logger = Log.Logger;
         private readonly IHub _hub;
 
         public UnhandledExceptionService(DiscordBotBase bot, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
@@ -205,8 +207,7 @@ namespace Agora.Addons.Disqord
                 if (id == TimeoutException) return null;
                 if (id == RestApiException)
                 {
-                    
-                    Console.WriteLine($"{arg.TransactionName} FILTER MESSAGE: {arg.Message?.Message}");
+                    _logger.Information($"MISSING FILTER: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
                 }
             }
 
@@ -223,42 +224,5 @@ namespace Agora.Addons.Disqord
 
             return arg;
         }
-
-        //private class SentryEventProcessor : ISentryEventProcessor
-        //{
-
-
-        //    private const string WebSocketClosedException = "Disqord.WebSocket.WebSocketClosedException";
-
-        //    public SentryEvent Process(SentryEvent @event)
-        //    {
-
-        //        //if (@event.SentryExceptions.Any(e => e.Type.Equals(NoMatchFoundException) || e.Type.Equals(WebSocketClosedException))) return null;
-
-        //        //var invalidOperation = @event.SentryExceptions.FirstOrDefault(e => e.Type.Equals(InvalidOperationException));
-
-        //        //if (invalidOperation != null)
-        //        //{
-        //        //    if (invalidOperation.Value.Contains("DefaultBotCommandsSetup")) return @event;
-        //        //    if (invalidOperation.Value.Contains("The bot lacks the necessary permissions")) return null;
-        //        //    if (invalidOperation.Value.Contains("This interaction has already been responded to")) return null;
-        //        //}
-
-        //        if (@event.Level == SentryLevel.Error)
-        //        {
-        //            switch (@event.Logger)
-        //            {
-        //                case "Disqord.Bot.DiscordBot":
-        //                    return null;
-        //                case "Disqord.Hosting.DiscordClientMasterService":
-        //                    return null;
-        //                default:
-        //                    break;
-        //            }
-        //        }
-
-        //        return @event;
-        //    }
-        //}
     }
 }

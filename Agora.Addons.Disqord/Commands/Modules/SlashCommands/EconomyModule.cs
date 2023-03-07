@@ -55,7 +55,7 @@ namespace Agora.Addons.Disqord.Commands
 
 
         [SlashCommand("give")]
-        [Description("Give a portion of your moeny to another member")]
+        [Description("Give a portion of your money to another member")]
         public async Task<IResult> Donate(
             [Description("The amount of money to give"), RequireBalance(), Minimum(0)] double amount,
             [Description("The user to give money to"), RequireRole(AuthorizationRole.Buyer, author: false)] IMember user)

@@ -104,7 +104,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddField("Server Time", $"{serverTime}{Environment.NewLine}{localTime} **[Local]**")
                 .AddField($"{economy} Server Economy", settings.EconomyType)
                 .AddField("Default Currency", $"Symbol: **{settings.DefaultCurrency.Symbol}** | Decimals: **{settings.DefaultCurrency.DecimalDigits}** | Format: **{defaultBalance}**")
-                .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
+                .AddInlineField("Result Logs", settings.ResultLogChannelId == 0 ? Markdown.Italics("Undefined") : settings.InlineResults ? Markdown.Bold("Inline Results") : Mention.Channel(new Snowflake(settings.ResultLogChannelId)))
                 .AddInlineField("Audit Logs", settings.AuditLogChannelId == 0 ? Markdown.Italics("Undefined") : Mention.Channel(new Snowflake(settings.AuditLogChannelId)))
                 .AddInlineBlankField()
                 .AddInlineField("Minimum Duration", minDuration)

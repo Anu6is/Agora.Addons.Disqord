@@ -41,6 +41,11 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostListingSoldAsync(Listing productListing)
         {
+            var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+            if (channel is CachedCategoryChannel or CachedForumChannel)
+                ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
+
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -80,11 +85,18 @@ namespace Agora.Addons.Disqord
                 x.Embeds = new[] { embed.WithFooter("The message attached to this listing failed to be delivered.") };
             });
 
+            if (channel is CachedForumChannel) await LockPostAsync();
+
             return ReferenceNumber.Create(message.Id);
         }
 
         public async ValueTask<ReferenceNumber> PostListingExpiredAsync(Listing productListing)
         {
+            var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+            if (channel is CachedCategoryChannel or CachedForumChannel)
+                ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
+            
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -97,6 +109,8 @@ namespace Agora.Addons.Disqord
                                         .WithColor(Color.SlateGray);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(Mention.User(owner)).AddEmbed(embed));
+
+            if (channel is CachedForumChannel) await LockPostAsync();
 
             return ReferenceNumber.Create(message.Id);
         }
@@ -166,7 +180,7 @@ namespace Agora.Addons.Disqord
 
                     if (settings.AuditLogChannelId != 0)
                         await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId != 0)
+                    else if (settings.ResultLogChannelId > 1)
                         await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
                 }
 
@@ -174,6 +188,17 @@ namespace Agora.Addons.Disqord
             }
 
             return;
+        }
+        
+        private async Task LockPostAsync()
+        {
+            if (_agora.GetChannel(EmporiumId.Value, ShowroomId.Value) is not CachedThreadChannel post) return;
+
+            await post.ModifyAsync(x =>
+            {
+                x.IsArchived = true;
+                x.IsLocked = true;
+            });
         }
     }
 }

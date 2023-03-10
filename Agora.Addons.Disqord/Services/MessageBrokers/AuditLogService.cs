@@ -261,7 +261,7 @@ namespace Agora.Addons.Disqord
 
                     if (settings.AuditLogChannelId != 0)
                         await TrySendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId != 0)
+                    else if (settings.ResultLogChannelId > 1)
                         await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
                 }
 

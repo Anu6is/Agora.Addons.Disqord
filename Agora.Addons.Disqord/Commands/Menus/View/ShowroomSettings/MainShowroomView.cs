@@ -37,7 +37,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var bot = e.Interaction.Client as DiscordBotBase;
             var resultLogId = _context.Settings.ResultLogChannelId;
             var auditLogId = _context.Settings.AuditLogChannelId;
-            var resultLog = resultLogId == 0 ? "Not Configured" : bot.ValidateChannelPermissions(guildId.Value, resultLogId, true);
+            var resultLog = resultLogId == 0 ? "Not Configured" : resultLogId == 1 ? "Inline Results" : bot.ValidateChannelPermissions(guildId.Value, resultLogId, true);
             var auditLog = auditLogId == 0 ? "Not Configured" : bot.ValidateChannelPermissions(guildId.Value, auditLogId, true);
 
             var auction = _showrooms.Where(x => x.ListingType == ListingType.Auction.ToString())?

@@ -221,6 +221,8 @@ namespace Agora.Addons.Disqord
                 if (showroom is CachedCategoryChannel or CachedForumChannel)
                     channelId = productListing.ReferenceCode.Reference();
 
+                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+
                 if (productListing.Status != ListingStatus.Withdrawn && showroom is IForumChannel forum)
                 {
                     if (_interactionAccessor != null && _interactionAccessor.Context != null)
@@ -237,6 +239,8 @@ namespace Agora.Addons.Disqord
 
                     forum = await TagClosedPostAsync(productListing, forum, post);
 
+                    if (settings.InlineResults) return;
+
                     await post.ModifyAsync(x =>
                     {
                         x.IsArchived = true;
@@ -249,7 +253,10 @@ namespace Agora.Addons.Disqord
 
                     if (channel == null) return;
 
-                    await _agora.DeleteChannelAsync(channelId);
+                    if (settings.InlineResults)
+                        await _agora.DeleteMessageAsync(channel.Id, productListing.Product.ReferenceNumber.Value);
+                    else
+                        await _agora.DeleteChannelAsync(channelId);
                 }
             }
             catch (Exception ex)
@@ -330,7 +337,7 @@ namespace Agora.Addons.Disqord
 
                     if (settings.AuditLogChannelId != 0)
                         await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId != 0)
+                    else if (settings.ResultLogChannelId > 1)
                         await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
                 }
 

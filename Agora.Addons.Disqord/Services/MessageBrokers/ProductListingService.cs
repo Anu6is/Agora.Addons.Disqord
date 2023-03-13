@@ -6,6 +6,7 @@ using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Commands;
 using Disqord.Gateway;
+using Disqord.Http;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
@@ -99,6 +100,10 @@ namespace Agora.Addons.Disqord
                     forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
                 return productListing.Product.ReferenceNumber;
+            }
+            catch (RestApiException api) when (api.StatusCode == HttpResponseStatusCode.NotFound) 
+            {
+                //ignore these, the message doesn't exist anymore
             }
             catch (Exception ex)
             {

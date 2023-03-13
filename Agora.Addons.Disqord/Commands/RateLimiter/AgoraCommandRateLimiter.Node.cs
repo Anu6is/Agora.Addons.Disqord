@@ -1,7 +1,7 @@
 ﻿using Qmmands;
 using Qommon;
 using Qommon.Collections;
-using Qommon.Collections.Synchronized;
+using Qommon.Collections.ThreadSafe;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -13,13 +13,13 @@ namespace Agora.Addons.Disqord.Commands
 
             public IReadOnlyList<RateLimitAttribute> RateLimits { get; }
 
-            public ISynchronizedDictionary<object, Bucket> Buckets { get; }
+            public IThreadSafeDictionary<object, Bucket> Buckets { get; }
 
             public Node(AgoraCommandRateLimiter rateLimiter, IEnumerable<RateLimitAttribute> rateLimits)
             {
                 RateLimiter = rateLimiter;
                 RateLimits = rateLimits.GetArray();
-                Buckets = new SynchronizedDictionary<object, Bucket>();
+                Buckets = ThreadSafeDictionary.ConcurrentDictionary.Create<object, Bucket>();
             }
 
             public virtual async ValueTask<IResult> RateLimit(ICommandContext context)
@@ -71,9 +71,8 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (key == null) return null;
 
-                var bucket = Buckets.GetValueOrDefault(key);
-
-                if (bucket != null) return bucket;
+                if (Buckets.TryGetValue(key, out var bucket))
+                    return bucket;
 
                 bucket = await RateLimiter.CreateBucketAsync(context, rateLimit);
 

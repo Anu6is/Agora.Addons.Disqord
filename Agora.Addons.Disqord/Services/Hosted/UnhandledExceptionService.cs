@@ -117,36 +117,44 @@ namespace Agora.Addons.Disqord
                     break;
             }
 
-            _hub.CaptureEvent(new SentryEvent()
+            try
             {
-                Message = new SentryMessage() { Message = exception.ToString() },
-                ServerName = interaction.GuildId.ToString(),
-                Logger = $"{interaction.GuildId}.{interaction.ChannelId}.{interaction.CustomId}",
-            }, scope =>
+                _hub.CaptureEvent(new SentryEvent()
+                {
+                    Message = new SentryMessage() { Message = exception.ToString() },
+                    ServerName = interaction.GuildId.ToString(),
+                    Logger = $"{interaction.GuildId}.{interaction.ChannelId}.{interaction.CustomId}",
+                }, scope =>
+                {
+                    scope.AddBreadcrumb(
+                        message: $"Error occurred while executing {command}",
+                        category: step,
+                        dataPair: ("reason", reason),
+                        type: "user");
+
+                    scope.TransactionName = command;
+                    scope.User = new User() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
+
+                    scope.SetTag("eventId", eventId);
+                    scope.SetTag("GuildId", interaction.GuildId.ToString());
+                    scope.SetTag("ChannelId", interaction.ChannelId.ToString());
+                    scope.SetTag("MessageId", interaction.Message.Id.ToString());
+
+                    var client = interaction.Client as AgoraBot;
+                    var member = interaction.Author as IMember;
+                    var channel = client.GetChannel(interaction.GuildId.Value, interaction.ChannelId);
+
+                    scope.SetExtra("Shard", client.ApiClient.GetShardId(interaction.GuildId));
+                    scope.SetExtra("Arguments", interaction.CustomId);
+                    scope.SetExtra("Guild Permissions", member?.CalculateGuildPermissions().ToString());
+                    scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());
+                });
+            }
+            catch (Exception ex)
             {
-                scope.AddBreadcrumb(
-                    message: $"Error occurred while executing {command}",
-                    category: step,
-                    dataPair: ("reason", reason),
-                    type: "user");
+                _logger.Error("Error capturing event", ex);
+            }
 
-                scope.TransactionName = command;
-                scope.User = new User() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
-
-                scope.SetTag("eventId", eventId);
-                scope.SetTag("GuildId", interaction.GuildId.ToString());
-                scope.SetTag("ChannelId", interaction.ChannelId.ToString());
-                scope.SetTag("MessageId", interaction.Message.Id.ToString());
-
-                var client = interaction.Client as AgoraBot;
-                var member = interaction.Author as IMember;
-                var channel = client.GetChannel(interaction.GuildId.Value, interaction.ChannelId);
-
-                scope.SetExtra("Shard", client.ApiClient.GetShardId(interaction.GuildId));
-                scope.SetExtra("Arguments", interaction.CustomId);
-                scope.SetExtra("Guild Permissions", member?.CalculateGuildPermissions().ToString());
-                scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());
-            });
 
             return default;
         }
@@ -205,10 +213,8 @@ namespace Agora.Addons.Disqord
                 if (id == DbUpdateConcurrencyException) return null;
                 if (id == InvalidOperationException) return null;
                 if (id == TimeoutException) return null;
-                if (id == RestApiException)
-                {
-                    _logger.Information($"MISSING FILTER: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
-                }
+             
+                _logger.Information($"ID {id}: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
             }
 
             if (arg.Level == SentryLevel.Warning && arg.Logger != null && arg.Logger.Contains("Microsoft.EntityFrameworkCore.")) return null;

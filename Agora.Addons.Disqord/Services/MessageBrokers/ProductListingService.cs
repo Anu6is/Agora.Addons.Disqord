@@ -122,23 +122,30 @@ namespace Agora.Addons.Disqord
             var locked = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Locked", StringComparison.OrdinalIgnoreCase))?.Id;
             var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
 
-            if (active != null && !thread.TagIds.Contains(active.Value) && productListing.Status != ListingStatus.Sold)
+            try
             {
-                if (active == null) return forumChannel;
-
-                await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                if (active != null && !thread.TagIds.Contains(active.Value) && productListing.Status != ListingStatus.Sold)
                 {
-                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(active.Value).ToArray();
-                });
+                    if (active == null) return forumChannel;
+
+                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                    {
+                        x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(active.Value).ToArray();
+                    });
+                }
+                else if (productListing.Status == ListingStatus.Sold)
+                {
+                    if (locked == null) return forumChannel;
+
+                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                    {
+                        x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault()).Append(locked.Value).ToArray();
+                    });
+                }
             }
-            else if (productListing.Status == ListingStatus.Sold)
+            catch (Exception)
             {
-                if (locked == null) return forumChannel;
-
-                await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
-                {
-                    x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault()).Append(locked.Value).ToArray();
-                });
+                //failed to update tags on forum post
             }
 
             return forumChannel;

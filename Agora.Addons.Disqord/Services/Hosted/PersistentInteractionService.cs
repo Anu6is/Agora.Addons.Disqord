@@ -4,6 +4,7 @@ using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
 using Disqord.Gateway;
 using Disqord.Rest;
+using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;
@@ -54,7 +55,7 @@ namespace Agora.Addons.Disqord
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator);
+                if (!await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator)) return;
 
                 if (!await ConfirmInteractionAsync(interaction)) return;
 
@@ -90,7 +91,7 @@ namespace Agora.Addons.Disqord
             }
         }
 
-        private static async Task AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
+        private static async Task<bool> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
                                                             IComponentInteraction interaction,
                                                             ulong roomId,
                                                             IServiceScope scope,
@@ -98,16 +99,17 @@ namespace Agora.Addons.Disqord
         {
             var request = AuthorizeInteraction(interaction, roomId);
 
-            if (request == null) return;
+            if (request == null) return true;
 
             try
             {
                 await mediator.Send(request);
+                return true;
             }
             catch (Exception ex)
             {
                 await SendErrorResponseAsync(args, interaction, scope, ex);
-                throw;
+                return false;
             }
         }
 
@@ -183,7 +185,7 @@ namespace Agora.Addons.Disqord
                 TimeoutException => null,
                 ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                 UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
-                { } when ex.Message.Contains("interaction has already been", StringComparison.OrdinalIgnoreCase) => null,
+                { } when ex.Message.IsNotNull() && ex.Message.Contains("interaction has already been", StringComparison.OrdinalIgnoreCase) => null,
                 _ => "An error occured while processing this action. If this persists, please contact support."
             };
             

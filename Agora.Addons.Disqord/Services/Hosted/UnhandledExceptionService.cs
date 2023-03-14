@@ -214,7 +214,7 @@ namespace Agora.Addons.Disqord
                 if (id == InvalidOperationException) return null;
                 if (id == TimeoutException) return null;
              
-                _logger.Information($"ID {id}: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
+                _logger.Information($"REVIEW EVENT ID {id}: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
             }
 
             if (arg.Level == SentryLevel.Warning && arg.Logger != null && arg.Logger.Contains("Microsoft.EntityFrameworkCore.")) return null;

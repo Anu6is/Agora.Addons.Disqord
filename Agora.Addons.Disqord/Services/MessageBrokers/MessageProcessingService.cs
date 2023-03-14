@@ -3,6 +3,7 @@ using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,23 @@ namespace Agora.Addons.Disqord
         public MessageProcessingService(DiscordBotBase bot, ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+        }
+
+        public async Task<bool> TrySendMesssageAsync(ulong guildId, ulong channelId, string message)
+        {
+            try
+            {
+                var channel = _agora.GetChannel(guildId, channelId);
+
+                if (channel is CachedCategoryChannel or CachedForumChannel) return false;
+
+                await SendMesssageAsync(channelId, message);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public async Task<ulong> SendMesssageAsync(ulong channelId, string message, ulong mention = 0)

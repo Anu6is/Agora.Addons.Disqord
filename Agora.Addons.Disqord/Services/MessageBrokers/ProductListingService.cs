@@ -265,7 +265,7 @@ namespace Agora.Addons.Disqord
 
                     if (channel == null) return;
 
-                    if (settings.InlineResults)
+                    if (settings.InlineResults && productListing.Status > ListingStatus.Withdrawn)
                         await _agora.DeleteMessageAsync(channel.Id, productListing.Product.ReferenceNumber.Value);
                     else
                         await _agora.DeleteChannelAsync(channelId);

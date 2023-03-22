@@ -6,6 +6,9 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
+using Emporia.Domain.Common.Enums;
+using Emporia.Extensions.Discord;
+using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +29,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithTitle($"Registered currencies {currencies.Count}")
                     .WithDescription(currencies.Count == 0 
                         ? "No Currencies Exist" 
-                        : $"{string.Join(Environment.NewLine, currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                        : $"{string.Join(Environment.NewLine, currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
                     .WithDefaultColor()))
         {
             _context = context;
@@ -80,7 +83,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithTitle($"Registered currencies {_currencies.Count}")
                     .WithDescription(_currencies.Count == 0
                         ? "No Currencies Exist"
-                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}  | Format: {x}"))}")
                     .WithDefaultColor());
             };
 
@@ -131,7 +134,9 @@ namespace Agora.Addons.Disqord.Menus.View
             {
                 await mediator.Send(new UpdateDecimalsCommand(new EmporiumId(_context.Guild.Id), _code, decimals));
 
-                _currencies.First(x => x.Code == _code).WithDecimals(decimals);
+                var currency = _currencies.First(x => x.Code == _code).WithDecimals(decimals);
+
+                if (_code == _context.Settings.DefaultCurrency.Code) await UpdateDefaultCurrency(currency, e);
             }
             catch (Exception ex) when (ex is ValidationException validationException)
             {
@@ -152,7 +157,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithTitle($"Registered currencies {_currencies.Count}")
                     .WithDescription(_currencies.Count == 0
                         ? "No Currencies Exist"
-                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
                     .WithDefaultColor());
             };
 
@@ -161,7 +166,38 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
-        [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 0)]
+        [Button(Label = "Format", Style = LocalButtonComponentStyle.Primary, Position = 3, Row = 0)]
+        public async ValueTask FormatCurrency(ButtonEventArgs e)
+        {
+            using var scope = _context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+            var currency = _currencies.First(x => x.Code == _code);
+            var format = currency.Format == CurrencyFormat.RightAlign ? CurrencyFormat.LeftAlign : CurrencyFormat.RightAlign;
+
+            await mediator.Send(new UpdateFormatCommand(new EmporiumId(_context.Guild.Id), _code, format));
+
+            if (_code == _context.Settings.DefaultCurrency.Code) await UpdateDefaultCurrency(currency.WithFormat(format), e);
+
+            MessageTemplate = message =>
+            {
+                message.AddEmbed(
+                new LocalEmbed()
+                    .WithTitle($"Registered currencies {_currencies.Count}")
+                    .WithDescription(_currencies.Count == 0
+                        ? "No Currencies Exist"
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
+                    .WithDefaultColor());
+            };
+
+            ReportChanges();
+
+            return;
+        }
+
+        [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 4, Row = 0)]
         public async ValueTask AddCurrency(ButtonEventArgs e)
         {
             if (_currencies.Count == 25)
@@ -254,7 +290,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithTitle($"Registered currencies {_currencies.Count}")
                     .WithDescription(_currencies.Count == 0
                         ? "No Currencies Exist"
-                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}"))}")
+                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
                     .WithDefaultColor());
             };
             
@@ -295,12 +331,37 @@ namespace Agora.Addons.Disqord.Menus.View
         public override ValueTask UpdateAsync()
         {
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
                 if (button.Position == 1)
                     button.IsDisabled = _currencies.Count <= 1 || _code == string.Empty;
-                else if (button.Position == 2)
+                else if (button.Position < 4)
                     button.IsDisabled = _code == string.Empty;
 
+                if (!button.IsDisabled && button.Position == 3)
+                {
+                    var currency = _currencies.First(x => x.Code == _code);
+
+                    if (currency.Format == CurrencyFormat.RightAlign)
+                        button.Label = "Left Align";
+                    else
+                        button.Label = "Right Align";
+                }
+            }
+
             return base.UpdateAsync();
+        }
+
+        private async ValueTask UpdateDefaultCurrency(Currency currency, ButtonEventArgs e)
+        {
+            var settings = (DefaultDiscordGuildSettings)_context.Settings;
+            settings.DefaultCurrency = currency;
+
+            using (var scope = _context.Services.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+                await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
+            }
         }
     }
 }

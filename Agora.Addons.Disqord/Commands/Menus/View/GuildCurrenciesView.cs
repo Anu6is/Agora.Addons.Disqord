@@ -179,7 +179,9 @@ namespace Agora.Addons.Disqord.Menus.View
 
             await mediator.Send(new UpdateFormatCommand(new EmporiumId(_context.Guild.Id), _code, format));
 
-            if (_code == _context.Settings.DefaultCurrency.Code) await UpdateDefaultCurrency(currency.WithFormat(format), e);
+            currency = currency.WithFormat(format);
+
+            if (_code == _context.Settings.DefaultCurrency.Code) await UpdateDefaultCurrency(currency, e);
 
             MessageTemplate = message =>
             {

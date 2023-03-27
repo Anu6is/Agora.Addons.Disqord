@@ -32,7 +32,7 @@ namespace Agora.Addons.Disqord.Checks
             if (context.Bot.GetChannel(context.GuildId, context.ChannelId) is not ICategorizableGuildChannel channel)
                 return Results.Failure($"Command must be executed in a {_roomType} Room:{Environment.NewLine}{string.Join(" | ", showrooms.Select(x => Mention.Channel(x.Id.Value)))}");
 
-            if (showrooms.Any(x => x.Id.Value.Equals(context.ChannelId) 
+            if (showrooms.Any(x => x.Id.Value.Equals(context.ChannelId)
                                 || x.Id.Value.Equals(channel.CategoryId.GetValueOrDefault())
                                 || channel is IThreadChannel threadchannel && x.Id.Value.Equals(threadchannel.ChannelId))) return Results.Success;
 

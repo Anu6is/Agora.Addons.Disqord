@@ -13,7 +13,7 @@ namespace Agora.Addons.Disqord.Menus.View
 {
     public class LeaderboardView : ViewBase
     {
-        private IDiscordGuildSettings _settings;
+        private readonly IDiscordGuildSettings _settings;
         private PagedResponse<LeaderboardResponse> _response;
 
         public LeaderboardView(IDiscordGuildSettings settings, PagedResponse<LeaderboardResponse> response)
@@ -85,7 +85,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithDefaultColor());
         }
 
-        private static string[] Awards = new string[] { "🏆", "🥈", "🥉" };
+        private static readonly string[] Awards = new string[] { "🏆", "🥈", "🥉" };
         private static IEnumerable<LocalEmbedField> PopulateLeaderboard(PagedResponse<LeaderboardResponse> response, Currency currency)
         {
             var fields = new List<LocalEmbedField>();
@@ -120,7 +120,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (button.Label == "Next") button.IsDisabled = _response.PageNumber == _response.TotalPages;
             }
 
-            return base.UpdateAsync();  
+            return base.UpdateAsync();
         }
 
         protected override string GetCustomId(InteractableViewComponent component)

@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord.Commands.View
 
                     if (!string.IsNullOrWhiteSpace(offer.deal.Details)) details = $"Details: {offer.deal.Details}";
 
-                    embed.AddField($"Offer {offer.idx + shift}", 
+                    embed.AddField($"Offer {offer.idx + shift}",
                                    $"{Mention.User(offer.deal.UserReference.Value)} is offering {Markdown.Bold(offer.deal.Submission)}\n\n{details}");
                 }
 
@@ -57,7 +57,7 @@ namespace Agora.Addons.Disqord.Commands.View
         {
             base.FormatLocalMessage(message);
 
-            if (message is LocalInteractionMessageResponse response) 
+            if (message is LocalInteractionMessageResponse response)
                 response.WithIsEphemeral();
         }
 
@@ -146,7 +146,7 @@ namespace Agora.Addons.Disqord.Commands.View
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            
+
             await mediator.Send(new RejectDealCommand(new EmporiumId(_emporiumId), new ShowroomId(_showroomId), ReferenceNumber.Create(_reference), _selectedOffer.User)
             {
                 Reason = reason
@@ -191,7 +191,7 @@ namespace Agora.Addons.Disqord.Commands.View
             var owner = _listing.Owner.ReferenceNumber.Value;
             var trader = _selectedOffer.UserReference.Value;
 
-            var channel = await Menu.Client.CreateTextChannelAsync(_emporiumId, $"trade-{_listing.ReferenceCode.Code()}-negotiations", x => 
+            var channel = await Menu.Client.CreateTextChannelAsync(_emporiumId, $"trade-{_listing.ReferenceCode.Code()}-negotiations", x =>
             {
                 x.CategoryId = categoryId.Value;
                 x.Overwrites = new[]
@@ -280,12 +280,12 @@ namespace Agora.Addons.Disqord.Commands.View
         private void UpdateSelection()
         {
             var selection = EnumerateComponents().OfType<SelectionViewComponent>().First();
-            
+
             selection.Options.Clear();
-            
+
             var shift = CurrentPageIndex * 5;
             var offers = _deals.Chunk(5).ToArray()[CurrentPageIndex];
-            
+
             foreach (var offer in offers.Select((deal, index) => (deal, idx: index + 1)))
             {
                 var user = offer.deal.UserReference.Value;

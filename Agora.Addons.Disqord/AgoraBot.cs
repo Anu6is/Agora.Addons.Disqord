@@ -31,7 +31,7 @@ namespace Agora.Addons.Disqord
         {
             var assemblies = new List<Assembly> { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
             var externalAssemblies = Services.GetRequiredService<IConfiguration>().LoadCommandAssemblies();
-            
+
             assemblies.AddRange(externalAssemblies);
 
             return assemblies;
@@ -50,11 +50,11 @@ namespace Agora.Addons.Disqord
             if (result is CommandNotFoundResult) return;
 
             await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
-            
+
             LocalMessageBase localMessageBase = CreateFailureMessage(context);
 
             if (localMessageBase == null) return;
-            if (result is ExceptionResult err &&  err.Exception is ValidationException or UnauthorizedAccessException) 
+            if (result is ExceptionResult err && err.Exception is ValidationException or UnauthorizedAccessException)
                 localMessageBase.Components = new List<LocalRowComponent>();
 
             if (result is ChecksFailedResult || result is ParameterChecksFailedResult)
@@ -66,13 +66,13 @@ namespace Agora.Addons.Disqord
             {
                 await SendFailureMessageAsync(context, localMessageBase);
             }
-            catch (Exception) 
+            catch (Exception)
             {
                 var failureReason = result.FailureReason;
 
                 if (result is ChecksFailedResult checksFailedResult)
                     failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
-                
+
                 Logger.LogError("Failed to log {type} exception {result} for {command}",
                                 result.GetType(),
                                 failureReason ?? "no reason",
@@ -90,7 +90,7 @@ namespace Agora.Addons.Disqord
                     .WithIsEphemeral();
 
             return new LocalMessage()
-                .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G","Support Server")));
+                .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
         }
 
         protected override string FormatFailureReason(IDiscordCommandContext context, IResult result)
@@ -141,7 +141,7 @@ namespace Agora.Addons.Disqord
             var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
 
             if (alias.IndexOf(':') > 0) alias = alias[..alias.IndexOf(":")];
-            
+
             if (result is OverloadsFailedResult overloadsFailedResult)
             {
                 foreach (var (overload, overloadResult) in overloadsFailedResult.FailedOverloads)

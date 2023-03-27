@@ -32,7 +32,7 @@ namespace Agora.Addons.Disqord.Commands.Menus.View
             Selection = new SelectionViewComponent(RequirementSelection)
             {
                 MinimumSelectedOptions = 0,
-                MaximumSelectedOptions = isAuction ? choices.Count() : choices.Count() -1,
+                MaximumSelectedOptions = isAuction ? choices.Count() : choices.Count() - 1,
                 Placeholder = "Select the options that should be required"
             };
 

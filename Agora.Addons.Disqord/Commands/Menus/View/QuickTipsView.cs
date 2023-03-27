@@ -7,8 +7,8 @@ namespace Agora.Addons.Disqord.Commands
 {
     public class QuickTipsView : PagedViewBase
     {
-        public QuickTipsView(IEnumerable<Fact> tips) 
-            : base(new ListPageProvider(tips.Select(tip => 
+        public QuickTipsView(IEnumerable<Fact> tips)
+            : base(new ListPageProvider(tips.Select(tip =>
             {
                 var embed = new LocalEmbed().WithTitle("💡 Did You Know").WithDescription(tip.Summary);
 

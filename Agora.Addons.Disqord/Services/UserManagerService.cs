@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord
 
             var hasRole = buyerRole == 0ul
                         || buyerRole == GuildId
-                        || member.RoleIds.Contains(buyerRole) 
+                        || member.RoleIds.Contains(buyerRole)
                         || await IsAdministrator(user);
 
             return hasRole && (criteria == null || await criteria(user, command));

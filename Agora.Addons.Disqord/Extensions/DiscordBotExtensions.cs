@@ -33,7 +33,7 @@ namespace Agora.Addons.Disqord.Extensions
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
             var basePerms = Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds;
-            var permissions = isLogChannel 
+            var permissions = isLogChannel
                 ? basePerms
                 : channel switch
                 {

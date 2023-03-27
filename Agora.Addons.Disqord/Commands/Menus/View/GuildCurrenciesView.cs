@@ -27,8 +27,8 @@ namespace Agora.Addons.Disqord.Menus.View
             : base(message => message.AddEmbed(
                 new LocalEmbed()
                     .WithTitle($"Registered currencies {currencies.Count}")
-                    .WithDescription(currencies.Count == 0 
-                        ? "No Currencies Exist" 
+                    .WithDescription(currencies.Count == 0
+                        ? "No Currencies Exist"
                         : $"{string.Join(Environment.NewLine, currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
                     .WithDefaultColor()))
         {
@@ -111,7 +111,7 @@ namespace Agora.Addons.Disqord.Menus.View
             await e.Interaction.Response().SendModalAsync(response);
 
             var reply = await Menu.Interactivity.WaitForInteractionAsync
-                (e.ChannelId, 
+                (e.ChannelId,
                 x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == response.CustomId, TimeSpan.FromMinutes(10));
 
             if (reply == null) return;
@@ -295,7 +295,7 @@ namespace Agora.Addons.Disqord.Menus.View
                         : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
                     .WithDefaultColor());
             };
-            
+
             ReportChanges();
 
             return;

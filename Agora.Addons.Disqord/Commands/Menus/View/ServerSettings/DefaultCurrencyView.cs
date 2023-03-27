@@ -27,13 +27,13 @@ namespace Agora.Addons.Disqord.Menus.View
                 selection.Options.Add(new LocalSelectionComponentOption("Error loading currencies", "0"));
             else if (emporium.Currencies != null)
                 _currencies = emporium.Currencies.ToArray();
-            
+
             foreach (var currency in _currencies)
             {
                 var symbol = currency.Symbol;
 
                 if (symbol.StartsWith("<:") && symbol.IndexOf(":", 2) > 0) symbol = symbol.Split(':')[1];
-                
+
                 var option = new LocalSelectionComponentOption($"Symbol: {symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
                 selection.Options.Add(option);
             }

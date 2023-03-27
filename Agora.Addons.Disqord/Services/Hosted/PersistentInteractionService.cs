@@ -46,11 +46,11 @@ namespace Agora.Addons.Disqord
 
                 using var scope = _scopeFactory.CreateScope();
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
-                
+
                 var roomId = await DetermineShowroomAsync(args);
 
                 if (roomId == 0) return;
-                if (!_modalRedirect.ContainsKey(interaction.CustomId) && !_confirmationRequired.ContainsKey(interaction.CustomId)) 
+                if (!_modalRedirect.ContainsKey(interaction.CustomId) && !_confirmationRequired.ContainsKey(interaction.CustomId))
                     await interaction.Response().DeferAsync();
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -142,7 +142,7 @@ namespace Agora.Addons.Disqord
 
             var response = await Client
                 .WaitForInteractionAsync<IComponentInteraction>(interaction.ChannelId,
-                                                                button => button.CustomId.StartsWith(interaction.Message.Id.ToString()) 
+                                                                button => button.CustomId.StartsWith(interaction.Message.Id.ToString())
                                                                        && button.AuthorId == interaction.AuthorId,
                                                                 TimeSpan.FromSeconds(6),
                                                                 Client.StoppingToken);
@@ -188,14 +188,14 @@ namespace Agora.Addons.Disqord
                 { } when ex.Message.IsNotNull() && ex.Message.Contains("interaction has already been", StringComparison.OrdinalIgnoreCase) => null,
                 _ => "An error occured while processing this action. If this persists, please contact support."
             };
-            
+
             await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
 
             if (message == null) return;
 
             var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
 
-            if (message.EndsWith("contact support.")) 
+            if (message.EndsWith("contact support."))
                 response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
 
             if (interaction.Response().HasResponded)

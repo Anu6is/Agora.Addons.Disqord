@@ -130,7 +130,7 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Configure rules for listings")]
         public sealed class ListingCommands : AgoraModuleBase
         {
-            public enum Listing { Auction = 0, Market = 2, Trade = 3}
+            public enum Listing { Auction = 0, Market = 2, Trade = 3 }
 
             [SlashCommand("requirements")]
             [Description("Configure which optional listing values are required during creation")]

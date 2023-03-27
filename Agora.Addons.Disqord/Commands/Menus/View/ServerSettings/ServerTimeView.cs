@@ -62,7 +62,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     settings.Offset = emporium.TimeOffset;
 
                     await mediator.Send(new UpdateGuildSettingsCommand(settings));
-                    
+
                     _context.Services.GetRequiredService<IEmporiaCacheService>().GetCachedEmporium(_context.Guild.Id).TimeOffset = emporium.TimeOffset;
 
                     MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));

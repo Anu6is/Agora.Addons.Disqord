@@ -11,20 +11,16 @@ using Microsoft.Extensions.Logging;
 using Qmmands;
 using Qommon;
 using Sentry;
-using Serilog;
 
 namespace Agora.Addons.Disqord
 {
     public class UnhandledExceptionService : DiscordBotService
     {
-        private static readonly Serilog.ILogger _logger = Log.Logger;
         private readonly IHub _hub;
 
         public UnhandledExceptionService(DiscordBotBase bot, IHub sentryHub, ILogger<UnhandledExceptionService> logger) : base(logger, bot)
         {
             _hub = sentryHub;
-
-            //SentrySdk.ConfigureScope(scope => scope.AddEventProcessor(new SentryEventProcessor()));
         }
 
         public ValueTask CommandExecutionFailed(IDiscordCommandContext commandContext, IResult result)
@@ -152,7 +148,7 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception ex)
             {
-                _logger.Error("Error capturing event", ex);
+                Logger.LogError(ex, "Error capturing event");
             }
 
 
@@ -167,7 +163,7 @@ namespace Agora.Addons.Disqord
 
             const string FormatException = "FormatException";
             const string TimeoutException = "TimeoutException";
-            const string RestApiException = "RestApiException";
+            //const string RestApiException = "RestApiException";
             const string ChecksFailedResult = "ChecksFailedResult";
             const string ValidationException = "ValidationException";
             const string TypeParseFailedResult = "TypeParseFailedResult";
@@ -213,8 +209,17 @@ namespace Agora.Addons.Disqord
                 if (id == DbUpdateConcurrencyException) return null;
                 if (id == InvalidOperationException) return null;
                 if (id == TimeoutException) return null;
-             
-                _logger.Error($"REVIEW EVENT ID {id}: Transaction: {arg.TransactionName} | Message: {arg.Message?.Message}");
+
+                var data = new Dictionary<string, string>()
+                {
+                    {"transaction", arg.TransactionName },
+                    {"tag_keys", string.Join(",", arg.Tags.Keys) },
+                    {"tag_values", string.Join(",", arg.Tags.Values) },
+                    {"EventId", arg.EventId.ToString() },
+                    {"Exception", arg.Exception?.Message ?? "empty"  }
+                };
+
+                arg.AddBreadcrumb(new Breadcrumb($"Uncaught event -> {id}: {arg.Message?.Message}", "info", data)); ;
             }
 
             if (arg.Level == SentryLevel.Warning && arg.Logger != null && arg.Logger.Contains("Microsoft.EntityFrameworkCore.")) return null;

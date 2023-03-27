@@ -1,22 +1,14 @@
-﻿using Ardalis.Specification;
-using Disqord;
+﻿using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using Emporia.Application.Common;
-using Emporia.Application.Features.Commands;
 using Emporia.Application.Features.Queries;
-using Emporia.Application.Specifications;
-using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord.Features.MessageBroker;
-using Emporia.Extensions.Discord.Specs;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Reflection;
-using System.Threading;
-using System.Timers;
 
 namespace Agora.Addons.Disqord
 {
@@ -55,7 +47,7 @@ namespace Agora.Addons.Disqord
 
             _logger.LogInformation("Initialized...updating status");
 
-            while (!stoppingToken.IsCancellationRequested) 
+            while (!stoppingToken.IsCancellationRequested)
             {
                 foreach (var activity in _activities)
                 {
@@ -96,7 +88,7 @@ namespace Agora.Addons.Disqord
                 {
                     _logger.LogError(ex, "Unable to reset Live Auction {auction} ", auction.Id);
                 }
-            }            
+            }
 
             return;
         }

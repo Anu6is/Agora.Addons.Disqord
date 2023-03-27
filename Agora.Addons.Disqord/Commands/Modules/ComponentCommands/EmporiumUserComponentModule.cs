@@ -20,7 +20,7 @@ namespace Agora.Addons.Disqord.Commands
         [SelectionCommand("rate-owner:*:*:*")]
         public async Task<IResult> RateOwner(Snowflake owner, Snowflake buyer, Snowflake message, string[] selectedValue)
         {
-            if (Context.AuthorId != buyer) 
+            if (Context.AuthorId != buyer)
                 return Response(
                         new LocalInteractionMessageResponse()
                             .WithIsEphemeral()
@@ -36,12 +36,12 @@ namespace Agora.Addons.Disqord.Commands
             var rating = int.Parse(selectedValue[0]);
 
             await Context.Interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents());
-            
+
             await _mediator.Send(new CreateUserReviewCommand(new EmporiumId(Context.GuildId), ReferenceNumber.Create(owner), rating)
             {
                 Comment = Comment.Create(userMessage.Id.ToString())
             });
-            
+
             await userMessage.ModifyAsync(x => x.Embeds = new[] { LocalEmbed.CreateFrom(userMessage.Embeds[0]).WithFooter("✅") });
 
             return Results.Success;

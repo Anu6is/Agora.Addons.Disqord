@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord.Extensions
                 firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
             else if (listing is StandardTrade trade)
             {
-                if (trade.AllowOffers && listing.Product is TradeItem item) 
+                if (trade.AllowOffers && listing.Product is TradeItem item)
                     firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
                                                                .WithStyle(LocalButtonComponentStyle.Primary)
                                                                .WithIsDisabled(!item.Offers.Any()));
@@ -86,7 +86,7 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalRowComponent ParticipantButtons(Listing listing) => listing switch
         {
-            { Product: AuctionItem auctionItem } => auctionItem.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auctionItem.StartingPrice.Currency.Symbol, Pattern) 
+            { Product: AuctionItem auctionItem } => auctionItem.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auctionItem.StartingPrice.Currency.Symbol, Pattern)
                 ? LocalComponent.Row(
                     LocalComponent.Button("undobid", "Undo Bid")
                                   .WithStyle(LocalButtonComponentStyle.Danger)
@@ -187,7 +187,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             0 => "Unlimited",
             >= 10000 => decimal.ToDouble(value).ToMetric(),
-            _ => auction.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auction.StartingPrice.Currency.Symbol, Pattern)  //auction.StartingPrice.Currency.Code == auction.StartingPrice.Currency.Symbol 
+            _ => auction.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auction.StartingPrice.Currency.Symbol, Pattern)
                 ? Money.Create(value, auction.StartingPrice.Currency).ToString().Replace(auction.StartingPrice.Currency.Symbol, "")
                 : Money.Create(value, auction.StartingPrice.Currency).ToString(),
         };
@@ -263,7 +263,7 @@ namespace Agora.Addons.Disqord.Extensions
                 return embed.AddField("Trading For", tradeItem.SuggestedOffer);
 
             embed.AddInlineField("Trading For", tradeItem.SuggestedOffer);
-            
+
             if (tradeItem.Offers.Any())
                 embed.AddInlineField("Submitted Offers", tradeItem.Offers.Count);
             else

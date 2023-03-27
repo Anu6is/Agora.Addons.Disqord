@@ -14,8 +14,6 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
 using Qommon;
-using System.Security.Cryptography.X509Certificates;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -48,7 +46,7 @@ namespace Agora.Addons.Disqord.Commands
                         .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                         .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
                         .OrderBy(x => x.Weekday).ToArray();
-                }                    
+                }
 
                 return base.OnBeforeExecuted();
             }
@@ -93,7 +91,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
-                
+
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);

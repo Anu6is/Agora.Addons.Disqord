@@ -95,13 +95,13 @@ namespace Agora.Addons.Disqord
             {
                 await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
-                if (channel is IForumChannel forumChannel 
+                if (channel is IForumChannel forumChannel
                     && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
                     forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
                 return productListing.Product.ReferenceNumber;
             }
-            catch (RestApiException api) when (api.StatusCode == HttpResponseStatusCode.NotFound) 
+            catch (RestApiException api) when (api.StatusCode == HttpResponseStatusCode.NotFound)
             {
                 //ignore these, the message doesn't exist anymore
             }
@@ -397,7 +397,7 @@ namespace Agora.Addons.Disqord
                 tagAdded = true;
             }
 
-            if (tagAdded) 
+            if (tagAdded)
                 return await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
 
             return forum;
@@ -411,12 +411,12 @@ namespace Agora.Addons.Disqord
             foreach (var name in tagNames)
             {
                 if (tags.Any(x => x.Name.Value.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))) continue;
-                
+
                 tags = tags.Append(new LocalForumTag() { Emoji = new LocalEmoji("📁"), Name = name.Trim() });
                 tagAdded = true;
             }
 
-            if (tagAdded) 
+            if (tagAdded)
                 forum = await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
 
             return forum.Tags.Where(x => tagNames.Any(name => name.Trim().Equals(x.Name))).Select(x => x.Id);

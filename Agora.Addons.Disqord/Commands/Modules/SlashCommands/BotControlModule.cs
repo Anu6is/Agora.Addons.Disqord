@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord.Commands
         public IResult Tips()
         {
             var tips = _configuration.GetSection("Facts").Get<List<Fact>>();
-            
+
             return View(new QuickTipsView(tips.OrderBy(x => _random.Next())));
         }
 
@@ -52,7 +52,7 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("log")]
         [RequireGuild(551567205461131305)]
         [Description("Set the log level")]
-        public async Task ChangeLogLevel([Description("Serilog log level")]LogEventLevel logLevel, bool includeEF = false)
+        public async Task ChangeLogLevel([Description("Serilog log level")] LogEventLevel logLevel, bool includeEF = false)
         {
             _switcher.SetMinimumLevel(logLevel);
 
@@ -145,7 +145,7 @@ namespace Agora.Addons.Disqord.Commands
         [SlashCommand("convert")]
         [RequireGuild(551567205461131305)]
         [Description("Run the conversion process")]
-        public async Task RunConversion([Description("The name of the service to convert to")] string serviceName) 
+        public async Task RunConversion([Description("The name of the service to convert to")] string serviceName)
         {
             RebootInProgress = true;
 
@@ -153,7 +153,7 @@ namespace Agora.Addons.Disqord.Commands
 
             await Deferral();
             await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
-            
+
             var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync(Context);
 
             Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);

@@ -11,7 +11,6 @@ using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Qmmands;
 
 namespace Agora.Addons.Disqord.Menus.View
 {

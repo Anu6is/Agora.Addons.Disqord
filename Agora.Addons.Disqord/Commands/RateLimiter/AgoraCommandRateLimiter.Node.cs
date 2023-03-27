@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord.Commands
                 bucket = await RateLimiter.CreateBucketAsync(context, rateLimit);
 
                 Buckets.TryAdd(key, bucket);
-                
+
                 return bucket;
             }
         }

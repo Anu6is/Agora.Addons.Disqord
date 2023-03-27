@@ -15,7 +15,7 @@ namespace Agora.Addons.Disqord.Commands
     {
         [MessageCommand("Auto-Reschedule")]
         [Description("Automatically re-list the item once it's sold/expired")]
-        public async Task<IResult> EnableAutoSchedule(IUserMessage message) 
+        public async Task<IResult> EnableAutoSchedule(IUserMessage message)
         {
             await Deferral(true);
 
@@ -26,7 +26,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var embed = message.Embeds[0];
 
-            if (embed.Footer.IconUrl != null) 
+            if (embed.Footer.IconUrl != null)
                 return Response(responseEmbed.WithDescription("Item is already scheduled to be relisted"));
 
             await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), embed.Title.Split(':')[0]));

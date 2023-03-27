@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord.Commands
             if (owner.Equals(Context.AuthorId))
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent("You cannot review yourself!"));
-            
+
             if (Context.AuthorId != buyer)
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent($"Only {Mention.User(buyer)} can review this transaction!"));
@@ -76,7 +76,7 @@ namespace Agora.Addons.Disqord.Commands
                                         .WithIsEphemeral();
 
             if (message.Author.Id != Context.Bot.CurrentUser.Id) return Response(invalidMessage);
-            
+
             var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
             var owner = participants.First();
             var buyer = participants.Last();
@@ -94,7 +94,7 @@ namespace Agora.Addons.Disqord.Commands
             await Base.ExecuteAsync(new RemoveCommentCommand(EmporiumId, ReferenceNumber.Create(owner), Comment.Create(message.Id.ToString())));
 
             var embed = LocalEmbed.CreateFrom(message.Embeds[0]).WithFooter("review this transaction | right-click -> apps -> review");
-            
+
             await message.ModifyAsync(x => x.Embeds = new[] { embed });
 
             return Response(new LocalInteractionMessageResponse()
@@ -108,7 +108,7 @@ namespace Agora.Addons.Disqord.Commands
             if (member.IsBot) return Results.Success;
 
             var message = new LocalInteractionMessageResponse().WithIsEphemeral();
-            var profile = (UserProfile) await _profileCache.GetUserProfileAsync(member.GuildId, member.Id);
+            var profile = (UserProfile)await _profileCache.GetUserProfileAsync(member.GuildId, member.Id);
 
             var color = profile.Rating switch
             {

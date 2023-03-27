@@ -138,7 +138,7 @@ namespace Agora.Addons.Disqord
                     break;
                 case WithdrawListingCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null) 
+                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null)
                         return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
                     break;
                 case UndoBidCommand command:
@@ -147,7 +147,7 @@ namespace Agora.Addons.Disqord
                     var listing = command.Showroom.Listings.First();
                     var currentOffer = listing.CurrentOffer;
 
-                    if (currentOffer == null) 
+                    if (currentOffer == null)
                         return "Invalid Operation: No available bids exist.";
 
                     if (settings.BiddingRecallLimit == TimeSpan.Zero)
@@ -164,7 +164,7 @@ namespace Agora.Addons.Disqord
                     break;
                 case IProductListingBinder command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (command.Showroom.Listings.First().CurrentOffer != null) 
+                    if (command.Showroom.Listings.First().CurrentOffer != null)
                         return "Invalid Operation: Updates cannot be made once an offer has been submitted.";
                     break;
                 default:
@@ -185,7 +185,7 @@ namespace Agora.Addons.Disqord
 
                     if (listing == null) return "Invalid Action: Listing is no longer available";
 
-                    if (!settings.AllowShillBidding && currentUser.Equals(listing.Owner)) 
+                    if (!settings.AllowShillBidding && currentUser.Equals(listing.Owner))
                         return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in </server settings:1013361602499723275>.";
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
@@ -234,7 +234,7 @@ namespace Agora.Addons.Disqord
                 case CreateDealCommand command:
                     var trade = command.Showroom.Listings.First();
 
-                    if (currentUser.Equals(trade.Owner)) 
+                    if (currentUser.Equals(trade.Owner))
                         return "Transaction Denied: you cannot trade with yourself.";
 
                     if (trade.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
@@ -251,18 +251,18 @@ namespace Agora.Addons.Disqord
         {
             var isManager = request switch
             {
-                WithdrawListingCommand command => await _userManager.IsAdministrator(currentUser) 
+                WithdrawListingCommand command => await _userManager.IsAdministrator(currentUser)
                                                || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 UndoBidCommand command => await _userManager.IsAdministrator(currentUser)
-                                       || command.Showroom.Listings.FirstOrDefault() is VickreyAuction 
-                                       || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner) 
+                                       || command.Showroom.Listings.FirstOrDefault() is VickreyAuction
+                                       || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner)
                                        || command.Bidder.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId),
-                ScheduleListingCommand command => await _userManager.IsAdministrator(currentUser) 
+                ScheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
                                                || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 UnscheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
                                                || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
-                IProductListingBinder binder => await _userManager.IsBroker(currentUser) 
-                                             || currentUser.Equals(binder.Showroom.Listings.FirstOrDefault()?.Owner), 
+                IProductListingBinder binder => await _userManager.IsBroker(currentUser)
+                                             || currentUser.Equals(binder.Showroom.Listings.FirstOrDefault()?.Owner),
                 _ => false
             };
 

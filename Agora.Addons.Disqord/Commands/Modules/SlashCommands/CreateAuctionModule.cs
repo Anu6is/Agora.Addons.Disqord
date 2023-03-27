@@ -14,8 +14,6 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
 using Qommon;
-using System.Security.Cryptography.X509Certificates;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -48,7 +46,7 @@ namespace Agora.Addons.Disqord.Commands
                         .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                         .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
                         .OrderBy(x => x.Weekday).ToArray();
-                }                    
+                }
 
                 return base.OnBeforeExecuted();
             }
@@ -73,6 +71,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -93,7 +92,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
-                
+
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
@@ -108,7 +107,8 @@ namespace Agora.Addons.Disqord.Commands
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
                     MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
-                    MaxBidIncrease = (decimal)maxBidIncrease
+                    MaxBidIncrease = (decimal)maxBidIncrease,
+                    Reversed = reverseBidding
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
@@ -148,6 +148,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -183,7 +184,8 @@ namespace Agora.Addons.Disqord.Commands
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
                     MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
-                    MaxBidIncrease = (decimal)maxBidIncrease
+                    MaxBidIncrease = (decimal)maxBidIncrease,
+                    Reversed = reverseBidding
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
@@ -223,6 +225,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -258,7 +261,8 @@ namespace Agora.Addons.Disqord.Commands
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
                     MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
-                    MaxBidIncrease = (decimal)maxBidIncrease
+                    MaxBidIncrease = (decimal)maxBidIncrease,
+                    Reversed = reverseBidding
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;

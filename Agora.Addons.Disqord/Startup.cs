@@ -18,7 +18,7 @@ namespace Agora.Addons.Disqord
 #if DEBUG
                    .UseEnvironment("Development")
 #endif
-                   .ConfigureAppConfiguration(builder => builder.AddCommandLine(args).AddJsonFile("./tips.json",optional:true, reloadOnChange:true))
+                   .ConfigureAppConfiguration(builder => builder.AddCommandLine(args).AddJsonFile("./tips.json", optional: true, reloadOnChange: true))
                    .ConfigureLogging((context, builder) => builder.AddSentry(context, UnhandledExceptionService.BeforeSend).ReplaceDefaultLogger().WithSerilog(context))
                    .ConfigureEmporiaServices()
                    .ConfigureDisqordCommands()

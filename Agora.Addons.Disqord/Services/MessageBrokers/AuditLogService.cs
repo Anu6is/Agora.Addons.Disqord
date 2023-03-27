@@ -1,6 +1,5 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Attributes;
-using Agora.Shared.Cache;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -107,8 +106,8 @@ namespace Agora.Addons.Disqord
             await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var title = productListing.Product.Title.ToString();
-            var owner = productListing.Anonymous 
-                      ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||" 
+            var owner = productListing.Anonymous
+                      ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||"
                       : Mention.User(productListing.Owner.ReferenceNumber.Value);
             var submitter = offer.UserReference.Value;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
@@ -161,7 +160,7 @@ namespace Agora.Addons.Disqord
                 new LocalEmbed().WithDescription(description.ToString())
                                 .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                 .WithColor(Color.OrangeRed)
-            }; 
+            };
 
             if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
                 embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Reason:")} {tradeOffer.Details}"));

@@ -2,8 +2,8 @@
 using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Menus.View;
 using Agora.Shared.EconomyFactory;
-using Agora.Shared.Persistence.Models;
 using Agora.Shared.Features.Queries;
+using Agora.Shared.Persistence.Models;
 using Agora.Shared.Persistence.Specifications;
 using Agora.Shared.Persistence.Specifications.Filters;
 using Disqord;

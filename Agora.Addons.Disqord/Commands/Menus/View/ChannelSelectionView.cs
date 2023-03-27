@@ -56,8 +56,8 @@ namespace Agora.Addons.Disqord.Menus.View
                 var category = ulong.Parse(e.SelectedOptions[0].Value.ToString());
                 var channels = Context.Guild.GetChannels().Values
                     .OfType<ICategorizableGuildChannel>()
-                    .Where(x => x.Id != CurrentChannelId && x.CategoryId == category 
-                             && (x.Type == ChannelType.Text 
+                    .Where(x => x.Id != CurrentChannelId && x.CategoryId == category
+                             && (x.Type == ChannelType.Text
                              || (IncludeNewsChannels && x.Type == ChannelType.News)
                              || (IncludeForumChannels && x.Type == ChannelType.Forum)));
 
@@ -125,7 +125,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return default;
         }
 
-        public bool HasRequiredPermissions(out Permissions missingPermissions) 
+        public bool HasRequiredPermissions(out Permissions missingPermissions)
         {
             missingPermissions = default;
 

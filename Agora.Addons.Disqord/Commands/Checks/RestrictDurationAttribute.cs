@@ -17,7 +17,7 @@ namespace Agora.Addons.Disqord.Checks
 
             var minDuration = settings.MinimumDuration.TotalSeconds;
             var maxDuration = settings.MaximumDuration.TotalSeconds;
-            
+
             if (Math.Round(duration.Add(TimeSpan.FromSeconds(1)).TotalSeconds, 0) < minDuration)
                 return Results.Failure($"The provided time is too short. Minimum duration is {TimeSpan.FromSeconds(minDuration).Humanize()}");
 

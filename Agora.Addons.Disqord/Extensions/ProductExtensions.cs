@@ -16,9 +16,11 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
+            var special = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
+
             return new LocalEmbed
             {
-                Title = $"{listing.Type}: {listing.Product.Title.Value}",
+                Title = $"{special}{listing.Type}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
@@ -51,7 +53,7 @@ namespace Agora.Addons.Disqord.Extensions
                 firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
             else if (listing is StandardTrade trade)
             {
-                if (trade.AllowOffers && listing.Product is TradeItem item) 
+                if (trade.AllowOffers && listing.Product is TradeItem item)
                     firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
                                                                .WithStyle(LocalButtonComponentStyle.Primary)
                                                                .WithIsDisabled(!item.Offers.Any()));
@@ -86,7 +88,7 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalRowComponent ParticipantButtons(Listing listing) => listing switch
         {
-            { Product: AuctionItem auctionItem } => auctionItem.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auctionItem.StartingPrice.Currency.Symbol, Pattern) 
+            { Product: AuctionItem auctionItem } => auctionItem.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auctionItem.StartingPrice.Currency.Symbol, Pattern)
                 ? LocalComponent.Row(
                     LocalComponent.Button("undobid", "Undo Bid")
                                   .WithStyle(LocalButtonComponentStyle.Danger)
@@ -180,14 +182,14 @@ namespace Agora.Addons.Disqord.Extensions
                 || (listing.Status == ListingStatus.Listed && listing.ScheduledPeriod.ScheduledStart.ToUniversalTime().Subtract(SystemClock.Now) <= TimeSpan.FromSeconds(5));
         }
 
-        private static string MinIncrement(this AuctionItem auction) => auction.FormatIncrement(auction.BidIncrement.MinValue);
-        private static string MaxIncrement(this AuctionItem auction) => auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault());
+        private static string MinIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MinValue)}";
+        private static string MaxIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault())}";
 
         private static string FormatIncrement(this AuctionItem auction, decimal value) => value switch
         {
             0 => "Unlimited",
             >= 10000 => decimal.ToDouble(value).ToMetric(),
-            _ => auction.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auction.StartingPrice.Currency.Symbol, Pattern)  //auction.StartingPrice.Currency.Code == auction.StartingPrice.Currency.Symbol 
+            _ => auction.StartingPrice.Currency.Symbol.StartsWith("<:") && Regex.IsMatch(auction.StartingPrice.Currency.Symbol, Pattern)
                 ? Money.Create(value, auction.StartingPrice.Currency).ToString().Replace(auction.StartingPrice.Currency.Symbol, "")
                 : Money.Create(value, auction.StartingPrice.Currency).ToString(),
         };
@@ -263,7 +265,7 @@ namespace Agora.Addons.Disqord.Extensions
                 return embed.AddField("Trading For", tradeItem.SuggestedOffer);
 
             embed.AddInlineField("Trading For", tradeItem.SuggestedOffer);
-            
+
             if (tradeItem.Offers.Any())
                 embed.AddInlineField("Submitted Offers", tradeItem.Offers.Count);
             else

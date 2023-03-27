@@ -13,6 +13,6 @@ namespace Agora.Addons.Disqord.Commands
                 await Context.Interaction.Followup().DeleteAsync((Context.Interaction as IComponentInteraction).Message.Id);
             else
                 await (Context.Interaction as IComponentInteraction).Message.DeleteAsync();
-        }                
+        }
     }
 }

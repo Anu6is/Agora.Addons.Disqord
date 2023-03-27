@@ -9,7 +9,7 @@ namespace Agora.Addons.Disqord.Checks
     internal class RestrictTimeoutAttribute : DiscordParameterCheckAttribute
     {
         private readonly double _minDuration;
-        private double _maxDuration;
+        private readonly double _maxDuration;
 
         public RestrictTimeoutAttribute(double minSeconds, double maxSeconds)
         {
@@ -21,9 +21,9 @@ namespace Agora.Addons.Disqord.Checks
         {
             var duration = (TimeSpan)argument;
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId.Value);
-            
+
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
-            
+
             var maximum = Math.Min(_maxDuration, settings.MaximumDuration.TotalSeconds);
 
             if (Math.Round(duration.Add(TimeSpan.FromSeconds(1)).TotalSeconds, 0) < _minDuration)

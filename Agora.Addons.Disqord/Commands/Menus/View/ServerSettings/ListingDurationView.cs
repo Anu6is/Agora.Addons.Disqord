@@ -10,7 +10,6 @@ using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System.Runtime;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -43,7 +42,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var response = await Menu.Interactivity.WaitForInteractionAsync(
                 e.ChannelId,
                 x => x.Interaction is IModalSubmitInteraction modal && modal.CustomId == modalResponse.CustomId,
-                TimeSpan.FromMinutes(10), 
+                TimeSpan.FromMinutes(10),
                 Menu.StoppingToken);
 
             if (response == null) return;
@@ -63,7 +62,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 settings.MinimumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
             }
-            
+
             if (maximum.IsNotNull())
             {
                 var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(maximum);

@@ -107,7 +107,7 @@ namespace Agora.Addons.Disqord.Menus.View
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
             await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
-            
+
             await e.Interaction.Response().SendMessageAsync(
                 new LocalInteractionMessageResponse().WithIsEphemeral()
                     .AddEmbed(new LocalEmbed().WithDescription("Default balance reset to 0").WithDefaultColor()));

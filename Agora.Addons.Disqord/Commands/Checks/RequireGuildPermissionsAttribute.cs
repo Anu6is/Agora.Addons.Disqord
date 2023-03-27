@@ -20,9 +20,9 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var currentPerms = currentMember.CalculateGuildPermissions();
 
             if (currentPerms.HasFlag(_permissions)) return Results.Success;
-            
+
             var guild = currentMember.GetGuild();
-            
+
             return Results.Failure($"The bot lacks permissions ({_permissions & ~currentPerms}) in {guild.Name}");
         }
     }

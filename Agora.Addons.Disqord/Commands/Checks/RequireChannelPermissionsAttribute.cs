@@ -2,7 +2,6 @@
 using Disqord.Bot.Commands;
 using Disqord.Gateway;
 using Qmmands;
-using Qommon;
 using System.Runtime.CompilerServices;
 
 namespace Agora.Addons.Disqord.Commands.Checks
@@ -11,7 +10,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
     {
         public Permissions Permissions { get; }
 
-        public RequireChannelPermissionsAttribute(Permissions permissions) =>  Permissions = permissions;
+        public RequireChannelPermissionsAttribute(Permissions permissions) => Permissions = permissions;
 
         public override bool CanCheck(IParameter parameter, object value) => value is IChannel;
 
@@ -22,11 +21,11 @@ namespace Agora.Addons.Disqord.Commands.Checks
             Permissions permissions;
             Snowflake channelId = (argument as IChannel).Id;
             IGuildChannel channel = discordGuildCommandContext.Bot.GetChannel(discordGuildCommandContext.GuildId, channelId);
-                
+
             if (channel == null) Results.Failure("Unable to locate the specified channel.");
 
             CachedMember currentMember = discordGuildCommandContext.Bot.GetCurrentMember(discordGuildCommandContext.GuildId);
-                
+
             if (currentMember == null) Results.Failure("RequireBotPermissionsAttribute requires the current member cached.");
 
             permissions = currentMember.CalculateChannelPermissions(channel);

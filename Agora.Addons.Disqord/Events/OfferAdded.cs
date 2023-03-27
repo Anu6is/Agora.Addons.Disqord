@@ -19,12 +19,12 @@ namespace Agora.Addons.Disqord.Events
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IUserProfileService _userProfileService;
 
-        public OfferAdded(DiscordBotBase bot, IUserProfileService profileService, IServiceScopeFactory scopeFactory) 
+        public OfferAdded(DiscordBotBase bot, IUserProfileService profileService, IServiceScopeFactory scopeFactory)
         {
             _bot = bot;
             _scopeFactory = scopeFactory;
             _userProfileService = profileService;
-        } 
+        }
 
         public async Task Handle(OfferAddedNotification notification, CancellationToken cancellationToken)
         {
@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Events
             var owner = notification.Listing.Owner;
             var emporiumId = owner.EmporiumId.Value;
             var profile = (UserProfile)await _userProfileService.GetUserProfileAsync(emporiumId, owner.ReferenceNumber.Value);
-            
+
             if (!profile.TradeDealAlerts) return;
 
             var trader = notification.Offer.UserReference.Value;

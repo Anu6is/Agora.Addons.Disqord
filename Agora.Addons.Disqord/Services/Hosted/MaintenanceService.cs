@@ -33,8 +33,8 @@ namespace Agora.Addons.Disqord
 
             using var scope = Bot.Services.CreateScope();
             {
-                var currentUserService = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();  
-                
+                var currentUserService = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+
                 currentUserService.CurrentUser = EmporiumUser.Create(new EmporiumId(e.GuildId), ReferenceNumber.Create(Bot.CurrentUser.Id));
 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new DeleteEmporiumCommand(new EmporiumId(emporium.EmporiumId)));
@@ -75,7 +75,7 @@ namespace Agora.Addons.Disqord
         protected override async ValueTask OnThreadUpdated(ThreadUpdatedEventArgs e)
         {
             var thread = e.NewThread;
-            
+
             if (!thread.Metadata.IsArchived) return;
             if (thread.CreatorId != Bot.CurrentUser.Id) return;
             if (Bot.GetChannel(e.GuildId, thread.ChannelId) is not IForumChannel forum) return;

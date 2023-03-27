@@ -16,7 +16,7 @@ namespace Agora.Addons.Disqord.Checks
 
             var cache = context.Services.GetRequiredService<IEmporiaCacheService>();
             var commandChannel = context.Bot.GetChannel(context.GuildId, context.ChannelId);
-            
+
             if (commandChannel is ITextChannel textChannel)
             {
                 var emporium = await cache.GetEmporiumAsync(context.GuildId);
@@ -29,7 +29,7 @@ namespace Agora.Addons.Disqord.Checks
 
                     await cache.RemoveEmporiumAsync(context.GuildId);
 
-                    return Results.Failure("Unable to complete this action. Please try again."); 
+                    return Results.Failure("Unable to complete this action. Please try again.");
                 }
 
                 if (!emporium.Showrooms.Any(x => x.Id.Value.Equals(textChannel.CategoryId.GetValueOrDefault().RawValue)))
@@ -38,7 +38,7 @@ namespace Agora.Addons.Disqord.Checks
                 var pinnedMessages = await textChannel.FetchPinnedMessagesAsync();
                 var productMessage = pinnedMessages.FirstOrDefault(x =>
                 {
-                    return x.Author.Id.Equals(context.Bot.CurrentUser.Id) 
+                    return x.Author.Id.Equals(context.Bot.CurrentUser.Id)
                         && x.Embeds.FirstOrDefault().Footer.Text.StartsWith("Reference Code:");
                 });
 
@@ -55,7 +55,7 @@ namespace Agora.Addons.Disqord.Checks
                     product = await cache.GetProductAsync(context.GuildId, thread.ChannelId, thread.Id);
             }
 
-            if (product == null) 
+            if (product == null)
                 return Results.Failure("This command can only be used in a thread/channel linked to an item.");
 
             return Results.Success;

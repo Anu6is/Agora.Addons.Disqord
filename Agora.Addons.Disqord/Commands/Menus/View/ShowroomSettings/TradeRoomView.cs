@@ -18,7 +18,7 @@ namespace Agora.Addons.Disqord.Menus.View
     public class TradeRoomView : ChannelSelectionView
     {
         protected override bool IncludeForumChannels => true;
-        protected override bool IncludeNewsChannels => true; 
+        protected override bool IncludeNewsChannels => true;
         protected override bool AllowAutoGeneration => true;
 
         private readonly List<Showroom> _showrooms;
@@ -113,7 +113,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
                     FormatException => ex.Message,
                     _ => "An error occured while processing this action. If this persists, please contact support."
-                };  
+                };
 
                 await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
                 await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());

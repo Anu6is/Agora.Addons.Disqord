@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord
 
             if (channel is CachedCategoryChannel or CachedForumChannel)
                 ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
-            
+
             await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -189,7 +189,7 @@ namespace Agora.Addons.Disqord
 
             return;
         }
-        
+
         private async Task LockPostAsync()
         {
             if (_agora.GetChannel(EmporiumId.Value, ShowroomId.Value) is not CachedThreadChannel post) return;

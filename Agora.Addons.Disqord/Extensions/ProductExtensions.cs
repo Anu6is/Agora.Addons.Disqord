@@ -16,9 +16,11 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
+            var special = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
+
             return new LocalEmbed
             {
-                Title = $"{listing.Type}: {listing.Product.Title.Value}",
+                Title = $"{special}{listing.Type}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
@@ -180,8 +182,8 @@ namespace Agora.Addons.Disqord.Extensions
                 || (listing.Status == ListingStatus.Listed && listing.ScheduledPeriod.ScheduledStart.ToUniversalTime().Subtract(SystemClock.Now) <= TimeSpan.FromSeconds(5));
         }
 
-        private static string MinIncrement(this AuctionItem auction) => auction.FormatIncrement(auction.BidIncrement.MinValue);
-        private static string MaxIncrement(this AuctionItem auction) => auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault());
+        private static string MinIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MinValue)}";
+        private static string MaxIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault())}";
 
         private static string FormatIncrement(this AuctionItem auction, decimal value) => value switch
         {

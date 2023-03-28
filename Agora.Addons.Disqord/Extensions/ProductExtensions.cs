@@ -274,7 +274,7 @@ namespace Agora.Addons.Disqord.Extensions
             return embed.AddInlineBlankField();
         }
 
-        private static DateTimeOffset ExpiresAt(this Listing listing)
+        public static DateTimeOffset ExpiresAt(this Listing listing)
         {
             if (listing.CurrentOffer == null || listing is not LiveAuction live) return listing.ExpirationDate;
 

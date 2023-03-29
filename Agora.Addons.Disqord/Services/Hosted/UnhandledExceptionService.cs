@@ -163,10 +163,12 @@ namespace Agora.Addons.Disqord
 
             const string FormatException = "FormatException";
             const string TimeoutException = "TimeoutException";
-            //const string RestApiException = "RestApiException";
+            const string RestApiException = "RestApiException";
+            const string RateLimitException = "RateLimitException";
             const string ChecksFailedResult = "ChecksFailedResult";
             const string ValidationException = "ValidationException";
             const string TypeParseFailedResult = "TypeParseFailedResult";
+            const string CommandRateLimitedResult = "CommandRateLimitedResult";
             const string InvalidOperationException = "InvalidOperationException";
             const string NoMatchFoundException = "Humanizer.NoMatchFoundException";
             const string ParameterChecksFailedResult = "ParameterChecksFailedResult";
@@ -179,6 +181,7 @@ namespace Agora.Addons.Disqord
             if (arg.Exception is not null)
             {
                 if (arg.Exception is TimeoutException) return null;
+                if (arg.Exception is RateLimitException) return null;
                 if (arg.Exception is ValidationException) return null;
                 if (arg.Exception is UnauthorizedAccessException) return null;
                 if (arg.Exception is InteractionExpiredException) return null;
@@ -208,7 +211,11 @@ namespace Agora.Addons.Disqord
                 if (id == FormatException || id == NoMatchFoundException) return null;
                 if (id == DbUpdateConcurrencyException) return null;
                 if (id == InvalidOperationException) return null;
+                if (id == CommandRateLimitedResult) return null;
+                if (id == RateLimitException) return null;
                 if (id == TimeoutException) return null;
+
+                if (id == RestApiException && arg.Message?.Message.Contains("Missing Access") == true) return null;
 
                 var data = new Dictionary<string, string>()
                 {

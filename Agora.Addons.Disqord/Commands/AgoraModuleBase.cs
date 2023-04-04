@@ -38,6 +38,15 @@ namespace Agora.Addons.Disqord.Commands
         public override async ValueTask OnBeforeExecuted()
         {
             Interlocked.Increment(ref _activeCommands);
+            
+            var contextService = Context.Services.GetService<AgoraContextService>();
+
+            if (contextService?.Context is IAgoraContext ctx && contextService.Context.Interaction.AuthorId == Context.AuthorId)
+            {
+                Logger.LogInformation("Using sudo context");
+
+                Context = ctx.FromContext(Context);
+            }
 
             Data = Context.Services.GetRequiredService<IDataAccessor>();
             Mediator = Context.Services.GetRequiredService<IMediator>();

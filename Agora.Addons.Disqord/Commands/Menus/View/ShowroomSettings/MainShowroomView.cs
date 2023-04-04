@@ -33,19 +33,19 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             await e.Interaction.Response().DeferAsync();
 
-            var guildId = e.Interaction.GuildId;
+            var guildId = _context.Guild.Id;
             var bot = e.Interaction.Client as DiscordBotBase;
             var resultLogId = _context.Settings.ResultLogChannelId;
             var auditLogId = _context.Settings.AuditLogChannelId;
-            var resultLog = resultLogId == 0 ? "Not Configured" : resultLogId == 1 ? "Inline Results" : bot.ValidateChannelPermissions(guildId.Value, resultLogId, true);
-            var auditLog = auditLogId == 0 ? "Not Configured" : bot.ValidateChannelPermissions(guildId.Value, auditLogId, true);
+            var resultLog = resultLogId == 0 ? "Not Configured" : resultLogId == 1 ? "Inline Results" : bot.ValidateChannelPermissions(guildId, resultLogId, true);
+            var auditLog = auditLogId == 0 ? "Not Configured" : bot.ValidateChannelPermissions(guildId, auditLogId, true);
 
             var auction = _showrooms.Where(x => x.ListingType == ListingType.Auction.ToString())?
-                                            .Select(x => bot.ValidateChannelPermissions(guildId.Value, x.Id.Value));
+                                            .Select(x => bot.ValidateChannelPermissions(guildId, x.Id.Value));
             var market = _showrooms.Where(x => x.ListingType == ListingType.Market.ToString())?
-                                            .Select(x => bot.ValidateChannelPermissions(guildId.Value, x.Id.Value));
+                                            .Select(x => bot.ValidateChannelPermissions(guildId, x.Id.Value));
             var trade = _showrooms.Where(x => x.ListingType == ListingType.Trade.ToString())?
-                                            .Select(x => bot.ValidateChannelPermissions(guildId.Value, x.Id.Value));
+                                            .Select(x => bot.ValidateChannelPermissions(guildId, x.Id.Value));
 
             var embed = new LocalEmbed().WithTitle("Permissions Review").WithUrl("https://support.discord.com/hc/en-us/articles/206141927")
                                         .WithDescription("Channel permissions override server permissions. " +

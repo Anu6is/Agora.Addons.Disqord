@@ -32,8 +32,10 @@ namespace Agora.Addons.Disqord.Commands
             private bool _scheduleOverride;
             private (DayOfWeek Weekday, TimeSpan Time)[] _schedule;
 
-            public override ValueTask OnBeforeExecuted()
+            public override async ValueTask OnBeforeExecuted()
             {
+                await base.OnBeforeExecuted();
+
                 var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel;
 
                 _scheduleOverride = channel != null
@@ -48,8 +50,6 @@ namespace Agora.Addons.Disqord.Commands
                         .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
                         .OrderBy(x => x.Weekday).ToArray();
                 }
-
-                return base.OnBeforeExecuted();
             }
 
             [SlashCommand("standard")]

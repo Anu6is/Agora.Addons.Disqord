@@ -22,7 +22,7 @@ namespace Agora.Addons.Disqord.Commands
             if (Channel is IThreadChannel room)
                 reference = room.Id.RawValue;
             else
-                reference = Cache.GetCachedProduct(Guild.Id, Context.ChannelId).ProductId;
+                reference = Cache.GetCachedProduct(EmporiumId.Value, Context.ChannelId).ProductId;
 
             await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(reference), (decimal)amount));
 

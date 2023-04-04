@@ -67,7 +67,7 @@ namespace Agora.Addons.Disqord.Commands
             if (rooms.Length == 1) listing = rooms[0];
             else
             {
-                var product = Cache.GetCachedProduct(Guild.Id, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
+                var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
                 if (product == null) throw new InvalidOperationException("Unable to retrieve product details.");
 
@@ -79,7 +79,7 @@ namespace Agora.Addons.Disqord.Commands
 
         private async Task<IResult> UpdateImagesAsync(string listing, List<string> images)
         {
-            var product = Cache.GetCachedProduct(Guild.Id, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
+            var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
             Product item = listing switch
             {

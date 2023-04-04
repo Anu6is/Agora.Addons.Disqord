@@ -29,7 +29,7 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Setup the bot for use in your server.")]
         public async Task<IResult> ServerSetup(
             [Description("Log all sold/expired items to this channel.")][ChannelTypes(ChannelType.Text)]
-            [RequireChannelPermissions(Permissions.SendMessages | Permissions.SendEmbeds)] IChannel resultLog,
+            [RequireChannelPermissions(Permissions.SendMessages | Permissions.SendEmbeds)] IChannel resultLog = null,
             [Description("Log all item activity to this channel.")][ChannelTypes(ChannelType.Text)]
             [RequireChannelPermissions(Permissions.SendMessages | Permissions.SendEmbeds)] IChannel auditLog = null,
             [Description("Default currency symbol.")] string symbol = "$",
@@ -40,13 +40,15 @@ namespace Agora.Addons.Disqord.Commands
 
             DefaultDiscordGuildSettings settings = null;
 
+            var resultLogId = resultLog == null ? 1 : resultLog.Id;
+
             await Data.BeginTransactionAsync(async () =>
             {
                 var time = serverTime ?? Time.From(DateTimeOffset.UtcNow.TimeOfDay);
                 var emporium = await Base.ExecuteAsync(new CreateEmporiumCommand(EmporiumId) { LocalTime = time });
                 var currency = await Base.ExecuteAsync(new CreateCurrencyCommand(EmporiumId, symbol, decimalPlaces));
 
-                settings = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currency, resultLog.Id)
+                settings = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currency, resultLogId)
                 {
                     AuditLogChannelId = auditLog?.Id ?? 0ul,
                     Economy = EconomyType.Disabled.ToString(),

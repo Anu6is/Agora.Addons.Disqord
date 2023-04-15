@@ -90,7 +90,8 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
+                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
+                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -167,7 +168,8 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
+                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
+                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -244,7 +246,8 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var defaultMin = emporium.Currencies.First(x => x.Matches(currency)).MinAmount;
+                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
+                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -292,6 +295,8 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (currency.IsFocused)
                 {
+                    if (!emporium.Currencies.Any()) return;
+                       
                     if (currency.RawArgument == string.Empty)
                         currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
                     else

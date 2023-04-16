@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord
                 var roomId = await DetermineShowroomAsync(args);
 
                 if (roomId == 0) return;
-                if (!_modalRedirect.ContainsKey(interaction.CustomId) && !_confirmationRequired.ContainsKey(interaction.CustomId))
+                if (!_modalRedirect.ContainsKey(interaction.CustomId) && !_confirmationRequired.ContainsKey(interaction.CustomId.Split(':').First()))
                     await interaction.Response().DeferAsync();
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -115,7 +115,7 @@ namespace Agora.Addons.Disqord
 
         private async Task<bool> ConfirmInteractionAsync(IComponentInteraction interaction)
         {
-            if (!_confirmationRequired.TryGetValue(interaction.CustomId, out var label)) return true;
+            if (!_confirmationRequired.TryGetValue(interaction.CustomId.Split(':').First(), out var label)) return true;
 
             var components = interaction.Message.Components
                 .Select(row =>

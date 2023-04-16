@@ -13,8 +13,10 @@ namespace Agora.Addons.Disqord
             { "withdrawMarket", "Remove Market Listing" },
             { "withdrawTrade", "Remove Trade Listing" },
             { "acceptAuction", "Accept Current Bid" },
+            { "bundle", "Confirm This Purchase" },
+            { "buy1", "Confirm This Purchase" },
+            { "buy", "Confirm This Purchase" },
             { "trade", "Accept Trade Offer" },
-            { "buy", "Confirm This Purchase" }
         };
 
         private readonly Dictionary<string, Func<IComponentInteraction, LocalInteractionModalResponse>> _modalRedirect = new()
@@ -32,6 +34,8 @@ namespace Agora.Addons.Disqord
         private static IBaseRequest AuthorizeInteraction(IComponentInteraction interaction, ulong showroomId) => interaction.CustomId switch
         {
             "buy" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            "buy1" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            { } when interaction.CustomId.StartsWith("bundle") => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "trade" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "barter" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("extend") => new ExtendListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("extend", "")) { AuthorizeOnly = true },
@@ -48,6 +52,8 @@ namespace Agora.Addons.Disqord
         private static IBaseRequest HandleInteraction(IComponentInteraction interaction, ulong showroomId) => interaction.CustomId switch
         {
             "buy" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)),
+            "buy1" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { ItemCount = 1},
+            { } when interaction.CustomId.StartsWith("bundle") => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { ItemCount = int.Parse(interaction.CustomId.Replace("bundle:", "")) },
             "trade" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)),
             "undobid" => new UndoBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)),
             "minbid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), 0) { UseMinimum = true },

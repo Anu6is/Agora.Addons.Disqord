@@ -49,23 +49,34 @@ namespace Agora.Addons.Disqord.Extensions
             var withdraw = LocalComponent.Button($"withdraw{type}", "Withdraw").WithStyle(LocalButtonComponentStyle.Danger);
             var firstRowButtons = LocalComponent.Row(withdraw, edit, extend);
 
-            if (listing is MassMarket)
-                firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
-            else if (listing is StandardTrade trade)
+            switch (listing)
             {
-                if (trade.AllowOffers && listing.Product is TradeItem item)
-                    firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
-                                                               .WithStyle(LocalButtonComponentStyle.Primary)
-                                                               .WithIsDisabled(!item.Offers.Any()));
+                case MassMarket:
+                    firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
+                    break;
+                case MultiItemMarket items:
+                    if (items.CostPerBundle > 0)
+                        firstRowButtons.AddComponent(LocalComponent.Button($"bundle:{items.AmountPerBundle}", "Buy Bundle")
+                                       .WithStyle(LocalButtonComponentStyle.Success)
+                                       .WithIsDisabled(items.AmountPerBundle > items.Product.Quantity.Amount));
+                    break;
+                case StandardTrade trade:
+                    if (trade.AllowOffers && listing.Product is TradeItem item)
+                        firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
+                                                                   .WithStyle(LocalButtonComponentStyle.Primary)
+                                                                   .WithIsDisabled(!item.Offers.Any()));
 
-                firstRowButtons.AddComponent(LocalComponent.Button(trade.AllowOffers ? "barter" : "trade", trade.AllowOffers ? "Submit Offer" : "Claim")
-                                                           .WithStyle(LocalButtonComponentStyle.Success)
-                                                           .WithIsDisabled(!listing.IsActive()));
+                    firstRowButtons.AddComponent(LocalComponent.Button(trade.AllowOffers ? "barter" : "trade", trade.AllowOffers ? "Submit Offer" : "Claim")
+                                                               .WithStyle(LocalButtonComponentStyle.Success)
+                                                               .WithIsDisabled(!listing.IsActive()));
+                    break;
+                default:
+                    break;
             }
 
 
             if (listing.Product is MarketItem)
-                firstRowButtons.AddComponent(LocalComponent.Button("buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
+                firstRowButtons.AddComponent(LocalComponent.Button(listing is MultiItemMarket ? "buy1" : "buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
             else if (listing.Product is AuctionItem)
                 firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
 
@@ -172,6 +183,7 @@ namespace Agora.Addons.Disqord.Extensions
             StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {market.FormatDiscount()}"),
             FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
             MassMarket market => new LocalEmbedAuthor().WithName($"Cost per Item: {market.CostPerItem.Value.ToString($"N{market.CostPerItem.Currency.DecimalDigits}")}"),
+            MultiItemMarket market => new LocalEmbedAuthor().WithName($"Limited to 1 per purchase {(market.AmountPerBundle > 0 ? $"or {market.AmountPerBundle} per bundle" : "")}"),
             _ => null
         };
 
@@ -209,6 +221,8 @@ namespace Agora.Addons.Disqord.Extensions
                         return $"{Markdown.Strikethrough(product.Price)}{Environment.NewLine}{Markdown.Bold(product.CurrentPrice)}";
                 case MassMarket:
                     return product.CurrentPrice.ToString();
+                case MultiItemMarket:
+                    return product.CurrentPrice.ToString();
                 default:
                     return string.Empty;
             }
@@ -217,7 +231,7 @@ namespace Agora.Addons.Disqord.Extensions
         private static string FormatDiscount(this Listing market)
         {
             if (market.Type != ListingType.Market) return string.Empty;
-            if (market is MassMarket) return string.Empty;
+            if (market is MassMarket or MultiItemMarket) return string.Empty;
 
             Discount discount = Discount.None;
             decimal discountValue = 0;
@@ -250,6 +264,9 @@ namespace Agora.Addons.Disqord.Extensions
                 ? Markdown.Italics("Expired")
                 : market.IsActive() ? Markdown.Timestamp(market.DiscountEndDate, Markdown.TimestampFormat.RelativeTime) : Markdown.Bold("||To be announced...||")),
             MassMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
+                ? Markdown.Italics("No Bundles Defined")
+                : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
+            MultiItemMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
                 ? Markdown.Italics("No Bundles Defined")
                 : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
             _ => null

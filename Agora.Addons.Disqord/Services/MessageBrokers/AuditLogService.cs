@@ -184,7 +184,7 @@ namespace Agora.Addons.Disqord
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
             var duration = DateTimeOffset.UtcNow.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
-            var stock = productListing is MassMarket
+            var stock = productListing is MassMarket or MultiItemMarket
                 ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
                 : productListing.Product.Quantity.Amount;
             var quantity = stock == 1 ? string.Empty : $"{stock} ";

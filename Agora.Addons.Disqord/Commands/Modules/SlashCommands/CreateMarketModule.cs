@@ -264,7 +264,78 @@ namespace Agora.Addons.Disqord.Commands
                 return Response("Bulk Market successfully created!");
             }
 
+            [SlashCommand("multi-item")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
+            [Description("List multiple items for sale")]
+            public async Task<IResult> CreateMultiMarket(
+                [Description("Quantity available. Defaults to 1.")] Stock quantity,
+                [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
+                [Description("Price of purchasing a single item from the total stock."), Minimum(0)] double pricePerItem,
+                [Description("Buying this number of items at once, applies a special price."), Minimum(2)] int amountInBundle = 0,
+                [Description("Price applied when purchaing a set number of items at once."), Minimum(0)] double pricePerBundle = 0,
+                [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to hide the item owner.")] bool anonymous = false)
+            {
+                await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+
+                quantity ??= Stock.Create(1);
+                scheduledStart ??= currentDateTime;
+                currency ??= Settings.DefaultCurrency.Code;
+                duration = duration == default ? defaultDuration : duration;
+
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Market);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
+                var item = new MarketItemModel(title, currency, (decimal)pricePerItem, quantity)
+                {
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
+                    Description = description
+                };
+
+                var ownerId = owner?.Id ?? Context.Author.Id;
+                var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                var listing = new MassMarketModel(scheduledStart.Value, scheduledEnd, (decimal)pricePerItem, new UserId(userDetails.UserId))
+                {
+                    AmountPerBundle = amountInBundle,
+                    CostPerBundle = (decimal)pricePerBundle,
+                    HiddenMessage = message,
+                    Anonymous = anonymous
+                };
+
+                await Base.ExecuteAsync(new CreateMultiMarketCommand(showroom, item, listing));
+
+                _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                return Response("Multiple Item Market successfully created!");
+            }
+
             [AutoComplete("standard")]
+            [AutoComplete("multi-item")]
             [AutoComplete("flash")]
             [AutoComplete("bulk")]
             public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)

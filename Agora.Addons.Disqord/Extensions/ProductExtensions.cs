@@ -52,13 +52,15 @@ namespace Agora.Addons.Disqord.Extensions
             switch (listing)
             {
                 case MassMarket:
-                    firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]").WithStyle(LocalButtonComponentStyle.Success));
+                    firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]")
+                                   .WithStyle(LocalButtonComponentStyle.Success)
+                                   .WithIsDisabled(!listing.IsActive()));
                     break;
                 case MultiItemMarket items:
                     if (items.CostPerBundle > 0)
                         firstRowButtons.AddComponent(LocalComponent.Button($"bundle:{items.AmountPerBundle}", "Buy Bundle")
                                        .WithStyle(LocalButtonComponentStyle.Success)
-                                       .WithIsDisabled(items.AmountPerBundle > items.Product.Quantity.Amount));
+                                       .WithIsDisabled(items.AmountPerBundle > items.Product.Quantity.Amount || !listing.IsActive()));
                     break;
                 case StandardTrade trade:
                     if (trade.AllowOffers && listing.Product is TradeItem item)
@@ -76,9 +78,13 @@ namespace Agora.Addons.Disqord.Extensions
 
 
             if (listing.Product is MarketItem)
-                firstRowButtons.AddComponent(LocalComponent.Button(listing is MultiItemMarket ? "buy1" : "buy", "Buy").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!listing.IsActive()));
+                firstRowButtons.AddComponent(LocalComponent.Button(listing is MultiItemMarket ? "buy1" : "buy", "Buy")
+                               .WithStyle(LocalButtonComponentStyle.Success)
+                               .WithIsDisabled(!listing.IsActive()));
             else if (listing.Product is AuctionItem)
-                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer").WithStyle(LocalButtonComponentStyle.Success).WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
+                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer")
+                               .WithStyle(LocalButtonComponentStyle.Success)
+                               .WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
 
             var secondRowButtons = ParticipantButtons(listing);
 

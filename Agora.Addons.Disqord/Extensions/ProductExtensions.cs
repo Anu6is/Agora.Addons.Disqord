@@ -142,7 +142,7 @@ namespace Agora.Addons.Disqord.Extensions
             AuctionItem auction => embed.AddInlineField("Quantity", auction.Quantity.Amount.ToString())
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
                                         .AddInlineField("Current Bid", listing is VickreyAuction || auction.Offers.Count == 0
-                                                                     ? listing.ValueTag.ToString()
+                                                                     ? "No Bids"
                                                                      : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))

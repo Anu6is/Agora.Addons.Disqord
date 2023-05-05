@@ -49,6 +49,18 @@ namespace Agora.Addons.Disqord.Checks
             }
             else if (commandChannel is IThreadChannel thread)
             {
+                var perms = Permissions.ViewChannels
+                    | Permissions.SendMessages
+                    | Permissions.SendEmbeds
+                    | Permissions.ManageChannels
+                    | Permissions.SendMessagesInThreads
+                    | Permissions.ReadMessageHistory;
+                var member = context.Bot.GetCurrentMember(context.GuildId);
+                var channelPerms = member.CalculateChannelPermissions(thread.GetChannel());
+
+                if (!channelPerms.HasFlag(perms))
+                    return Results.Failure($"The bot lacks the necessary permissions ({perms & ~channelPerms}) to complete this command.");
+
                 if (thread.GetChannel() is IForumChannel)
                     product = await cache.GetProductAsync(context.GuildId, thread.Id, thread.Id);
                 else

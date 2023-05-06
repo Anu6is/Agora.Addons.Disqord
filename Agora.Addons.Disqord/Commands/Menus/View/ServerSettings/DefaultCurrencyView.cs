@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 if (symbol.StartsWith("<:") && symbol.IndexOf(":", 2) > 0) symbol = symbol.Split(':')[1];
 
-                var option = new LocalSelectionComponentOption(currency.ToString(), currency.Code);
+                var option = new LocalSelectionComponentOption(symbol, currency.Code);
                 selection.Options.Add(option);
             }
         }

@@ -43,7 +43,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 _selection.Options.Add(new LocalSelectionComponentOption(currency.Code, Guid.NewGuid().ToString()));
         }
 
-        [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger, Position = 1, Row = 0)]
+        [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger, Position = 0, Row = 0)]
         public async ValueTask RemoveCurrency(ButtonEventArgs e)
         {
             if (_code == _context.Settings.DefaultCurrency.Code)
@@ -92,7 +92,7 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
         }
 
-        [Button(Label = "Update", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 0)]
+        [Button(Label = "Update", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 0)]
         public async ValueTask EditCurrency(ButtonEventArgs e)
         {
             var response = new LocalInteractionModalResponse()
@@ -166,7 +166,7 @@ namespace Agora.Addons.Disqord.Menus.View
             return;
         }
 
-        [Button(Label = "Format", Style = LocalButtonComponentStyle.Primary, Position = 3, Row = 0)]
+        [Button(Label = "Format", Style = LocalButtonComponentStyle.Primary, Position = 2, Row = 0)]
         public async ValueTask FormatCurrency(ButtonEventArgs e)
         {
             using var scope = _context.Services.CreateScope();
@@ -198,6 +198,25 @@ namespace Agora.Addons.Disqord.Menus.View
 
             return;
         }
+
+        [Button(Label = "Set Default", Style = LocalButtonComponentStyle.Primary, Position = 3, Row = 0)]
+        public async ValueTask SetAsDefault(ButtonEventArgs e)
+        {
+            if (_code == _context.Settings.DefaultCurrency.Code)
+            {
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Currency is already the Default").WithIsEphemeral());
+                return;
+            }
+
+            var currency = _currencies.First(x => x.Code == _code);
+
+            await UpdateDefaultCurrency(currency, e);
+
+            await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent($"Default currency set to {currency.Symbol}").WithIsEphemeral());
+
+            return;
+        } 
+
 
         [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 4, Row = 0)]
         public async ValueTask AddCurrency(ButtonEventArgs e)
@@ -334,12 +353,12 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
-                if (button.Position == 1)
-                    button.IsDisabled = _currencies.Count <= 1 || _code == string.Empty;
+                if (button.Position == 0)
+                    button.IsDisabled = _code == _context.Settings.DefaultCurrency.Code || _code == string.Empty;
                 else if (button.Position < 4)
                     button.IsDisabled = _code == string.Empty;
 
-                if (!button.IsDisabled && button.Position == 3)
+                if (!button.IsDisabled && button.Position == 2)
                 {
                     var currency = _currencies.First(x => x.Code == _code);
 
@@ -348,6 +367,8 @@ namespace Agora.Addons.Disqord.Menus.View
                     else
                         button.Label = "Right Align";
                 }
+
+                if (button.Position == 3 && _code == _context.Settings.DefaultCurrency.Code) button.IsDisabled = true;
             }
 
             return base.UpdateAsync();

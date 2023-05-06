@@ -26,7 +26,7 @@ namespace Agora.Addons.Disqord.Menus.View
             if (emporium == null)
                 selection.Options.Add(new LocalSelectionComponentOption("Error loading currencies", "0"));
             else if (emporium.Currencies != null)
-                _currencies = emporium.Currencies.ToArray();
+                _currencies = emporium.Currencies.Distinct(new CurrencyEqualityComparer()).ToArray();
 
             foreach (var currency in _currencies)
             {
@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 if (symbol.StartsWith("<:") && symbol.IndexOf(":", 2) > 0) symbol = symbol.Split(':')[1];
 
-                var option = new LocalSelectionComponentOption($"Symbol: {symbol} | Decimals: {currency.DecimalDigits} | Format: {currency}", currency.Code);
+                var option = new LocalSelectionComponentOption(currency.ToString(), currency.Code);
                 selection.Options.Add(option);
             }
         }

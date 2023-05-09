@@ -16,11 +16,12 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
-            var special = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
+            var prefix = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
+            var suffix = listing is CommissionTrade ? " Request" : string.Empty;
 
             return new LocalEmbed
             {
-                Title = $"{special}{listing.Type}: {listing.Product.Title.Value}",
+                Title = $"{prefix}{listing.Type}{suffix}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
@@ -51,6 +52,11 @@ namespace Agora.Addons.Disqord.Extensions
 
             switch (listing)
             {
+                case CommissionTrade:
+                    firstRowButtons.AddComponent(LocalComponent.Button("sell", "Claim")
+                                   .WithStyle(LocalButtonComponentStyle.Success)
+                                   .WithIsDisabled(!listing.IsActive()));
+                    break;
                 case MassMarket:
                     firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]")
                                    .WithStyle(LocalButtonComponentStyle.Success)
@@ -134,6 +140,7 @@ namespace Agora.Addons.Disqord.Extensions
             StandardTrade trade => trade.AllowOffers
                                 ? null // TODO add buttons for bartering 
                                 : null,
+            CommissionTrade => null,
             _ => LocalComponent.Row(LocalComponent.Button("undo", "Undo Offer").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null))
         };
 
@@ -163,7 +170,7 @@ namespace Agora.Addons.Disqord.Extensions
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
                                         .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
-                                        .AddField("Item Owner", listing.Anonymous
+                                        .AddField(listing is CommissionTrade ? "Requester" : "Item Owner", listing.Anonymous
                                                                 ? Markdown.BoldItalics("Anonymous")
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
@@ -218,19 +225,16 @@ namespace Agora.Addons.Disqord.Extensions
 
             switch (listing)
             {
-                case StandardMarket:
-                    return product.Price.ToString();
                 case FlashMarket market:
                     if (market.DiscountEndDate.ToUniversalTime() < SystemClock.Now)
                         return product.CurrentPrice.ToString();
                     else
                         return $"{Markdown.Strikethrough(product.Price)}{Environment.NewLine}{Markdown.Bold(product.CurrentPrice)}";
                 case MassMarket:
-                    return product.CurrentPrice.ToString();
                 case MultiItemMarket:
                     return product.CurrentPrice.ToString();
                 default:
-                    return string.Empty;
+                    return product.Price.ToString();
             }
         }
 
@@ -275,26 +279,23 @@ namespace Agora.Addons.Disqord.Extensions
             MultiItemMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
                 ? Markdown.Italics("No Bundles Defined")
                 : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
-            _ => null
+            _ => embed
         };
 
         private static LocalEmbed AddTradeOfferFields(this LocalEmbed embed, Listing listing)
         {
-            if (listing is not StandardTrade trade) return embed;
+            var name = listing is CommissionTrade ? "Offering" : "Trading For";
+            object value = listing is CommissionTrade ? (listing.Product as TradeItem<Money>).SuggestedOffer : (listing.Product as TradeItem<string>).SuggestedOffer;
 
-            var tradeItem = listing.Product as TradeItem;
+            embed.AddInlineField(name, value);
 
-            if (!trade.AllowOffers)
-                return embed.AddField("Trading For", tradeItem.SuggestedOffer);
-
-            embed.AddInlineField("Trading For", tradeItem.SuggestedOffer);
-
-            if (tradeItem.Offers.Any())
-                embed.AddInlineField("Submitted Offers", tradeItem.Offers.Count);
-            else
-                embed.AddInlineBlankField();
-
-            return embed.AddInlineBlankField();
+            return listing switch
+            {
+                StandardTrade { Product: TradeItem<string> product } trade => product.Offers.Any()
+                    ? embed.AddInlineField("Submitted Offers", product.SuggestedOffer).AddInlineBlankField()
+                    : embed.AddInlineBlankField().AddInlineBlankField(),
+                _ => embed.AddInlineBlankField().AddInlineBlankField()
+            };
         }
 
         public static DateTimeOffset ExpiresAt(this Listing listing)

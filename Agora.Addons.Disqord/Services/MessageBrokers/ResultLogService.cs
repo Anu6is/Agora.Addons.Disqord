@@ -56,7 +56,8 @@ namespace Agora.Addons.Disqord
                 : productListing.Product.Quantity.Amount;
 
             var quantity = stock == 1 ? string.Empty : $"{stock} ";
-            var embed = new LocalEmbed().WithTitle($"{productListing} Claimed")
+            var listing = productListing is CommissionTrade ? "Trade Request" : productListing.ToString();
+            var embed = new LocalEmbed().WithTitle($"{listing} Claimed")
                                         .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} for {Markdown.Bold(productListing.CurrentOffer.Submission)}")
                                         .WithColor(Color.Teal);
 

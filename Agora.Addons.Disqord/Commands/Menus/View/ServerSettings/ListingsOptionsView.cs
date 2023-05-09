@@ -24,16 +24,17 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (context.Settings.AllowedListings.Any(listing => listing == option.Label)) option.IsDefault = true;
         }
 
-        [Selection(MaximumSelectedOptions = 9, Row = 1, Placeholder = "Select the listing types to allow")]
+        [Selection(MaximumSelectedOptions = 10, Row = 1, Placeholder = "Select the listing types to allow")]
         [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
         [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction ends/expires.")]
         [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]
         [SelectionOption("Sealed Auction", Value = "3", Description = "Bids are hidden (sealed). Winner pays the second highest bid.")]
-        [SelectionOption("Standard Market", Value = "4", Description = "List items at a fixed price.")]
+        [SelectionOption("Standard Market", Value = "4", Description = "List items for sale at a fixed price.")]
         [SelectionOption("Multi-Item Market", Value = "5", Description = "List multiple items for individual sales")]
         [SelectionOption("Flash Market", Value = "6", Description = "List items at a fixed price with a timed discount period.")]
         [SelectionOption("Bulk Market", Value = "7", Description = "List a large quantity of items. Buyers select their quantity.")]
-        [SelectionOption("Standard Trade", Value = "8", Description = "List an item for trade and what you want in return.")]
+        [SelectionOption("Request Trade", Value = "8", Description = "List an item you are searching for (want to buy).")]
+        [SelectionOption("Standard Trade", Value = "9", Description = "List an item for trade and what you want in return.")]
         //[SelectionOption("Open Trade", Value = "8", Description = "List an item for trade and allow others to submit counter offers. ")]
         //[SelectionOption("Reverse Trade", Value = "9", Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)

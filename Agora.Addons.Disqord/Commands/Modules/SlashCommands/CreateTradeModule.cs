@@ -89,7 +89,7 @@ namespace Agora.Addons.Disqord.Commands
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
 
-                var item = new TradeItemModel(offering, accepting)
+                var item = new TradeItemModel<string>(offering, accepting)
                 {
                     ImageUrl = image == null ? null : new[] { image.Url },
                     Category = emporiumCategory?.Title,
@@ -152,7 +152,7 @@ namespace Agora.Addons.Disqord.Commands
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
 
-                var item = new TradeItemModel(offering, accepting)
+                var item = new TradeItemModel<string>(offering, accepting)
                 {
                     ImageUrl = image == null ? null : new[] { image.Url },
                     Category = emporiumCategory?.Title,
@@ -177,7 +177,73 @@ namespace Agora.Addons.Disqord.Commands
                 return Response("Open Trade successfully created!");
             }
 
+            [SlashCommand("request")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
+            [Description("List an item you are searching for")]
+            public async Task<IResult> CreateReverseMarket(
+                [Description("Title of the item you want."), Maximum(75)] ProductTitle title,
+                [Description("Price at which you wish to purchase."), Minimum(0)] double price,
+                [Description("Currency to use. Defaults to server default.")] string currency = null,
+                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("When the request would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the seller."), Maximum(250)] HiddenMessage message = null,
+                [Description("Item requester. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember buyer = null,
+                [Description("True to hide the item requester.")] bool anonymous = false)
+            {
+                await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+
+                scheduledStart ??= currentDateTime;
+                currency ??= Settings.DefaultCurrency.Code;
+                duration = duration == default ? defaultDuration : duration;
+
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Trade);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+                var cur = emporium.Currencies.First(x => x.Matches(currency));
+
+                var item = new TradeItemModel<Money>(title, Money.Create((decimal)price, cur))
+                { 
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
+                    Description = description
+                };
+
+                var ownerId = buyer?.Id ?? Context.Author.Id;
+                var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                var listing = new StandardTradeModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
+                {
+                    HiddenMessage = message,
+                    Anonymous = anonymous
+                };
+
+                await Base.ExecuteAsync(new CreateCommissionTradeCommand(showroom, item, listing));
+
+                _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                return Response("Request successfully created!");
+            }
+
             [AutoComplete("standard")]
+            [AutoComplete("request")]
             //[AutoComplete("open")]
             public async Task AutoCompleteAuction(AutoComplete<string> category, AutoComplete<string> subcategory)
             {
@@ -229,9 +295,6 @@ namespace Agora.Addons.Disqord.Commands
 
                 return;
             }
-
-            //reverse 
-            //Specify what you are looking for and accept best proposal
         }
     }
 }

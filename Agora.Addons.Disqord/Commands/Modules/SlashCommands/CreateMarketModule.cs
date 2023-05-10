@@ -36,7 +36,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 await base.OnBeforeExecuted();
 
-                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel;
+                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel ?? Context.Bot.GetChannel(Guild.Id, ShowroomId.Value) as ITopicChannel;
 
                 _scheduleOverride = channel != null
                                     && channel.Topic.IsNotNull()

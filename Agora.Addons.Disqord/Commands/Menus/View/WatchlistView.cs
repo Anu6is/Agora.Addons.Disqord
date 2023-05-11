@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Menus
                                   .WithFields(x.Select(l => 
                                         new LocalEmbedField()
                                                 .WithName(l.Product.Title.ToString())
-                                                .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}> Expires {GetExpiration(l)}")))))))
+                                                .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}{GetJumpLink(l)} Expires {GetExpiration(l)}")))))))
         {
             if (listings.Count() < 10)
                 foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
@@ -57,11 +57,9 @@ namespace Agora.Addons.Disqord.Menus
             => $"Your Bid: {(listing.Product as AuctionItem).Offers.OrderByDescending(o => o.SubmittedOn).First(b => b.UserReference.Equals(userReference)).Submission.Value}";
 
         private static string GetHighestBid(ReferenceNumber userReference, Listing listing)
-            => Markdown.Link(
-                listing is VickreyAuction
+            => listing is VickreyAuction
                     ? "Current Value: **Sealed**" 
-                    : $"{HasHighest(userReference, listing)} Current Value: {listing.CurrentOffer.Submission.Value}",
-                GetJumpLink(listing));
+                    : $"{HasHighest(userReference, listing)} Current Value: {listing.CurrentOffer.Submission.Value}";
 
         private static LocalCustomEmoji HasHighest(ReferenceNumber userReference, Listing listing) 
             => listing.CurrentOffer.UserReference.Equals(userReference) ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;

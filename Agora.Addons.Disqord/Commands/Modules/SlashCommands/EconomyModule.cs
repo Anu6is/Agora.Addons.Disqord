@@ -105,7 +105,7 @@ namespace Agora.Addons.Disqord.Commands
         [RequireManager]
         [SlashCommand("reset-balance")]
         [Description("Set a user's balance to zero")]
-        public async Task<IResult> ResetBalance([Description("The user to reset")] IMember user)
+        public async Task<IResult> ResetBalance([Description("The user to reset")] IUser user)
         {
             var member = await Cache.GetUserAsync(Context.GuildId, user.Id);
 

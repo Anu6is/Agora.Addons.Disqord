@@ -4,12 +4,10 @@ using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
-using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
-using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
@@ -35,20 +33,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 await base.OnBeforeExecuted();
 
-                var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel ?? Context.Bot.GetChannel(Guild.Id, ShowroomId.Value) as ITopicChannel;
-
-                _scheduleOverride = channel != null
-                                    && channel.Topic.IsNotNull()
-                                    && channel.Topic.StartsWith("Schedule", StringComparison.OrdinalIgnoreCase);
-
-                if (_scheduleOverride)
-                {
-                    var schedule = channel.Topic.Replace("Schedule", "", StringComparison.OrdinalIgnoreCase).TrimStart(new[] { ':', ' ' });
-                    _schedule = schedule.Split(';')
-                        .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                        .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
-                        .OrderBy(x => x.Weekday).ToArray();
-                }
+                _scheduleOverride = TryOverrideSchedule(out _schedule);
             }
 
             [SlashCommand("standard")]

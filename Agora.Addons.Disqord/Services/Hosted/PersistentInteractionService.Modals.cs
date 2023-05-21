@@ -24,6 +24,8 @@ namespace Agora.Addons.Disqord
             {
                 case string x when x.StartsWith("extend"):
                     return await ExtendListing(modalInteraction, emporiumId, showroomId, keys);
+                case "editGiveaway":
+                    return EditGiveawayListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editAuction":
                     return EditAuctionListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editMarket":
@@ -145,6 +147,23 @@ namespace Agora.Addons.Disqord
 
             return new UpdateTradeItemCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])))
             {
+                ImageUrls = rows["image"].IsNull() ? null : new[] { rows["image"] },
+                Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
+                Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),
+            };
+        }
+
+        private IBaseRequest EditGiveawayListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var rows = modalInteraction.Components
+                .OfType<IRowComponent>()
+                .Select(row => row.Components.OfType<ITextInputComponent>().First())
+                .Where(component => component is not null)
+                .ToDictionary(key => key.CustomId, value => value.Value);
+
+            return new UpdateGiveawayItemCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])))
+            {
+                Title = rows["title"].IsNull() ? null : ProductTitle.Create(rows["title"]),
                 ImageUrls = rows["image"].IsNull() ? null : new[] { rows["image"] },
                 Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
                 Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),

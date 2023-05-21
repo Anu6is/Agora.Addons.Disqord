@@ -136,21 +136,37 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithStyle(LocalButtonComponentStyle.Primary)
                                   .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
                     ),
+            { Product: GiveawayItem giveawayItem} =>
+                LocalComponent.Row(
+                    LocalComponent.Button("optout", "Cancel Ticket")
+                                  .WithStyle(LocalButtonComponentStyle.Danger)
+                                  .WithIsDisabled(listing.CurrentOffer == null),
+                    LocalComponent.Button("join", "Get Ticket")
+                                  .WithStyle(LocalButtonComponentStyle.Success)
+                                  .WithIsDisabled(giveawayItem.MaxParticipants > 0 && giveawayItem.MaxParticipants == giveawayItem.Offers.Count)),
             { Product: MarketItem } => null,
             StandardTrade trade => trade.AllowOffers
                                 ? null // TODO add buttons for bartering 
                                 : null,
-            CommissionTrade => null,
-            _ => LocalComponent.Row(LocalComponent.Button("undo", "Undo Offer").WithStyle(LocalButtonComponentStyle.Danger).WithIsDisabled(listing.CurrentOffer == null))
+            _ => null
         };
 
         private static LocalEmbed WithProductDetails(this LocalEmbed embed, Listing listing) => listing.Product switch
         {
+            GiveawayItem giveaway => embed.AddInlineField("Total Spots", giveaway.MaxParticipants == 0 ? "Unlimited" : giveaway.MaxParticipants.ToString())
+                                          .AddInlineField("Joined", giveaway.Offers.Count)
+                                          .AddPriceDetailField(listing)
+                                          .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
+                                          .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
+                                          .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
+                                          .AddInlineField("Item Owner", listing.Anonymous
+                                                                    ? Markdown.BoldItalics("Anonymous")
+                                                                    : Mention.User(listing.Owner.ReferenceNumber.Value)),
             AuctionItem auction => embed.AddInlineField("Quantity", auction.Quantity.Amount.ToString())
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
-                                        .AddInlineField("Current Bid", listing is VickreyAuction || auction.Offers.Count == 0
+                                        .AddInlineField("Current Bid", auction.Offers.Count == 0
                                                                      ? "No Bids"
-                                                                     : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
+                                                                     : listing is VickreyAuction ? $"{auction.Offers.Count}" : $"{listing.ValueTag}\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
                                         .AddInlineField("Expiration", Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime))
@@ -279,6 +295,7 @@ namespace Agora.Addons.Disqord.Extensions
             MultiItemMarket market => embed.AddInlineField("Bundle Bonus", market.AmountPerBundle == 0
                 ? Markdown.Italics("No Bundles Defined")
                 : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
+            StandardGiveaway => embed.AddInlineBlankField(),
             _ => embed
         };
 

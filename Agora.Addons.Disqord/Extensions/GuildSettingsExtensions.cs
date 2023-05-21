@@ -150,6 +150,7 @@ namespace Agora.Addons.Disqord.Extensions
             embed.AddField("Auction", rooms.Contains("Auction") ? GetRoomDetails(showrooms, ListingType.Auction) : $"{AgoraEmoji.RedCrossMark}| Auction listings disabled");
             embed.AddField("Market", rooms.Contains("Market") ? GetRoomDetails(showrooms, ListingType.Market) : $"{AgoraEmoji.RedCrossMark}| Market listings disabled");
             embed.AddField("Trade", rooms.Contains("Trade") ? GetRoomDetails(showrooms, ListingType.Trade) : $"{AgoraEmoji.RedCrossMark}| Trade listings disabled");
+            embed.AddField("Giveaway", rooms.Contains("Giveaway") ? GetRoomDetails(showrooms, ListingType.Giveaway) : $"{AgoraEmoji.RedCrossMark}| Trade listings disabled");
             //embed.AddField("Exchange", rooms.Contains("Exchange") ? GetRoomDetails(showrooms, ListingType.Exchange) : $"{AgoraEmoji.RedCrossMark}| Exchange listings disabled");
 
             return embed;

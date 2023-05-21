@@ -20,6 +20,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Auction Room", "Owner lists an item which is sold to the highest bidder.", (ctx, opts) => new AuctionRoomView(ctx, opts, showrooms)),
                       new ("Market Room", "Owner lists an item which is sold to the first buyer(s).", (ctx, opts) => new MarketRoomView(ctx, opts, showrooms)),
                       new ("Trade Room", "Owner lists an item to trade for something specific or best offer.", (ctx, opts) => new TradeRoomView(ctx, opts, showrooms)),
+                      new ("Giveaway Room", "Owner lists an item to be given to a randomly selected user.", (ctx, opts) => new GiveawayRoomView(ctx, opts, showrooms)),
                       //new ("Exchange Room", "User lists an item they want, and accepts the best deal to acquire it.", (ctx, opts) => new ExchangeRoomView(ctx, opts, showrooms))
                     },
                   showrooms)
@@ -47,13 +48,17 @@ namespace Agora.Addons.Disqord.Menus.View
             var trade = _showrooms.Where(x => x.ListingType == ListingType.Trade.ToString())?
                                             .Select(x => bot.ValidateChannelPermissions(guildId, x.Id.Value));
 
+            var giveaway = _showrooms.Where(x => x.ListingType == ListingType.Giveaway.ToString())?
+                                            .Select(x => bot.ValidateChannelPermissions(guildId, x.Id.Value));
+
             var embed = new LocalEmbed().WithTitle("Permissions Review").WithUrl("https://support.discord.com/hc/en-us/articles/206141927")
                                         .WithDescription("Channel permissions override server permissions. " +
                                         "If these checks reveal that permissions are missing, review the permissions granted to the Bot/@everyone on the channel.")
                                         .AddField("Logs", $"Result Log: {resultLog}{Environment.NewLine}Audit Log: {auditLog}")
                                         .AddField("Auction Channels", auction.Any() ? string.Join(Environment.NewLine, auction) : "None Configured")
-                                        .AddField("Market Channels", market.Any() ? string.Join(Environment.NewLine, auction) : "None Configured")
-                                        .AddField("Trade Channels", trade.Any() ? string.Join(Environment.NewLine, auction) : "None Configured")
+                                        .AddField("Market Channels", market.Any() ? string.Join(Environment.NewLine, market) : "None Configured")
+                                        .AddField("Trade Channels", trade.Any() ? string.Join(Environment.NewLine, trade) : "None Configured")
+                                        .AddField("Giveaway Channels", giveaway.Any() ? string.Join(Environment.NewLine, giveaway) : "None Configured")
                                         .WithDefaultColor();
 
             await e.Interaction.Followup().SendAsync(new LocalInteractionFollowup().AddEmbed(embed).WithIsEphemeral(true));

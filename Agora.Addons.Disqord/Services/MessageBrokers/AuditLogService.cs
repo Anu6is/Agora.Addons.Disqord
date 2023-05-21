@@ -114,7 +114,7 @@ namespace Agora.Addons.Disqord
 
             var description = new StringBuilder()
                 .Append(Mention.User(submitter))
-                .Append(" offered ").Append(Markdown.Bold(offer.Submission))
+                .Append(productListing.Product is GiveawayItem ? " acquired " : " offered ").Append(Markdown.Bold(offer.Submission))
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
                 .Append(" hosted by ").Append(owner);
 
@@ -148,9 +148,12 @@ namespace Agora.Addons.Disqord
 
             if (submitter != productListing.User.ReferenceNumber.Value) user = $" by {Mention.User(productListing.User.ReferenceNumber.Value)}";
 
-            var description = new StringBuilder()
-                .Append("An offer of ").Append(Markdown.Bold(offer.Submission))
-                .Append(" made by ").Append(Mention.User(submitter))
+            var description = new StringBuilder();
+
+            if (productListing.Product is not GiveawayItem) description.Append("An offer of ");
+            
+            description.Append(Markdown.Bold(offer.Submission))
+                .Append(productListing.Product is GiveawayItem ? " held by " : " made by ").Append(Mention.User(submitter))
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))
                 .Append(" hosted by ").Append(owner)
                 .Append(" has been ").Append(Markdown.Underline("withdrawn")).Append(user);
@@ -194,7 +197,7 @@ namespace Agora.Addons.Disqord
                 .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" was ").Append(Markdown.Underline("claimed"))
                 .Append(" after ").Append(duration.Humanize())
-                .Append(" for ").Append(Markdown.Bold(value))
+                .Append(productListing.Product is GiveawayItem ? " with " : " for ").Append(Markdown.Bold(value))
                 .Append(" by ").Append(Mention.User(buyer));
 
             var embed = new LocalEmbed().WithDescription(description.ToString())

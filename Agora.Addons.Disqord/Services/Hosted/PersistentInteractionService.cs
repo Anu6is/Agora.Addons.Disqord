@@ -91,11 +91,11 @@ namespace Agora.Addons.Disqord
             }
         }
 
-        private static async Task<bool> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
-                                                            IComponentInteraction interaction,
-                                                            ulong roomId,
-                                                            IServiceScope scope,
-                                                            IMediator mediator)
+        private async Task<bool> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
+                                                           IComponentInteraction interaction,
+                                                           ulong roomId,
+                                                           IServiceScope scope,
+                                                           IMediator mediator)
         {
             var request = AuthorizeInteraction(interaction, roomId);
 
@@ -108,6 +108,8 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception ex)
             {
+                _logger.LogError("{command} failed with error: {err}", request.GetType().Name, ex.Message);
+
                 await SendErrorResponseAsync(args, interaction, scope, ex);
                 return false;
             }

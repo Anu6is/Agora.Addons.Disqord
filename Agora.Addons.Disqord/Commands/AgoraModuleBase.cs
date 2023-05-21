@@ -4,6 +4,7 @@ using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
+using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,6 +90,29 @@ namespace Agora.Addons.Disqord.Commands
             Transaction.Finish();
 
             return base.OnAfterExecuted();
+        }
+
+        public bool TryOverrideSchedule(out (DayOfWeek Weekday, TimeSpan Time)[] schedule)
+        {
+            schedule = null;
+
+            var channel = Context.Bot.GetChannel(Context.GuildId, Context.ChannelId) as ITopicChannel ?? Context.Bot.GetChannel(Guild.Id, ShowroomId.Value) as ITopicChannel;
+
+            var scheduleOverride = channel != null
+                                && channel.Topic.IsNotNull()
+                                && channel.Topic.StartsWith("Schedule", StringComparison.OrdinalIgnoreCase);
+
+            if (scheduleOverride)
+            {
+                var scheduledTime = channel.Topic.Replace("Schedule", "", StringComparison.OrdinalIgnoreCase).TrimStart(new[] { ':', ' ' });
+
+                schedule = scheduledTime.Split(';')
+                    .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))
+                    .OrderBy(x => x.Weekday).ToArray();
+            }
+
+            return scheduleOverride;
         }
 
         public async Task WaitForCommandsAsync(int waitTimeInMinutes)

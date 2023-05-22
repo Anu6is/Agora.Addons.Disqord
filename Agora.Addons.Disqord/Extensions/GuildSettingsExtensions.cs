@@ -86,7 +86,7 @@ namespace Agora.Addons.Disqord.Extensions
             var confirmation = settings.TransactionConfirmation ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var listingRecall = settings.AllowListingRecall ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-            var bidAcceptance = settings.AllowAcceptingOffer ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var earlyAcceptance = settings.AllowAcceptingOffer ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
             var minDuration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var maxDuration = settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
@@ -110,7 +110,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Minimum Duration", minDuration)
                 .AddInlineField("Maximum Duration", maxDuration)
                 .AddInlineField("Default Duration", defaultDuration)
-                .AddField($"{bidAcceptance} Allow Bid Acceptance", settings.AllowAcceptingOffer ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddField($"{earlyAcceptance} Allow Early Acceptance", settings.AllowAcceptingOffer ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))

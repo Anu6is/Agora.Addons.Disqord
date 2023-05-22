@@ -12,7 +12,11 @@ namespace Agora.Addons.Disqord.Commands
             if (Context.Interaction.Response().HasResponded)
                 await Context.Interaction.Followup().DeleteAsync((Context.Interaction as IComponentInteraction).Message.Id);
             else
-                await (Context.Interaction as IComponentInteraction).Message.DeleteAsync();
+                try
+                {
+                    await (Context.Interaction as IComponentInteraction).Message.DeleteAsync();
+                }
+                catch (Exception) { }
         }
     }
 }

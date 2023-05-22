@@ -33,7 +33,7 @@ namespace Agora.Addons.Disqord.Extensions
             .WithDefaultColor();
         }
 
-        public static LocalRowComponent[] Buttons(this Listing listing, bool allowBidAccept)
+        public static LocalRowComponent[] Buttons(this Listing listing, bool earlyAcceptance)
         {
             var type = listing.Type.ToString();
 
@@ -90,7 +90,17 @@ namespace Agora.Addons.Disqord.Extensions
             else if (listing.Product is AuctionItem)
                 firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer")
                                .WithStyle(LocalButtonComponentStyle.Success)
-                               .WithIsDisabled(!allowBidAccept || listing.CurrentOffer == null));
+                               .WithIsDisabled(!earlyAcceptance || listing.CurrentOffer == null));
+            else if (listing is StandardGiveaway or RaffleGiveaway) 
+            {
+                var item = (GiveawayItem)listing.Product;
+                var soldOut = item.MaxParticipants > 0 && item.Offers.Count == item.MaxParticipants;
+
+                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Draw Now")
+                               .WithStyle(LocalButtonComponentStyle.Success)
+                               .WithIsDisabled(listing.CurrentOffer == null || (!soldOut && !earlyAcceptance)));
+
+            }
 
             var secondRowButtons = ParticipantButtons(listing);
 

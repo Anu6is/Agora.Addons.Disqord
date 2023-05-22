@@ -21,17 +21,17 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Bid Acceptance";
+                    button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Early Acceptance";
             }
         }
 
-        [Button(Label = "Bid Acceptance", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
+        [Button(Label = "Early Acceptance", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask RecallListings(ButtonEventArgs e)
         {
             _settings.AllowAcceptingOffer = !_settings.AllowAcceptingOffer;
-            e.Button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Bid Acceptance";
+            e.Button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Early Acceptance";
 
-            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Allow Bid Acceptance"));
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Allow Early Acceptance"));
 
             ReportChanges();
 

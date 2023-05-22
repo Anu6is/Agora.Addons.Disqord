@@ -213,6 +213,7 @@ namespace Agora.Addons.Disqord.Extensions
             FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
             MassMarket market => new LocalEmbedAuthor().WithName($"Cost per Item: {market.CostPerItem.Value.ToString($"N{market.CostPerItem.Currency.DecimalDigits}")}"),
             MultiItemMarket market => new LocalEmbedAuthor().WithName($"Limited to 1 per purchase {(market.AmountPerBundle > 0 ? $"or {market.AmountPerBundle} per bundle" : "")}"),
+            RaffleGiveaway giveaway => new LocalEmbedAuthor().WithName($"Max tickets per user: {(giveaway.MaxTicketsPerUser == 0 ? "Unlimited" : giveaway.MaxTicketsPerUser)}"),
             _ => null
         };
 
@@ -296,6 +297,7 @@ namespace Agora.Addons.Disqord.Extensions
                 ? Markdown.Italics("No Bundles Defined")
                 : $"{Markdown.Bold(market.AmountPerBundle)} for {Markdown.Bold(market.CostPerBundle)}"),
             StandardGiveaway => embed.AddInlineBlankField(),
+            RaffleGiveaway => embed.AddInlineField("Ticket Price", (listing.Product as GiveawayItem).TicketPrice.ToString()),
             _ => embed
         };
 

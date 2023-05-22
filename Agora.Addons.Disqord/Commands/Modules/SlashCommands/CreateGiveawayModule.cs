@@ -44,7 +44,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Length of time the Giveaway should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("Min amount bids can be increased by."), Minimum(0)] double maxParticipants = 0,
+                [Description("Maximum number of available tickets."), Minimum(0)] double maxParticipants = 0,
                 [Description("Scheduled start of the Giveaway (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
@@ -99,7 +99,78 @@ namespace Agora.Addons.Disqord.Commands
                 return Response("Standard Giveaway successfully created!");
             }
 
+            [SlashCommand("raffle")]
+            [RateLimit(10, 1, RateLimitMeasure.Hours, ChannelType.News)]
+            [Description("Purchase a ticket for a random chance to win.")]
+            public async Task<IResult> CreateRaffleGiveaway(
+                [Description("Title of the item to be Giveawayed."), Maximum(75)] ProductTitle title,
+                [Description("Price at which a ticket is sold for. Numbers only!"), Minimum(0)] double ticketPrice,
+                [Description("Currency to use. Defaults to server default")] string currency = null,
+                [Description("Length of time the Giveaway should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("Maximum number of available tickets. 0 for unlimited."), Minimum(0)] uint maxParticipants = 0,
+                [Description("Maximum number of tickets a user can purchase."), Minimum(1)] uint maxTicketsPerUser = 1,
+                [Description("Scheduled start of the Giveaway (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("Category the item is associated with"), Maximum(25)] string category = null,
+                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("True to hide the item owner.")] bool anonymous = false)
+            {
+                await Deferral(isEphemeral: true);
+
+                var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Giveaway);
+                var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
+
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+                var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
+                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+
+                scheduledStart ??= currentDateTime;
+                currency ??= Settings.DefaultCurrency.Code;
+                duration = duration == default ? defaultDuration : duration;
+
+                var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
+
+                if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Giveaway);
+                var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
+                var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+
+                var item = new GiveawayItemModel(title)
+                {
+                    TicketPrice = (decimal)ticketPrice,
+                    Currency = currency,
+                    ImageUrl = image == null ? null : new[] { image.Url },
+                    Category = emporiumCategory?.Title,
+                    Subcategory = emporiumSubcategory?.Title,
+                    Description = description,
+                    MaxParticipants = maxParticipants,
+                };
+
+                var ownerId = owner?.Id ?? Context.Author.Id;
+                var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                var listing = new RaffleGiveawayModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
+                {
+                    MaxTicketsPerUser = maxTicketsPerUser,
+                    HiddenMessage = message,
+                    Anonymous = anonymous
+                };
+
+                await Base.ExecuteAsync(new CreateRaffleGiveawayCommand(showroom, item, listing));
+
+                _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                return Response("Raffle Giveaway successfully created!");
+            }
+
             [AutoComplete("standard")]
+            [AutoComplete("raffle")]
             public async Task AutoCompleteGiveaway(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);

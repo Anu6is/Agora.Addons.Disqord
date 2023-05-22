@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 if (context.Settings.AllowedListings.Any(listing => listing == option.Label)) option.IsDefault = true;
         }
 
-        [Selection(MaximumSelectedOptions = 11, Row = 1, Placeholder = "Select the listing types to allow")]
+        [Selection(MaximumSelectedOptions = 12, Row = 1, Placeholder = "Select the listing types to allow")]
         [SelectionOption("Select All", Value = "0", Description = "Allow all available listing options.")]
         [SelectionOption("Standard Auction", Value = "1", Description = "Highest bid wins after the auction ends/expires.")]
         [SelectionOption("Live Auction", Value = "2", Description = "Auction ends if a set amount of time passes with no new bids.")]
@@ -36,6 +36,7 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("Request Trade", Value = "8", Description = "List an item you are searching for (want to buy).")]
         [SelectionOption("Standard Trade", Value = "9", Description = "List an item for trade and what you want in return.")]
         [SelectionOption("Standard Giveaway", Value = "10", Description = "Giveaway an item to a randomly chosen user.")]
+        [SelectionOption("Raffle Giveaway", Value = "11", Description = "Purchase a ticket for a random chance at winning.")]
         //[SelectionOption("Open Trade", Value = "8", Description = "List an item for trade and allow others to submit counter offers. ")]
         //[SelectionOption("Reverse Trade", Value = "9", Description = "Post an item you want, and agree to a submitted exchange offer.")]
         public ValueTask ListingsSelection(SelectionEventArgs e)

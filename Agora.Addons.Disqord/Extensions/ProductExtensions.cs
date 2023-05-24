@@ -18,10 +18,13 @@ namespace Agora.Addons.Disqord.Extensions
         {
             var prefix = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
             var suffix = listing is CommissionTrade ? " Request" : string.Empty;
+            var type = listing is RaffleGiveaway 
+                ? "Raffle" 
+                : listing.Type.ToString();
 
             return new LocalEmbed
             {
-                Title = $"{prefix}{listing.Type}{suffix}: {listing.Product.Title.Value}",
+                Title = $"{prefix}{type}{suffix}: {listing.Product.Title.Value}",
                 Author = listing.UniqueTrait(),
                 Description = listing.Product.Description?.Value,
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
@@ -314,7 +317,11 @@ namespace Agora.Addons.Disqord.Extensions
         private static LocalEmbed AddTradeOfferFields(this LocalEmbed embed, Listing listing)
         {
             var name = listing is CommissionTrade ? "Offering" : "Trading For";
-            object value = listing is CommissionTrade ? (listing.Product as TradeItem<Money>).SuggestedOffer : (listing.Product as TradeItem<string>).SuggestedOffer;
+            object value = listing is CommissionTrade 
+                ? (listing.Product as TradeItem<Money>).SuggestedOffer 
+                : listing.Product is TradeItem<string> 
+                    ? (listing.Product as TradeItem<string>).SuggestedOffer 
+                    : (listing.Product as TradeItem).SuggestedOffer;
 
             embed.AddInlineField(name, value);
 

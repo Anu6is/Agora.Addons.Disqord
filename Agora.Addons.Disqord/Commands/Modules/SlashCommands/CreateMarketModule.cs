@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
                 [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
-                [Description("The type of discount to aplly.")] Discount discountType = Discount.None,
+                [Description("The type of discount to apply.")] Discount discountType = Discount.None,
                 [Description("The amount of discount to apply."), Minimum(0)] double discountAmount = 0,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
@@ -115,7 +115,7 @@ namespace Agora.Addons.Disqord.Commands
             public async Task<IResult> CreateFlashMarket(
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
-                [Description("The type of discount to aplly."), Choice("Percent", 1), Choice("Amount", 2)] int discountType,
+                [Description("The type of discount to apply."), Choice("Percent", 1), Choice("Amount", 2)] int discountType,
                 [Description("The value of discount to apply."), Minimum(0)] double discountValue,
                 [Description("Length of time the discount is available. (example: 15m or 15 minutes)")] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,

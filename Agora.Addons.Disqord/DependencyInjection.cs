@@ -2,7 +2,6 @@
 using Agora.Addons.Disqord.Parsers;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Qmmands;
@@ -33,7 +32,7 @@ namespace Agora.Addons.Disqord
             foreach (Type serviceType in types)
                 services.AddAgoraService(serviceType);
 
-            services.AddMediatR(x => x.AsScoped(), Assembly.GetExecutingAssembly());
+            services.AddMediatR(x => x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
             return services;
         }

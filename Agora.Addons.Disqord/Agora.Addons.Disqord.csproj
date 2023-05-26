@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha5.51" />
     <PackageReference Include="HumanTimeParser.English" Version="3.0.0-dev-2713817134" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>

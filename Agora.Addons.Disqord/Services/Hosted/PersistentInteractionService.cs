@@ -72,7 +72,7 @@ namespace Agora.Addons.Disqord
             return;
         }
 
-        private static async Task HandleInteractionResponseAsync(InteractionReceivedEventArgs args,
+        private async Task HandleInteractionResponseAsync(InteractionReceivedEventArgs args,
                                                                  IComponentInteraction interaction,
                                                                  IServiceScope scope,
                                                                  IModalSubmitInteraction modalInteraction,
@@ -87,6 +87,7 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error executing command");
                 await SendErrorResponseAsync(args, modalInteraction as IInteraction ?? interaction, scope, ex);
             }
         }

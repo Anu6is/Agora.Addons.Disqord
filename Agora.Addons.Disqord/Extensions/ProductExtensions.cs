@@ -39,7 +39,7 @@ namespace Agora.Addons.Disqord.Extensions
         public static LocalRowComponent[] Buttons(this Listing listing, bool earlyAcceptance)
         {
             var type = listing.Type.ToString();
-
+           
             if (listing.Status == ListingStatus.Sold)
             {
                 var relist = LocalComponent.Button($"revert{type}", "Revert Transaction").WithStyle(LocalButtonComponentStyle.Danger);
@@ -317,17 +317,14 @@ namespace Agora.Addons.Disqord.Extensions
         private static LocalEmbed AddTradeOfferFields(this LocalEmbed embed, Listing listing)
         {
             var name = listing is CommissionTrade ? "Offering" : "Trading For";
-            object value = listing is CommissionTrade 
-                ? (listing.Product as TradeItem<Money>).SuggestedOffer 
-                : listing.Product is TradeItem<string> 
-                    ? (listing.Product as TradeItem<string>).SuggestedOffer 
-                    : (listing.Product as TradeItem).SuggestedOffer;
+
+            string value = listing is CommissionTrade request ? request.Commission.ToString() : (listing.Product as TradeItem).SuggestedOffer.Trim('"');
 
             embed.AddInlineField(name, value);
 
             return listing switch
             {
-                StandardTrade { Product: TradeItem<string> product } trade => product.Offers.Any()
+                StandardTrade { Product: TradeItem product } => product.Offers.Any()
                     ? embed.AddInlineField("Submitted Offers", product.SuggestedOffer).AddInlineBlankField()
                     : embed.AddInlineBlankField().AddInlineBlankField(),
                 _ => embed.AddInlineBlankField().AddInlineBlankField()

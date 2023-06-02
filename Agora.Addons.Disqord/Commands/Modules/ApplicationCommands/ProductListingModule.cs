@@ -29,7 +29,9 @@ namespace Agora.Addons.Disqord.Commands
             if (embed.Footer.IconUrl != null)
                 return Response(responseEmbed.WithDescription("Item is already scheduled to be relisted"));
 
-            await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), embed.Title.Split(':')[0]));
+            var listingType = embed.Title.Replace("Request", "").Split(':')[0].Trim();
+
+            await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), listingType));
 
             return Response(responseEmbed.WithDescription("Item will be automatically relisted once sold/expired"));
         }
@@ -64,7 +66,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var embed = message.Embeds[0];
 
-            if (embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner")) == null) return Response(response);
+            if (embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner") || x.Name.Equals("Requester")) == null) return Response(response);
             if (embed.Footer == null || !embed.Footer.Text.StartsWith("Reference Code:")) return Response(response);
 
             return null;

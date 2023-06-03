@@ -33,7 +33,7 @@ namespace Agora.Addons.Disqord
             foreach (Type serviceType in types)
                 services.AddAgoraService(serviceType);
 
-            services.AddMediatR(x => x.AsScoped(), Assembly.GetExecutingAssembly());
+            services.AddMediatR(x => x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()).Lifetime = ServiceLifetime.Scoped);
 
             return services;
         }

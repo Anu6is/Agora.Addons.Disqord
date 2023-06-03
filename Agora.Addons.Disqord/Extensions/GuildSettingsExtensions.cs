@@ -37,11 +37,11 @@ namespace Agora.Addons.Disqord.Extensions
             },  "A Trade room (channel) is required."),
             new(settings =>
             {
-                if (settings.AllowedListings.Any(listing => listing.Contains("Exchange")))
-                    return settings.AvailableRooms.Any(room => room.Equals("Exchange"));
+                if (settings.AllowedListings.Any(listing => listing.Contains("Giveaway")))
+                    return settings.AvailableRooms.Any(room => room.Equals("Giveaway"));
 
                 return true;
-            },  "An Exchange room (channel) is required.")
+            },  "A Giveaway room (channel) is required.")
         };
 
         private static readonly List<(Func<IDiscordGuildSettings, bool> ValidationCriteria, string Result)> RoomValidations = new()
@@ -69,11 +69,11 @@ namespace Agora.Addons.Disqord.Extensions
             },  "Trade room configured but trade listings are not allowed."),
             new(settings =>
             {
-                if (settings.AvailableRooms.Any(room => room.Equals("Exchange")))
-                    return settings.AllowedListings.Any(listing => listing.Contains("Exchange"));
+                if (settings.AvailableRooms.Any(room => room.Equals("Giveaway")))
+                    return settings.AllowedListings.Any(listing => listing.Contains("Giveaway"));
 
                 return true;
-            },  "Exchange room configured but exchange are listings not allowed.")
+            },  "Giveaway room configured but Giveaway listings are not allowed.")
         };
 
         public static LocalEmbed ToEmbed(this IDiscordGuildSettings settings, string highlightField = null, LocalEmoji highlighEmoji = null)

@@ -180,6 +180,21 @@ namespace Agora.Addons.Disqord
 
             switch (request)
             {
+                case CreateCommissionTradeCommand command:
+                    var validCommission = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                    {
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+
+                        var cmd = command as CreateCommissionTradeCommand;
+                        var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                        var userBalance = await economy.GetBalanceAsync(currentUser, cmd.TradeItemModel.PreferredOffer.Currency);
+
+                        return userBalance >= cmd.TradeItemModel.PreferredOffer;
+                    });
+
+                    if (!validCommission) return "Transaction Denied: Insufficient balance available to request this commission.";
+
+                    break;
                 case CreateBidCommand command:
                     var listing = command.Showroom.Listings.FirstOrDefault();
 
@@ -231,6 +246,28 @@ namespace Agora.Addons.Disqord
 
                     if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
                     break;
+                case CreateTicketCommand command:
+                    var giveaway = command.Showroom.Listings.FirstOrDefault();
+
+                    if (giveaway == null) return "Invalid Action: Listing is not longer available";
+
+                    if (giveaway is StandardGiveaway) return string.Empty;
+
+                    var validClaim = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
+                    {
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+
+                        var cmd = command as CreateTicketCommand;
+                        var item = cmd.Showroom.Listings.First().Product as GiveawayItem;
+                        var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                        var userBalance = await economy.GetBalanceAsync(currentUser, item.TicketPrice.Currency);
+
+                        return userBalance >= item.TicketPrice;
+                    });
+
+                    if (!validClaim) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+
+                    break;
                 case CreateDealCommand command:
                     var trade = command.Showroom.Listings.First();
 
@@ -239,6 +276,22 @@ namespace Agora.Addons.Disqord
 
                     if (trade.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
                         return "Invalid Action: You already made an offer on this item.";
+
+                    if (trade is not CommissionTrade) return string.Empty;
+
+                    var validRequest = await _userManager.ValidateBuyerAsync(trade.Owner, command, async (owner, command) =>
+                    {
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+
+                        var cmd = command as CreateDealCommand;
+                        var request = cmd.Showroom.Listings.First() as CommissionTrade;
+                        var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
+                        var userBalance = await economy.GetBalanceAsync(owner, request.Commission.Currency);
+
+                        return userBalance >= request.Commission;
+                    });
+
+                    if (!validRequest) return "Transaction Denied: Requester's remaining balance is insufficient for payout.";
                     break;
                 default:
                     return string.Empty;

@@ -106,6 +106,8 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var scheduledTime = channel.Topic.Replace("Schedule", "", StringComparison.OrdinalIgnoreCase).TrimStart(new[] { ':', ' ' });
 
+                if (string.IsNullOrWhiteSpace(scheduledTime)) return false;
+
                 schedule = scheduledTime.Split(';')
                     .Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                     .Select(x => (Weekday: Enum.Parse<DayOfWeek>(x[0]), Time: TimeOnly.Parse(x[1]).ToTimeSpan()))

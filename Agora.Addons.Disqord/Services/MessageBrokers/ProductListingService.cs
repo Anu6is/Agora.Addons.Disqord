@@ -372,6 +372,20 @@ namespace Agora.Addons.Disqord
             if (category != string.Empty)
                 tags.AddRange(await GetTagIdsAsync(forum, category.Split(':')));
 
+            var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+
+            message.WithContent($"Expiration: {expiration}\n");
+
+            if (type.Equals("Auction"))
+            {
+                var item = (AuctionItem)productListing.Product;
+                var bids = productListing is VickreyAuction 
+                         ? $"Bids: {item.Offers.Count}"
+                         : $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}";
+
+                message.Content += bids;
+            }
+
             var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);

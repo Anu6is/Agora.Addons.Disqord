@@ -297,6 +297,7 @@ namespace Agora.Addons.Disqord
         {
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold);
 
+            var soon = forum.Tags.FirstOrDefault(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id;
             var active = forum.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
             var locked = forum.Tags.FirstOrDefault(x => x.Name.Equals("Locked", StringComparison.OrdinalIgnoreCase))?.Id;
 
@@ -307,7 +308,7 @@ namespace Agora.Addons.Disqord
                 if (sold.HasValue && !post.TagIds.Contains(sold.Value))
                     await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
                     {
-                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(sold.Value).ToArray();
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != soon.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(sold.Value).ToArray();
                     });
             }
             else if (productListing.Status == ListingStatus.Expired)
@@ -317,7 +318,7 @@ namespace Agora.Addons.Disqord
                 if (expired.HasValue && !post.TagIds.Contains(expired.Value))
                     await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
                     {
-                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(expired.Value).ToArray();
+                        x.TagIds = post.TagIds.Where(tag => tag != active.GetValueOrDefault() && tag != soon.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(expired.Value).ToArray();
                     });
             }
 

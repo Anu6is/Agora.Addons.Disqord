@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord
             return ReferenceNumber.Create(response.Id);
         }
 
-        public async ValueTask<ReferenceNumber> UpdateProductListingAsync(Listing productListing)
+        public async ValueTask<ReferenceNumber> UpdateProductListingAsync(Listing productListing, bool refreshMessage = true)
         {
             var categorization = await GetCategoryAsync(productListing);
             var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed().WithCategory(categorization) };
@@ -93,7 +93,7 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
+                if (refreshMessage) await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
                 if (channel is IForumChannel forumChannel
                     && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
@@ -115,41 +115,55 @@ namespace Agora.Addons.Disqord
 
         private async Task<IForumChannel> UpdateForumTagAsync(Listing productListing, IForumChannel forumChannel)
         {
-            forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold);
+            forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold, AgoraTag.Soon);
 
             var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
             var active = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id;
             var locked = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Locked", StringComparison.OrdinalIgnoreCase))?.Id;
+            var soon = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id;
             var thread = (IThreadChannel)_agora.GetChannel(EmporiumId.Value, productListing.Product.ReferenceNumber.Value);
 
             try
             {
-                if (active != null && !thread.TagIds.Contains(active.Value) && productListing.Status != ListingStatus.Sold)
+                if (productListing.Status != ListingStatus.Sold)
                 {
-                    if (active == null) return forumChannel;
+                    var isActive = productListing.ScheduledPeriod.ScheduledStart <= SystemClock.Now && active != null;
+                    var isSoon = productListing.ExpiresIn <= TimeSpan.FromHours(1) && soon != null;
 
-                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
+                    if (isActive)
                     {
-                        x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != locked.GetValueOrDefault()).Append(active.Value).ToArray();
-                    });
+                        var tagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != locked.GetValueOrDefault()).ToList();
+
+                        var count = tagIds.Count;
+
+                        if (!tagIds.Contains(active.Value)) tagIds.Add(active.Value);
+                        
+                        if (isSoon && !tagIds.Contains(soon.Value)) tagIds.Add(soon.Value);
+
+                        if (count != tagIds.Count)
+                            await ModifyThreadTagsAsync(thread, tagIds);
+                    }
+                    
+                    if (soon != null && !isSoon && thread.TagIds.Contains(soon.Value))
+                        await ModifyThreadTagsAsync(thread, thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != soon.GetValueOrDefault() && tag != locked.GetValueOrDefault()).ToList());
                 }
-                else if (productListing.Status == ListingStatus.Sold)
+                else if (locked != null)
                 {
-                    if (locked == null) return forumChannel;
-
-                    await _agora.ModifyThreadChannelAsync(productListing.Product.ReferenceNumber.Value, x =>
-                    {
-                        x.TagIds = thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault()).Append(locked.Value).ToArray();
-                    });
+                    await ModifyThreadTagsAsync(thread, thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault() && tag != soon.GetValueOrDefault()).Append(locked.Value).ToList());
                 }
             }
             catch (Exception)
             {
-                //failed to update tags on forum post
+                // Failed to update tags on forum post
             }
 
             return forumChannel;
         }
+
+        private async Task ModifyThreadTagsAsync(IThreadChannel thread, List<Snowflake> tagIds) => await _agora.ModifyThreadChannelAsync(thread.Id, x =>
+        {
+            x.TagIds = tagIds.Distinct().ToArray();
+        });
 
         private async Task RefreshProductListingAsync(Listing productListing, List<LocalEmbed> productEmbeds, ulong channelId, IDiscordGuildSettings settings)
         {
@@ -361,16 +375,45 @@ namespace Agora.Addons.Disqord
 
         private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.SendMessagesInThreads | Permissions.ManageChannels);
+            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.SendMessagesInThreads | Permissions.ManageChannels);
 
-            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Sold);
+            forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Soon, AgoraTag.Expired, AgoraTag.Sold);
 
             var type = productListing.Type.ToString().Replace("Market", "Sale");
             var price = productListing.Type == ListingType.Market ? $"({productListing.ValueTag})" : string.Empty;
-            var tags = new List<Snowflake>() { forum.Tags.First(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase)).Id };
+            var tags = new List<Snowflake>();
+
+            var pendingTag = forum.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+            var activeTag = forum.Tags.First(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+            var endingSoonTag = forum.Tags.First(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+
+            if (productListing.ScheduledPeriod.ScheduledStart >= SystemClock.Now.AddSeconds(5))
+            {
+                tags.Add(pendingTag);
+            }
+            else
+            {
+                tags.Add(activeTag);
+
+                if (productListing.ExpiresIn <= TimeSpan.FromHours(1)) tags.Add(endingSoonTag);
+            }
 
             if (category != string.Empty)
                 tags.AddRange(await GetTagIdsAsync(forum, category.Split(':')));
+
+            var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+
+            message.WithContent($"Expiration: {expiration}\n");
+
+            if (type.Equals("Auction"))
+            {
+                var item = (AuctionItem)productListing.Product;
+                var bids = productListing is VickreyAuction 
+                         ? $"Bids: {item.Offers.Count}"
+                         : $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}";
+
+                message.Content += bids;
+            }
 
             var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
             {

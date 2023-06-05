@@ -10,10 +10,14 @@ namespace Agora.Addons.Disqord
         private readonly ILogger _logger;
         private readonly RecurringJob[] _jobs;
 
-        public ProductListingScheduler(ListingActivationJob activationJob, ListingExpirationJob expirationJob, DiscountExpirationJob discountExpirationJob, ILogger<ProductListingScheduler> logger)
+        public ProductListingScheduler(ListingActivationJob activationJob,
+                                       ListingExpirationJob expirationJob,
+                                       PendingClosureJob pendingClosureJob,
+                                       DiscountExpirationJob discountExpirationJob,
+                                       ILogger<ProductListingScheduler> logger)
         {
             _logger = logger;
-            _jobs = new RecurringJob[] { activationJob, expirationJob, discountExpirationJob };
+            _jobs = new RecurringJob[] { activationJob, expirationJob, pendingClosureJob, discountExpirationJob };
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

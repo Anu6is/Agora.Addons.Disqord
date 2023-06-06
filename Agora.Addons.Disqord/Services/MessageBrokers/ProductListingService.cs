@@ -15,6 +15,7 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
+using static Disqord.Discord.Limits.Message;
 
 namespace Agora.Addons.Disqord
 {
@@ -167,12 +168,34 @@ namespace Agora.Addons.Disqord
 
         private async Task RefreshProductListingAsync(Listing productListing, List<LocalEmbed> productEmbeds, ulong channelId, IDiscordGuildSettings settings)
         {
+            var content = string.Empty;
+            var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+
+            if (channel is IThreadChannel forumChannel
+                && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
+            {
+                var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+
+                content = $"Expiration: {expiration}\n";
+
+                if (productListing.Type == ListingType.Auction)
+                {
+                    var item = (AuctionItem)productListing.Product;
+                    var bids = productListing is VickreyAuction
+                             ? $"Bids: {item.Offers.Count}"
+                             : $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}";
+
+                    content += bids;
+                }
+            }
+
             if (_interactionAccessor.Context == null
                 || (_interactionAccessor.Context.Interaction is IComponentInteraction component
                 && component.Message.Id != productListing.Product.ReferenceNumber.Value))
             {
                 await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
                 {
+                    x.Content = content;
                     x.Embeds = productEmbeds;
                     x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
                 });
@@ -184,12 +207,14 @@ namespace Agora.Addons.Disqord
                 if (interaction.Response().HasResponded)
                     await interaction.Followup().ModifyResponseAsync(x =>
                     {
+                        x.Content = content;
                         x.Embeds = productEmbeds;
                         x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
                     });
                 else
                     await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
                     {
+                        Content = content,
                         Embeds = productEmbeds,
                         Components = productListing.Buttons(settings.AllowAcceptingOffer)
                     });

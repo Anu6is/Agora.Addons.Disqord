@@ -13,6 +13,7 @@ namespace Agora.Addons.Disqord
             { "withdrawMarket", "Remove Market Listing" },
             { "withdrawTrade", "Remove Trade Listing" },
             { "acceptAuction", "Accept Current Bid" },
+            { "acceptMarket", "Accept Current Offer"},
             { "bundle", "Confirm This Purchase" },
             { "buy1", "Confirm This Purchase" },
             { "buy", "Confirm This Purchase" },
@@ -30,6 +31,7 @@ namespace Agora.Addons.Disqord
             { "editAuction", EditAuctionListingModal },
             { "editMarket", EditMarketListingModal },
             { "editTrade", EditTradeListingModal },
+            { "bestOffer", SubmitMarketOfferModal },
             { "barter", SubmitTradeOfferModal },
             { "claim", PartialPurchaseModal }
         };
@@ -39,8 +41,10 @@ namespace Agora.Addons.Disqord
             "buy" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "buy1" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "sell" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            "join" => new CreateTicketCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly =  true },
             "trade" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "barter" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
+            "bestOffer" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true, Offer = 0 },
             { } when interaction.CustomId.StartsWith("bundle") => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("extend") => new ExtendListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("extend", "")) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("accept") => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("accept", "")) { AuthorizeOnly = true },
@@ -133,6 +137,13 @@ namespace Agora.Addons.Disqord
                     LocalComponent.Row(LocalComponent.TextInput("image", "Update Image", TextInputComponentStyle.Short).WithPlaceholder("Insert image url").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("description", "Update Description", TextInputComponentStyle.Paragraph).WithPlaceholder("Item description").WithMaximumInputLength(500).WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("message", "Update Buyer's Note", TextInputComponentStyle.Paragraph).WithPlaceholder("Hidden message").WithMaximumInputLength(250).WithIsRequired(false)));
+        }
+
+        private static LocalInteractionModalResponse SubmitMarketOfferModal(IComponentInteraction interaction)
+        {
+            return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
+                .WithTitle("Make an Offer")
+                .WithComponents(LocalComponent.Row(LocalComponent.TextInput("amount", "Your best offer", TextInputComponentStyle.Short).WithPlaceholder("0").WithIsRequired()));
         }
 
         private static LocalInteractionModalResponse SubmitTradeOfferModal(IComponentInteraction interaction)

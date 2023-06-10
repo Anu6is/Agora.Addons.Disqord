@@ -32,6 +32,8 @@ namespace Agora.Addons.Disqord
                     return EditMarketListing(modalInteraction, emporiumId, showroomId, keys);
                 case "editTrade":
                     return EditTradeListing(modalInteraction, emporiumId, showroomId, keys);
+                case "bestOffer":
+                    return SubmitMarketOfferModal(modalInteraction, emporiumId, showroomId, keys);
                 case "barter":
                     return SubmitTradeOffer(modalInteraction, emporiumId, showroomId, keys);
                 case "claim":
@@ -52,6 +54,8 @@ namespace Agora.Addons.Disqord
             { } when interaction.CustomId.StartsWith("claim")
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral()),
             { } when interaction.CustomId.StartsWith("barter")
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully submitted!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("bestOffer")
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully submitted!").WithIsEphemeral()),
             _ => Task.CompletedTask
         };
@@ -153,7 +157,7 @@ namespace Agora.Addons.Disqord
             };
         }
 
-        private IBaseRequest EditGiveawayListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        private static IBaseRequest EditGiveawayListing(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
         {
             var rows = modalInteraction.Components
                 .OfType<IRowComponent>()
@@ -168,6 +172,17 @@ namespace Agora.Addons.Disqord
                 Message = rows["message"].IsNull() ? null : HiddenMessage.Create(rows["message"]),
                 Description = rows["description"].IsNull() ? null : ProductDescription.Create(rows["description"]),
             };
+        }
+
+        private static IBaseRequest SubmitMarketOfferModal(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var input = modalInteraction.Components
+                .OfType<IRowComponent>().First()
+                .Components.OfType<ITextInputComponent>().First().Value;
+
+            if (!decimal.TryParse(input, out var offer)) throw new ValidationException("Offer amount must be a number!");
+
+            return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1]))) { Offer = offer };
         }
 
         private static IBaseRequest SubmitTradeOffer(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)

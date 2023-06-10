@@ -4,6 +4,8 @@ using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
 using Disqord.Gateway;
 using Disqord.Rest;
+using Emporia.Application.Common;
+using Emporia.Application.Features.Commands;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using FluentValidation;
@@ -65,6 +67,8 @@ namespace Agora.Addons.Disqord
                     ? HandleInteraction(interaction, roomId)
                     : await HandleModalInteraction(modalInteraction, roomId);
 
+                if (command is CreatePaymentCommand { Offer: not null })
+                    scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
 
                 await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);
             }

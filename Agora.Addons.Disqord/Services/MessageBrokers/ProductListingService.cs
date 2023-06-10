@@ -15,7 +15,6 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
-using static Disqord.Discord.Limits.Message;
 
 namespace Agora.Addons.Disqord
 {
@@ -406,7 +405,6 @@ namespace Agora.Addons.Disqord
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Soon, AgoraTag.Expired, AgoraTag.Sold);
 
             var type = productListing.Type.ToString().Replace("Market", "Sale");
-            var price = productListing.Type == ListingType.Market ? $"({productListing.ValueTag})" : string.Empty;
             var tags = new List<Snowflake>();
 
             var pendingTag = forum.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
@@ -431,17 +429,17 @@ namespace Agora.Addons.Disqord
 
             message.WithContent($"Expiration: {expiration}\n");
 
-            if (type.Equals("Auction"))
+            message.Content += productListing switch
             {
-                var item = (AuctionItem)productListing.Product;
-                var bids = productListing is VickreyAuction 
-                         ? $"Bids: {item.Offers.Count}"
-                         : $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}";
+                { Type: ListingType.Market } => $"Price: {productListing.ValueTag}",
+                VickreyAuction { Product: AuctionItem item } => $"Bids: {item.Offers.Count}",
+                { Product: AuctionItem item } => $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}",
+                CommissionTrade trade => $"Commission: {trade.ValueTag}",
+                RaffleGiveaway { Product: GiveawayItem item } => $"Ticket Price: {item.TicketPrice}",
+                _ => string.Empty
+            };
 
-                message.Content += bids;
-            }
-
-            var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title} {price}", message, x =>
+            var showroom = await forum.CreateThreadAsync($"[{type}] {productListing.Product.Title}", message, x =>
             {
                 x.AutomaticArchiveDuration = TimeSpan.FromDays(7);
                 x.TagIds = tags.Take(20).ToArray();

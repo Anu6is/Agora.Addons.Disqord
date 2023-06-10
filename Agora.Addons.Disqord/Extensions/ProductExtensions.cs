@@ -55,10 +55,10 @@ namespace Agora.Addons.Disqord.Extensions
 
             switch (listing)
             {
-                case CommissionTrade:
-                    firstRowButtons.AddComponent(LocalComponent.Button("sell", "Claim")
+                case { Product: AuctionItem }:
+                    firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer")
                                    .WithStyle(LocalButtonComponentStyle.Success)
-                                   .WithIsDisabled(!listing.IsActive()));
+                                   .WithIsDisabled(!earlyAcceptance || listing.CurrentOffer == null));
                     break;
                 case MassMarket:
                     firstRowButtons.AddComponent(LocalComponent.Button("claim", "Buy [X]")
@@ -81,29 +81,31 @@ namespace Agora.Addons.Disqord.Extensions
                                                                .WithStyle(LocalButtonComponentStyle.Success)
                                                                .WithIsDisabled(!listing.IsActive()));
                     break;
+                case CommissionTrade:
+                    firstRowButtons.AddComponent(LocalComponent.Button("sell", "Claim")
+                                   .WithStyle(LocalButtonComponentStyle.Success)
+                                   .WithIsDisabled(!listing.IsActive()));
+                    break;
+                case StandardGiveaway or RaffleGiveaway:
+                    var giveaway = (GiveawayItem)listing.Product;
+                    var soldOut = giveaway.MaxParticipants > 0 && giveaway.Offers.Count == giveaway.MaxParticipants;
+
+                    firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Draw Now")
+                                   .WithStyle(LocalButtonComponentStyle.Success)
+                                   .WithIsDisabled(listing.CurrentOffer == null || (!soldOut && !earlyAcceptance)));
+                    break;
                 default:
                     break;
             }
 
-
-            if (listing.Product is MarketItem)
+            if (listing is StandardMarket { AllowOffers: true })
+                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer")
+                               .WithStyle(LocalButtonComponentStyle.Success)
+                               .WithIsDisabled(listing.CurrentOffer == null));
+            else if (listing.Product is MarketItem)
                 firstRowButtons.AddComponent(LocalComponent.Button(listing is MultiItemMarket ? "buy1" : "buy", "Buy")
                                .WithStyle(LocalButtonComponentStyle.Success)
                                .WithIsDisabled(!listing.IsActive()));
-            else if (listing.Product is AuctionItem)
-                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Accept Offer")
-                               .WithStyle(LocalButtonComponentStyle.Success)
-                               .WithIsDisabled(!earlyAcceptance || listing.CurrentOffer == null));
-            else if (listing is StandardGiveaway or RaffleGiveaway) 
-            {
-                var item = (GiveawayItem)listing.Product;
-                var soldOut = item.MaxParticipants > 0 && item.Offers.Count == item.MaxParticipants;
-
-                firstRowButtons.AddComponent(LocalComponent.Button($"accept{type}", "Draw Now")
-                               .WithStyle(LocalButtonComponentStyle.Success)
-                               .WithIsDisabled(listing.CurrentOffer == null || (!soldOut && !earlyAcceptance)));
-
-            }
 
             var secondRowButtons = ParticipantButtons(listing);
 
@@ -157,7 +159,16 @@ namespace Agora.Addons.Disqord.Extensions
                     LocalComponent.Button("join", "Get Ticket")
                                   .WithStyle(LocalButtonComponentStyle.Success)
                                   .WithIsDisabled(giveawayItem.MaxParticipants > 0 && giveawayItem.MaxParticipants == giveawayItem.Offers.Count)),
-            { Product: MarketItem } => null,
+            StandardMarket { AllowOffers: true } => 
+                LocalComponent.Row(
+                    LocalComponent.Button($"revertMarket", "Undo Offer")
+                                  .WithStyle(LocalButtonComponentStyle.Danger)
+                                  .WithIsDisabled(listing.CurrentOffer == null),
+                    LocalComponent.Button("bestOffer", "Make Offer")
+                                  .WithStyle(LocalButtonComponentStyle.Primary),
+                    LocalComponent.Button("buy", "Buy Now")
+                                  .WithStyle(LocalButtonComponentStyle.Success)
+                    ),
             StandardTrade trade => trade.AllowOffers
                                 ? null // TODO add buttons for bartering 
                                 : null,
@@ -297,9 +308,12 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
         {
-            StandardMarket market => embed.AddInlineField("Discounted Price", market.DiscountValue == 0
-                ? Markdown.Italics("No Discount Applied")
-                : (market.Product as MarketItem).CurrentPrice.ToString()),
+            StandardMarket market => embed.AddInlineField(market.AllowOffers ? "Best Offer" : "Discounted Price", 
+                                                          market.AllowOffers 
+                ? listing.CurrentOffer ?? Offer.Create(listing.Owner, listing.ProductId, Tag.Create("No Offers Submitted"))
+                : market.DiscountValue == 0
+                    ? Markdown.Italics("No Discount Applied")
+                    : (market.Product as MarketItem).CurrentPrice.ToString()),
             FlashMarket market => embed.AddInlineField("Discount Ends", market.DiscountEndDate.ToUniversalTime() < SystemClock.Now
                 ? Markdown.Italics("Expired")
                 : market.IsActive() ? Markdown.Timestamp(market.DiscountEndDate, Markdown.TimestampFormat.RelativeTime) : Markdown.Bold("||To be announced...||")),

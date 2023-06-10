@@ -53,6 +53,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("The type of discount to apply.")] Discount discountType = Discount.None,
                 [Description("The amount of discount to apply."), Minimum(0)] double discountAmount = 0,
+                [Description("Allow buyers to submit a counter offer.")] bool allowOffers = false,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
@@ -96,6 +97,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var listing = new StandardMarketModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
+                    AllowOffers = allowOffers,
                     Discount = discountType,
                     DiscountValue = (decimal)discountAmount,
                     HiddenMessage = message,

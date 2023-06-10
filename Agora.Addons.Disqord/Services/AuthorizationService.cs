@@ -134,6 +134,7 @@ namespace Agora.Addons.Disqord
                         return $"Invalid Operation: Item has to be listed for at least {duration}. {remaining} remaining.";
                     break;
                 case RevertTransactionCommand command:
+                    if (command.Showroom.Listings.First() is StandardMarket { AllowOffers: true } market && market.Status < ListingStatus.Withdrawn) return string.Empty;
                     if (!settings.TransactionConfirmation) return "Invalid Operation: This action has been disabled.";
                     break;
                 case WithdrawListingCommand command:
@@ -236,12 +237,13 @@ namespace Agora.Addons.Disqord
                     {
                         if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
 
-                        var cmd = command as CreatePaymentCommand;
+                        var cmd = command as CreatePaymentCommand;                        
+
                         var item = cmd.Showroom.Listings.First().Product as MarketItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.Price.Currency);
 
-                        return userBalance >= cmd.PaymentAmount;
+                        return userBalance >= cmd.PaymentAmount || (cmd.Offer.HasValue && userBalance >= cmd.Offer.Value);
                     });
 
                     if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
@@ -314,6 +316,8 @@ namespace Agora.Addons.Disqord
                                                || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 UnscheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
                                                || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
+                RevertTransactionCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner) 
+                                                 || currentUser.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId),
                 IProductListingBinder binder => await _userManager.IsBroker(currentUser)
                                              || currentUser.Equals(binder.Showroom.Listings.FirstOrDefault()?.Owner),
                 _ => false
@@ -322,17 +326,13 @@ namespace Agora.Addons.Disqord
             return isManager ? string.Empty : "Unauthorized Access: You cannot perform this action.";
         }
 
-        private static string ValidateStaff()
-        {
-            return "Not implemented";
-        }
+        private static string ValidateStaff() => "Not implemented";
 
         private static string ValidateOwner<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
             var isOwner = request switch
             {
                 AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
-                RevertTransactionCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
                 _ => true
             };
 

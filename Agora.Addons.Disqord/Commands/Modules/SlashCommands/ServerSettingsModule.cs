@@ -8,13 +8,17 @@ using Agora.Shared.EconomyFactory;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
+using Disqord.Gateway;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Emporia.Extensions.Discord.Features.MessageBroker;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
+using Qommon;
+using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -142,6 +146,114 @@ namespace Agora.Addons.Disqord.Commands
                 var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, Settings, Context.Services.CreateScope().ServiceProvider);
 
                 return View(new ListingRequirementsView((DefaultListingRequirements)requirements, settingsContext));
+            }
+        }
+
+        [RequireSetup]
+        [SlashGroup("room")]
+        [Description("Manage server assigned showrooms")]
+        public sealed class ShowroomCommands : AgoraModuleBase
+        {
+            public enum RoomType { Auction, Market = 2, Trade = 3, Giveaway = 4 }
+
+            [SlashCommand("add")]
+            [Description("Assign a new showroom (channel)")]
+            public async Task<IResult> AddShowroom(
+                [Description("Select the type of room")] RoomType showroom,
+                [Description("Select a category channel")] Snowflake category, 
+                [Description("Select a text/forum channel")] Snowflake channel)
+            {
+                try
+                {
+                    await Data.BeginTransactionAsync(async () =>
+                    {
+                        var room = await Base.ExecuteAsync(new CreateShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
+
+                        var settings = (DefaultDiscordGuildSettings)Settings;
+
+                        if (settings.AvailableRooms.Add(ListingType.Auction.ToString()))
+                            await Base.ExecuteAsync(new UpdateGuildSettingsCommand(settings));
+                    });
+                 
+                    return Response(new LocalInteractionMessageResponse().WithContent($"New {showroom} showroom registered - {Mention.Channel(channel)}").WithIsEphemeral());
+                }
+                catch (Exception ex)
+                {
+                    var message = ex switch
+                    {
+                        ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                        _ => "An error occured while processing this action. If this persists, please contact support."
+                    };
+                    return Response(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
+                }
+            }
+
+            [SlashCommand("remove")]
+            [Description("Remove an existing showroom (channel)")]
+            public async Task<IResult> RemoveShowroom(
+                [Description("Select the type of room")] RoomType showroom,
+                [Description("Select a category channel")] Snowflake category,
+                [Description("Select a text/forum channel")] Snowflake channel)
+            {
+                try
+                {
+                    await Base.ExecuteAsync(new DeleteShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
+
+
+                    return Response(new LocalInteractionMessageResponse().WithContent($"Removed {showroom} showroom - {Mention.Channel(channel)}").WithIsEphemeral());
+                }
+                catch (Exception ex)
+                {
+                    var message = ex switch
+                    {
+                        ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                        _ => "An error occured while processing this action. If this persists, please contact support."
+                    };
+                    return Response(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
+                }
+            }
+
+            [AutoComplete("add")]
+            [AutoComplete("remove")]
+            public Task AutoComplete(AutoComplete<string> category, AutoComplete<string> channel)
+            {
+                var categoryChannels = Guild.GetChannels().Values.OfType<CachedCategoryChannel>();
+
+                if (category.IsFocused)
+                {
+                    if (!categoryChannels.Any())
+                        category.Choices.Add("No category channels found!", "0");
+                    else if (category.RawArgument == string.Empty)
+                        category.Choices.AddRange(categoryChannels.Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))
+                                                                  .ToArray());
+                    else
+                        category.Choices.AddRange(categoryChannels.Where(x => x.Name.Contains(category.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                  .Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))
+                                                                  .ToArray());
+                }
+                else if (channel.IsFocused)
+                {
+                    if (!category.Argument.TryGetValue(out var channelCategory))
+                        channel.Choices.Add("Select a category to populate suggestions.", "0");
+                    else
+                    {
+                        var textChannels = Guild.GetChannels().Values.OfType<ICategorizableGuildChannel>()
+                                            .Where(x => x.CategoryId.ToString().Equals(channelCategory)
+                                                     && (x.Type == ChannelType.Text || x.Type == ChannelType.News || x.Type == ChannelType.Forum));
+
+                        if (!textChannels.Any())
+                            channel.Choices.Add("No suitable channels exist in the selected category!", "0");
+                        else if (channel.RawArgument == string.Empty)
+                            channel.Choices.AddRange(textChannels.Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))
+                                                                 .ToArray());
+                        else
+                            channel.Choices.AddRange(textChannels.Where(x => x.Name.Contains(channel.RawArgument, StringComparison.OrdinalIgnoreCase))
+                                                                 .Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))
+                                                                 .ToArray());
+                    }
+                }
+
+                return Task.CompletedTask;
             }
         }
 

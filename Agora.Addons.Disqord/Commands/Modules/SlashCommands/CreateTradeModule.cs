@@ -232,7 +232,7 @@ namespace Agora.Addons.Disqord.Commands
             [AutoComplete("standard")]
             [AutoComplete("request")]
             //[AutoComplete("open")]
-            public async Task AutoCompleteAuction(AutoComplete<string> category, AutoComplete<string> subcategory)
+            public async Task AutoComplete(AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 

@@ -327,7 +327,7 @@ namespace Agora.Addons.Disqord.Commands
             [AutoComplete("multi-item")]
             [AutoComplete("flash")]
             [AutoComplete("bulk")]
-            public async Task AutoCompleteAuction(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
+            public async Task AutoComplete(AutoComplete<string> currency, AutoComplete<string> category, AutoComplete<string> subcategory)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 

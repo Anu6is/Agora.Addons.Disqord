@@ -15,6 +15,7 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
+using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {
@@ -177,15 +178,15 @@ namespace Agora.Addons.Disqord
 
                 content = $"Expiration: {expiration}\n";
 
-                if (productListing.Type == ListingType.Auction)
+                content += productListing switch
                 {
-                    var item = (AuctionItem)productListing.Product;
-                    var bids = productListing is VickreyAuction
-                             ? $"Bids: {item.Offers.Count}"
-                             : $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}";
-
-                    content += bids;
-                }
+                    { Type: ListingType.Market } => $"Price: {productListing.ValueTag}",
+                    VickreyAuction { Product: AuctionItem item } => $"Bids: {item.Offers.Count}",
+                    { Product: AuctionItem item } => $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}",
+                    CommissionTrade trade => $"Commission: {trade.ValueTag}",
+                    RaffleGiveaway { Product: GiveawayItem item } => $"Ticket Price: {item.TicketPrice}",
+                    _ => string.Empty
+                };
             }
 
             if (_interactionAccessor.Context == null

@@ -198,7 +198,7 @@ namespace Agora.Addons.Disqord.Commands
             public async Task<IResult> CreateLiveAuction(
                 [Description("Title of the item to be auctioned."), Maximum(75)] ProductTitle title,
                 [Description("Price at which bidding should start at. Numbers only!"), Minimum(0)] double startingPrice,
-                [Description("Max time between bids. Auction ends if no new bids. (example: 5m or 5 minutes)"), RestrictTimeout(5, 86400)] TimeSpan timeout,
+                [Description("Max time between bids. Auction ends if no new bids. (example: 5m or 5 minutes)"), RestrictTimeout(5, 432000)] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
                 [Description("Length of time the auction should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,

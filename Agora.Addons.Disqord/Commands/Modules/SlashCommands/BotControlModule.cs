@@ -1,6 +1,4 @@
-﻿using Agora.Addons.Conversion;
-using Agora.Addons.Disqord.Checks;
-using Agora.Shared;
+﻿using Agora.Shared;
 using Agora.Shared.Extensions;
 using Agora.Shared.Models;
 using Disqord;
@@ -10,7 +8,6 @@ using Disqord.Gateway;
 using Humanizer;
 using Humanizer.Localisation;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Qmmands;
@@ -140,26 +137,26 @@ namespace Agora.Addons.Disqord.Commands
             await Response(status);
         }
 
-        [RequireBotOwner]
-        [SkipAuthentication]
-        [SlashCommand("convert")]
-        [RequireGuild(551567205461131305)]
-        [Description("Run the conversion process")]
-        public async Task RunConversion([Description("The name of the service to convert to")] string serviceName)
-        {
-            RebootInProgress = true;
+        //[RequireBotOwner]
+        //[SkipAuthentication]
+        //[SlashCommand("convert")]
+        //[RequireGuild(551567205461131305)]
+        //[Description("Run the conversion process")]
+        //public async Task RunConversion([Description("The name of the service to convert to")] string serviceName)
+        //{
+        //    RebootInProgress = true;
 
-            Logger.LogInformation("Starting conversion");
+        //    Logger.LogInformation("Starting conversion");
 
-            await Deferral();
-            await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
+        //    await Deferral();
+        //    await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
 
-            var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync(Context);
+        //    var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync(Context);
 
-            Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);
+        //    Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);
 
-            Restart(serviceName);
-        }
+        //    Restart(serviceName);
+        //}
 
         private async Task<IResult> GetStatsAsync()
         {
@@ -172,7 +169,7 @@ namespace Agora.Addons.Disqord.Commands
             return Response($"{memory} | {uptime}");
         }
 
-        private async void Restart(string serviceName)
+        private void Restart(string serviceName)
         {
             var psi = new ProcessStartInfo("sudo")
             {
@@ -190,8 +187,6 @@ namespace Agora.Addons.Disqord.Commands
                 Logger.LogWarning("Failed to restart service");
 
             }
-
-            await Response("Conversion complete!");
         }
     }
 }

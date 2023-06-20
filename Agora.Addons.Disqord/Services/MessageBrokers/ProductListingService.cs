@@ -15,7 +15,6 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
-using static Disqord.Discord.Limits;
 
 namespace Agora.Addons.Disqord
 {

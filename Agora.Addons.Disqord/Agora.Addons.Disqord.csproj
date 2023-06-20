@@ -17,7 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Agora.Addons.Conversion\Agora.Addons.Conversion.csproj" />
     <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
   </ItemGroup>
 

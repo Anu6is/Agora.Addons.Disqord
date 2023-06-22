@@ -21,15 +21,16 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Early Acceptance";
+                    button.Label = $"{(_settings.Features.AcceptOffers ? "Disable" : "Enable")} Early Acceptance";
             }
         }
 
         [Button(Label = "Early Acceptance", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask RecallListings(ButtonEventArgs e)
         {
-            _settings.AllowAcceptingOffer = !_settings.AllowAcceptingOffer;
-            e.Button.Label = $"{(_settings.AllowAcceptingOffer ? "Disable" : "Enable")} Early Acceptance";
+            _settings.Flags = _settings.Features.ToggleFlag(SettingsFlags.AcceptOffers);
+
+            e.Button.Label = $"{(_settings.Features.AcceptOffers ? "Disable" : "Enable")} Early Acceptance";
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Allow Early Acceptance"));
 
@@ -41,11 +42,11 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
         public async ValueTask SaveBidingOptions(ButtonEventArgs e)
         {
-            if (_settings.AllowAcceptingOffer == _context.Settings.AllowAcceptingOffer) return;
+            if (_settings.Flags == _context.Settings.Flags) return;
 
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-            settings.AllowAcceptingOffer = _settings.AllowAcceptingOffer;
+            settings.Flags = _settings.Flags;
 
             using var scope = _context.Services.CreateScope();
             {

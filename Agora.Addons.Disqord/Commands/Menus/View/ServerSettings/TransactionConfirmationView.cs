@@ -21,15 +21,15 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.TransactionConfirmation ? "Disable" : "Enable")} Transaction Confirmation";
+                    button.Label = $"{(_settings.Features.ConfirmTransactions ? "Disable" : "Enable")} Transaction Confirmation";
             }
         }
 
         [Button(Label = "Transaction Confirmation", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask ConfirmTransactions(ButtonEventArgs e)
         {
-            _settings.TransactionConfirmation = !_settings.TransactionConfirmation;
-            e.Button.Label = $"{(_settings.TransactionConfirmation ? "Disable" : "Enable")} Transaction Confirmation";
+            _settings.Flags = _settings.Features.ToggleFlag(SettingsFlags.ConfirmTransactions);
+            e.Button.Label = $"{(_settings.Features.ConfirmTransactions ? "Disable" : "Enable")} Transaction Confirmation";
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Confirm Transactions"));
 
@@ -41,11 +41,11 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
         public async ValueTask SaveOptions(ButtonEventArgs e)
         {
-            if (_settings.TransactionConfirmation == _context.Settings.TransactionConfirmation) return;
+            if (_settings.Flags == _context.Settings.Flags) return;
 
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-            settings.TransactionConfirmation = _settings.TransactionConfirmation;
+            settings.Flags = _settings.Flags;
 
             using var scope = _context.Services.CreateScope();
             {

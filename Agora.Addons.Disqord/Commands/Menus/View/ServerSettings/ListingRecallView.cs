@@ -21,15 +21,15 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.AllowListingRecall ? "Disable" : "Enable")} Listings Recall";
+                    button.Label = $"{(_settings.Features.RecallListings ? "Disable" : "Enable")} Listings Recall";
             }
         }
 
         [Button(Label = "Listings Recall", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask RecallListings(ButtonEventArgs e)
         {
-            _settings.AllowListingRecall = !_settings.AllowListingRecall;
-            e.Button.Label = $"{(_settings.AllowListingRecall ? "Disable" : "Enable")} Listings Recall";
+            _settings.Flags = _settings.Features.ToggleFlag(SettingsFlags.RecallListings);
+            e.Button.Label = $"{(_settings.Features.RecallListings ? "Disable" : "Enable")} Listings Recall";
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Recall Listings"));
 
@@ -41,11 +41,11 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
         public async ValueTask SaveBidingOptions(ButtonEventArgs e)
         {
-            if (_settings.AllowListingRecall == _context.Settings.AllowListingRecall) return;
+            if (_settings.Flags == _context.Settings.Flags) return;
 
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-            settings.AllowListingRecall = _settings.AllowListingRecall;
+            settings.Flags = _settings.Flags;
 
             using var scope = _context.Services.CreateScope();
             {

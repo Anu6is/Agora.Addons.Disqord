@@ -52,7 +52,7 @@ namespace Agora.Addons.Disqord
             var categorization = await GetCategoryAsync(productListing);
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization))
-                                            .WithComponents(productListing.Buttons(settings.AllowAcceptingOffer));
+                                            .WithComponents(productListing.Buttons(settings.Features.AcceptOffers));
 
             if (channel is CachedForumChannel forum)
                 return ReferenceNumber.Create(await CreateForumPostAsync(forum, message, productListing, categorization));
@@ -196,7 +196,7 @@ namespace Agora.Addons.Disqord
                 {
                     x.Content = content;
                     x.Embeds = productEmbeds;
-                    x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
+                    x.Components = productListing.Buttons(settings.Features.AcceptOffers);
                 });
             }
             else
@@ -208,14 +208,14 @@ namespace Agora.Addons.Disqord
                     {
                         x.Content = content;
                         x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons(settings.AllowAcceptingOffer);
+                        x.Components = productListing.Buttons(settings.Features.AcceptOffers);
                     });
                 else
                     await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
                     {
                         Content = content,
                         Embeds = productEmbeds,
-                        Components = productListing.Buttons(settings.AllowAcceptingOffer)
+                        Components = productListing.Buttons(settings.Features.AcceptOffers)
                     });
             }
         }

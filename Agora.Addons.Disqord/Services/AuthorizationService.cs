@@ -124,7 +124,7 @@ namespace Agora.Addons.Disqord
             {
                 case AcceptListingCommand command:
                     if (command.ListingType != ListingType.Auction.ToString()) return string.Empty;
-                    if (!settings.AllowAcceptingOffer) return "Invalid Operation: This action has been disabled.";
+                    if (!settings.Features.AcceptOffers) return "Invalid Operation: This action has been disabled.";
 
                     var canAcceptFrom = command.Showroom.Listings.First().ScheduledPeriod.ScheduledStart.Add(settings.MinimumDuration).ToUniversalTime();
                     var duration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
@@ -135,11 +135,11 @@ namespace Agora.Addons.Disqord
                     break;
                 case RevertTransactionCommand command:
                     if (command.Showroom.Listings.First() is StandardMarket { AllowOffers: true } market && market.Status < ListingStatus.Withdrawn) return string.Empty;
-                    if (!settings.TransactionConfirmation) return "Invalid Operation: This action has been disabled.";
+                    if (!settings.Features.ConfirmTransactions) return "Invalid Operation: This action has been disabled.";
                     break;
                 case WithdrawListingCommand command:
                     if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
-                    if (!settings.AllowListingRecall && command.Showroom.Listings.First().CurrentOffer != null)
+                    if (!settings.Features.RecallListings && command.Showroom.Listings.First().CurrentOffer != null)
                         return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
                     break;
                 case UndoBidCommand command:
@@ -201,7 +201,7 @@ namespace Agora.Addons.Disqord
 
                     if (listing == null) return "Invalid Action: Listing is no longer available";
 
-                    if (!settings.AllowShillBidding && currentUser.Equals(listing.Owner))
+                    if (!settings.Features.AllowShillBidding && currentUser.Equals(listing.Owner))
                         return "Transaction Denied: You cannot bid on an item you listed. Enable **Shill Bidding** in </server settings:1013361602499723275>.";
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>

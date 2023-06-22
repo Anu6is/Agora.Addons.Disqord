@@ -21,15 +21,15 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+                    button.Label = $"{(_settings.Features.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
             }
         }
 
         [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
         public ValueTask ShillBidding(ButtonEventArgs e)
         {
-            _settings.AllowShillBidding = !_settings.AllowShillBidding;
-            e.Button.Label = $"{(_settings.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+            _settings.Flags = _settings.Features.ToggleFlag(SettingsFlags.ShillBidding);
+            e.Button.Label = $"{(_settings.Features.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
 
@@ -41,11 +41,11 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
         public async ValueTask SaveBidingOptions(ButtonEventArgs e)
         {
-            if (_settings.AllowShillBidding == _context.Settings.AllowShillBidding) return;
+            if (_settings.Flags == _context.Settings.Flags) return;
 
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-            settings.AllowShillBidding = _settings.AllowShillBidding;
+            settings.Flags = _settings.Flags;
 
             using var scope = _context.Services.CreateScope();
             {

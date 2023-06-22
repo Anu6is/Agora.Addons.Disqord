@@ -83,10 +83,10 @@ namespace Agora.Addons.Disqord.Extensions
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
-            var confirmation = settings.TransactionConfirmation ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-            var shillBid = settings.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-            var listingRecall = settings.AllowListingRecall ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-            var earlyAcceptance = settings.AllowAcceptingOffer ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var confirmation = settings.Features.ConfirmTransactions ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var shillBid = settings.Features.AllowShillBidding ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var listingRecall = settings.Features.RecallListings ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+            var earlyAcceptance = settings.Features.AcceptOffers ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
             var minDuration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var maxDuration = settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
@@ -110,13 +110,13 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Minimum Duration", minDuration)
                 .AddInlineField("Maximum Duration", maxDuration)
                 .AddInlineField("Default Duration", defaultDuration)
-                .AddField($"{earlyAcceptance} Allow Early Acceptance", settings.AllowAcceptingOffer ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddField($"{earlyAcceptance} Allow Early Acceptance", settings.Features.AcceptOffers ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
-                .AddInlineField($"{shillBid} Shill Bidding", settings.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
-                .AddInlineField($"{confirmation} Confirm Transactions", settings.TransactionConfirmation ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
-                .AddInlineField($"{listingRecall} Recall Listings", settings.AllowListingRecall ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddInlineField($"{shillBid} Shill Bidding", settings.Features.AllowShillBidding ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddInlineField($"{confirmation} Confirm Transactions", settings.Features.ConfirmTransactions ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
+                .AddInlineField($"{listingRecall} Recall Listings", settings.Features.RecallListings ? Markdown.Bold("Enabled") : Markdown.Italics("Disabled"))
                 .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
                 .AddInlineBlankField()

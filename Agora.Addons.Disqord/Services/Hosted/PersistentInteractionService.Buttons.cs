@@ -32,6 +32,7 @@ namespace Agora.Addons.Disqord
             { "editMarket", EditMarketListingModal },
             { "editTrade", EditTradeListingModal },
             { "bestOffer", SubmitMarketOfferModal },
+            { "custombid", SubmitCustomBidModal },
             { "barter", SubmitTradeOfferModal },
             { "claim", PartialPurchaseModal }
         };
@@ -45,6 +46,7 @@ namespace Agora.Addons.Disqord
             "trade" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "barter" => new CreateDealCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             "bestOffer" => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true, Offer = 0 },
+            "custombid" => new CreateBidCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), 0) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("bundle") => new CreatePaymentCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id)) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("extend") => new ExtendListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("extend", "")) { AuthorizeOnly = true },
             { } when interaction.CustomId.StartsWith("accept") => new AcceptListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("accept", "")) { AuthorizeOnly = true },
@@ -153,6 +155,13 @@ namespace Agora.Addons.Disqord
                 .WithComponents(
                     LocalComponent.Row(LocalComponent.TextInput("offer", "Trade Offer", TextInputComponentStyle.Short).WithPlaceholder("What are you offering?").WithMaximumInputLength(75).WithIsRequired(true)),
                     LocalComponent.Row(LocalComponent.TextInput("details", "Additional Details", TextInputComponentStyle.Paragraph).WithPlaceholder("Additional details (optional message for item owner)").WithMaximumInputLength(250).WithIsRequired(false)));
+        }
+
+        private static LocalInteractionModalResponse SubmitCustomBidModal(IComponentInteraction interaction)
+        {
+            return new LocalInteractionModalResponse().WithCustomId($"{interaction.CustomId}:{interaction.Message.Id}")
+                .WithTitle("Bid Amount")
+                .WithComponents(LocalComponent.Row(LocalComponent.TextInput("amount", "Custom Bid Amount", TextInputComponentStyle.Short).WithPlaceholder("1").WithIsRequired()));
         }
 
         private static LocalInteractionModalResponse PartialPurchaseModal(IComponentInteraction interaction)

@@ -51,8 +51,9 @@ namespace Agora.Addons.Disqord
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var categorization = await GetCategoryAsync(productListing);
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+            var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization))
-                                            .WithComponents(productListing.Buttons(settings.Features.AcceptOffers));
+                                            .WithComponents(productListing.Buttons(settings.Features.AcceptOffers, hideMinButton));
 
             if (channel is CachedForumChannel forum)
                 return ReferenceNumber.Create(await CreateForumPostAsync(forum, message, productListing, categorization));
@@ -188,6 +189,8 @@ namespace Agora.Addons.Disqord
                 };
             }
 
+            var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
+
             if (_interactionAccessor.Context == null
                 || (_interactionAccessor.Context.Interaction is IComponentInteraction component
                 && component.Message.Id != productListing.Product.ReferenceNumber.Value))
@@ -196,7 +199,7 @@ namespace Agora.Addons.Disqord
                 {
                     x.Content = content;
                     x.Embeds = productEmbeds;
-                    x.Components = productListing.Buttons(settings.Features.AcceptOffers);
+                    x.Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
                 });
             }
             else
@@ -208,14 +211,14 @@ namespace Agora.Addons.Disqord
                     {
                         x.Content = content;
                         x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons(settings.Features.AcceptOffers);
+                        x.Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
                     });
                 else
                     await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
                     {
                         Content = content,
                         Embeds = productEmbeds,
-                        Components = productListing.Buttons(settings.Features.AcceptOffers)
+                        Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton)
                     });
             }
         }

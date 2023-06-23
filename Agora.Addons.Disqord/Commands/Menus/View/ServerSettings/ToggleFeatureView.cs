@@ -8,30 +8,37 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
-    public class BiddingAllowanceView : ServerSettingsView
+    public class ToggleFeatureView : ServerSettingsView
     {
+        private readonly string _featureText;
+        private readonly SettingsFlags _flag;
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
 
-        public BiddingAllowanceView(GuildSettingsContext context, List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
+        public ToggleFeatureView(SettingsFlags flag, 
+                                 string featureText,
+                                 GuildSettingsContext context,
+                                 List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
         {
+            _flag = flag;
             _context = context;
+            _featureText = featureText;
             _settings = context.Settings.DeepClone();
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.Features.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+                    button.Label = $"{(_settings.Features.HasFlag(_flag) ? "Disable" : "Enable")} {featureText}";
             }
         }
 
-        [Button(Label = "Shill Bidding", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
-        public ValueTask ShillBidding(ButtonEventArgs e)
+        [Button(Label = "Toggle", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
+        public ValueTask ConfirmTransactions(ButtonEventArgs e)
         {
-            _settings.Flags = _settings.Features.ToggleFlag(SettingsFlags.ShillBidding);
-            e.Button.Label = $"{(_settings.Features.AllowShillBidding ? "Disable" : "Enable")} Shill Bidding";
+            _settings.Flags = _settings.Features.ToggleFlag(_flag);
+            e.Button.Label = $"{(_settings.Features.HasFlag(_flag) ? "Disable" : "Enable")} {_featureText}";
 
-            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Shill Bidding"));
+            MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed(_featureText));
 
             ReportChanges();
 
@@ -39,7 +46,7 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 3, Row = 4, Emoji = "💾")]
-        public async ValueTask SaveBidingOptions(ButtonEventArgs e)
+        public async ValueTask SaveOptions(ButtonEventArgs e)
         {
             if (_settings.Flags == _context.Settings.Flags) return;
 

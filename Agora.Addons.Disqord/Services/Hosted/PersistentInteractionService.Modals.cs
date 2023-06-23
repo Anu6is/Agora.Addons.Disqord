@@ -33,7 +33,9 @@ namespace Agora.Addons.Disqord
                 case "editTrade":
                     return EditTradeListing(modalInteraction, emporiumId, showroomId, keys);
                 case "bestOffer":
-                    return SubmitMarketOfferModal(modalInteraction, emporiumId, showroomId, keys);
+                    return SubmitMarketOffer(modalInteraction, emporiumId, showroomId, keys);
+                case "custombid":
+                    return SubmitCustomBid(modalInteraction, emporiumId, showroomId, keys);
                 case "barter":
                     return SubmitTradeOffer(modalInteraction, emporiumId, showroomId, keys);
                 case "claim":
@@ -57,6 +59,8 @@ namespace Agora.Addons.Disqord
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully submitted!").WithIsEphemeral()),
             { } when interaction.CustomId.StartsWith("bestOffer")
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer successfully submitted!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("custombid")
+                    => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Bid successfully submitted!").WithIsEphemeral()),
             _ => Task.CompletedTask
         };
 
@@ -174,7 +178,7 @@ namespace Agora.Addons.Disqord
             };
         }
 
-        private static IBaseRequest SubmitMarketOfferModal(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        private static IBaseRequest SubmitMarketOffer(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
         {
             var input = modalInteraction.Components
                 .OfType<IRowComponent>().First()
@@ -183,6 +187,17 @@ namespace Agora.Addons.Disqord
             if (!decimal.TryParse(input, out var offer)) throw new ValidationException("Offer amount must be a number!");
 
             return new CreatePaymentCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1]))) { Offer = offer };
+        }
+
+        private static IBaseRequest SubmitCustomBid(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)
+        {
+            var input = modalInteraction.Components
+                .OfType<IRowComponent>().First()
+                .Components.OfType<ITextInputComponent>().First().Value;
+
+            if (!decimal.TryParse(input, out var amount)) throw new ValidationException("Bid amount must be a number!");
+
+            return new CreateBidCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), amount);
         }
 
         private static IBaseRequest SubmitTradeOffer(IModalSubmitInteraction modalInteraction, EmporiumId emporiumId, ShowroomId showroomId, string[] keys)

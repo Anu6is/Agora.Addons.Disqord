@@ -15,7 +15,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Audit Logs", "Channel to log all the actions performed on a listed item.", (ctx, opts) => new AuditChannelView(ctx, opts)),
                       new ("Duration Settings", "Minimum/Maximum amount of time an item can be listed.",(ctx, opts) => new ListingDurationView(ctx, opts)),
                       new ("Early Offer Acceptance", "Accept offers made and close a listing before time ends.",(ctx, opts) => new ToggleFeatureView(SettingsFlags.AcceptOffers, "Early Acceptance", ctx, opts)),
-                      new ("Min Bid Button", "Enable/Disable the min bid button for auctions",(ctx, opts) => new ToggleFeatureView(SettingsFlags.HideMinMaxButtons, "Min Bid Button", ctx, opts)),
+                      new ("Min Bid Button", "Enable/Disable the min bid button for auctions",(ctx, opts) => new ToggleFeatureView(SettingsFlags.HideMinMaxButtons, "Min Bid Button", ctx, opts, true)),
                       new ("Snipe Trigger", "Remaining time before a bid will trigger an extension.", (ctx, opts) => new SnipeTriggerView(ctx, opts)),
                       new ("Snipe Extension", "Duration to extend by if a bid is made within the trigger range.", (ctx, opts) => new SnipeExtensionView(ctx, opts)),
                       new ("Bidding Recall Limit", "The amount of time allowed before a bid can be recalled.", (ctx, opts) => new BiddingRecallView(ctx, opts)),

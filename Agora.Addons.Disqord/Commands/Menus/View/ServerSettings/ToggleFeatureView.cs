@@ -5,11 +5,13 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
     public class ToggleFeatureView : ServerSettingsView
     {
+        private readonly bool _invert;
         private readonly string _featureText;
         private readonly SettingsFlags _flag;
         private readonly GuildSettingsContext _context;
@@ -18,9 +20,11 @@ namespace Agora.Addons.Disqord.Menus.View
         public ToggleFeatureView(SettingsFlags flag, 
                                  string featureText,
                                  GuildSettingsContext context,
-                                 List<GuildSettingsOption> settingsOptions = null) : base(context, settingsOptions)
+                                 List<GuildSettingsOption> settingsOptions = null, 
+                                 bool invert = false) : base(context, settingsOptions)
         {
             _flag = flag;
+            _invert = invert;
             _context = context;
             _featureText = featureText;
             _settings = context.Settings.DeepClone();
@@ -28,7 +32,7 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.Features.HasFlag(_flag) ? "Disable" : "Enable")} {featureText}";
+                    button.Label = $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable")  : (_invert ? "Disable" : "Enable"))} {featureText}";
             }
         }
 
@@ -36,10 +40,8 @@ namespace Agora.Addons.Disqord.Menus.View
         public ValueTask ConfirmTransactions(ButtonEventArgs e)
         {
             _settings.Flags = _settings.Features.ToggleFlag(_flag);
-            e.Button.Label = $"{(_settings.Features.HasFlag(_flag) ? "Disable" : "Enable")} {_featureText}";
-
+            e.Button.Label = $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable"))} {_featureText}";
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed(_featureText));
-
             ReportChanges();
 
             return default; ;

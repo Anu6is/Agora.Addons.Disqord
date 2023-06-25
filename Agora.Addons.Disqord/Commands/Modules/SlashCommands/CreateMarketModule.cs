@@ -4,13 +4,11 @@ using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
-using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
-using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
@@ -58,6 +56,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -100,6 +99,7 @@ namespace Agora.Addons.Disqord.Commands
                     AllowOffers = allowOffers,
                     Discount = discountType,
                     DiscountValue = (decimal)discountAmount,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };
@@ -130,6 +130,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -171,6 +172,7 @@ namespace Agora.Addons.Disqord.Commands
                 {
                     Discount = (Discount)discountType,
                     DiscountValue = (decimal)discountValue,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };
@@ -201,6 +203,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -242,6 +245,7 @@ namespace Agora.Addons.Disqord.Commands
                 {
                     AmountPerBundle = amountInBundle,
                     CostPerBundle = (decimal)pricePerBundle,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };
@@ -271,6 +275,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -312,6 +317,7 @@ namespace Agora.Addons.Disqord.Commands
                 {
                     AmountPerBundle = amountInBundle,
                     CostPerBundle = (decimal)pricePerBundle,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };

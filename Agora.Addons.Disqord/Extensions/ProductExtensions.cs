@@ -11,8 +11,24 @@ namespace Agora.Addons.Disqord.Extensions
     public static class ProductExtensions
     {
         private const string Pattern = @"^<:\w+:\d+>$";
-        private const ulong ScheduledEmoteId = 397165177545424926;
-        private static readonly string ScheduledEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduledEmoteId);
+        private const ulong ScheduleSoldEmoteId = 397165177545424926;
+        private const ulong ScheduleExpiredEmoteId = 420539480202543114;
+        private const ulong ScheduleAllEmoteId = 420539509483110401;
+
+        private static readonly string ScheduleSoldEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduleSoldEmoteId);
+        private static readonly string ScheduleExpiredEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduleExpiredEmoteId);
+        private static readonly string ScheduleAllEmoteUrl = Discord.Cdn.GetCustomEmojiUrl(ScheduleAllEmoteId);
+
+        public static string GetScheduleEmojiUrl(this RescheduleOption rescheduleOption)
+        {
+            return rescheduleOption switch
+            {
+                RescheduleOption.Always => ScheduleAllEmoteUrl,
+                RescheduleOption.Sold => ScheduleSoldEmoteUrl,
+                RescheduleOption.Expired => ScheduleExpiredEmoteUrl,
+                _ => string.Empty
+            };
+        }
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
@@ -21,6 +37,13 @@ namespace Agora.Addons.Disqord.Extensions
             var type = listing is RaffleGiveaway 
                 ? "Raffle" 
                 : listing.Type.ToString();
+            var iconUrl = listing.ReschedulingChoice switch
+            {
+                RescheduleOption.Always => ScheduleAllEmoteUrl,
+                RescheduleOption.Sold => ScheduleSoldEmoteUrl,
+                RescheduleOption.Expired => ScheduleExpiredEmoteUrl,
+                _ => string.Empty
+            };
 
             return new LocalEmbed
             {
@@ -30,7 +53,7 @@ namespace Agora.Addons.Disqord.Extensions
                 Url = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 ImageUrl = listing.Product.Carousel?.Images.FirstOrDefault()?.Url,
                 Footer = new LocalEmbedFooter().WithText($"Reference Code: {listing.ReferenceCode.Code()}")
-                                               .WithIconUrl(listing.IsScheduled ? ScheduledEmoteUrl : null)
+                                               .WithIconUrl(iconUrl)
             }
             .WithProductDetails(listing)
             .WithDefaultColor();

@@ -57,6 +57,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -94,7 +95,7 @@ namespace Agora.Addons.Disqord.Commands
                     ReservePrice = (decimal)reservePrice,
                     MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease,
-                    Reversed = reverseBidding
+                    Reversed = reverseBidding,
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
@@ -103,8 +104,9 @@ namespace Agora.Addons.Disqord.Commands
                 var listing = new StandardAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
                     BuyNowPrice = (decimal)buyNowPrice,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
                 };
 
                 await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
@@ -135,6 +137,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -181,6 +184,7 @@ namespace Agora.Addons.Disqord.Commands
                 var listing = new VickreyAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
                     MaxParticipants = maxParticipants,
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };
@@ -213,6 +217,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
+                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -258,6 +263,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var listing = new LiveAuctionModel(scheduledStart.Value, scheduledEnd, timeout, new UserId(userDetails.UserId))
                 {
+                    RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous
                 };

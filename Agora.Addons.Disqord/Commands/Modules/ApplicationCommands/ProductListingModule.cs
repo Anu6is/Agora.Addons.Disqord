@@ -13,29 +13,6 @@ namespace Agora.Addons.Disqord.Commands
     [RequireMerchant]
     public sealed class ProductListingModule : AgoraModuleBase
     {
-        [MessageCommand("Auto-Reschedule")]
-        [Description("Automatically re-list the item once it's sold/expired")]
-        public async Task<IResult> EnableAutoSchedule(IUserMessage message)
-        {
-            await Deferral(true);
-
-            var responseEmbed = new LocalEmbed().WithDefaultColor();
-            var response = ValidateMessage(message, responseEmbed);
-
-            if (response != null) return response;
-
-            var embed = message.Embeds[0];
-
-            if (embed.Footer.IconUrl != null)
-                return Response(responseEmbed.WithDescription("Item is already scheduled to be relisted"));
-
-            var listingType = embed.Title.Replace("Request", "").Split(':')[0].Trim();
-
-            await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), listingType));
-
-            return Response(responseEmbed.WithDescription("Item will be automatically relisted once sold/expired"));
-        }
-
         [MessageCommand("Cancel Reschedule")]
         [Description("Cancel automatic re-listing the item once it's sold/expired")]
         public async Task<IResult> DisableAutoSchedule(IUserMessage message)

@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Agora\Agora.API\Agora.API.csproj" />
     <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
   </ItemGroup>
 

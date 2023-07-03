@@ -411,8 +411,8 @@ namespace Agora.Addons.Disqord
             var tags = new List<Snowflake>();
 
             var pendingTag = forum.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
-            var activeTag = forum.Tags.First(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
-            var endingSoonTag = forum.Tags.First(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+            var activeTag = forum.Tags.FirstOrDefault(x => x.Name.Equals("Active", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
+            var endingSoonTag = forum.Tags.FirstOrDefault(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
 
             if (productListing.ScheduledPeriod.ScheduledStart >= SystemClock.Now.AddSeconds(5))
             {

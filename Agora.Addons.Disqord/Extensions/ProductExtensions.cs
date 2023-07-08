@@ -159,7 +159,7 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithIsDisabled(listing is VickreyAuction || hideMinButton)
                                   .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
                     LocalComponent.Button("custombid", "Custom Bid")
-                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithStyle(LocalButtonComponentStyle.Success)
                                   .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
                     LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
                                   .WithStyle(LocalButtonComponentStyle.Primary)
@@ -174,7 +174,7 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithStyle(LocalButtonComponentStyle.Primary)
                                   .WithIsDisabled(listing is VickreyAuction || hideMinButton),
                     LocalComponent.Button("custombid", "Custom Bid")
-                                  .WithStyle(LocalButtonComponentStyle.Primary),
+                                  .WithStyle(LocalButtonComponentStyle.Success),
                     LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
                                   .WithStyle(LocalButtonComponentStyle.Primary)
                                   .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)

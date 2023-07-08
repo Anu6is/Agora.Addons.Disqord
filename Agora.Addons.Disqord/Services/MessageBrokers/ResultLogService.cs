@@ -13,6 +13,7 @@ using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Agora.Addons.Disqord
 {
@@ -75,6 +76,9 @@ namespace Agora.Addons.Disqord
             embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer));
 
             var localMessage = new LocalMessage().WithContent(participants).AddEmbed(embed);
+
+            await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
+            
             var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
             var delivered = await SendHiddenMessage(productListing, message);
 
@@ -89,6 +93,42 @@ namespace Agora.Addons.Disqord
             if (channel is CachedForumChannel) await LockPostAsync();
 
             return ReferenceNumber.Create(message.Id);
+        }
+
+        private async Task AttachOfferLogsAsync(LocalMessage localMessage, Product product, ulong emporiumId, ulong showroomId)
+        {
+            if (product is MarketItem || product is TradeItem) return;
+
+            var settings = await _settingsService.GetGuildSettingsAsync(emporiumId);
+
+            if (product is AuctionItem && !settings.Features.AttachListingLogs) return;
+
+            try
+            {
+                await CheckPermissionsAsync(emporiumId, showroomId, Permissions.SendAttachments);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            IEnumerable<OfferLog> logs = product switch
+            {
+                GiveawayItem giveaway => giveaway.Offers.Select(ticket => new OfferLog(ticket.UserReference.Value, ticket.Submission.Value, ticket.SubmittedOn)),
+                AuctionItem auction => auction.Offers.Select(bid => new OfferLog(bid.UserReference.Value, bid.Amount.Value.ToString(), bid.SubmittedOn)),
+                _ => Array.Empty<OfferLog>(),
+            };
+
+            var stream = new MemoryStream();
+            var json = JsonSerializer.Serialize(logs, new JsonSerializerOptions() { WriteIndented = true });
+            
+            await using var writer = new StreamWriter(stream, leaveOpen: true);
+            await writer.WriteAsync(json);
+            await writer.FlushAsync();
+
+            stream.Seek(0, SeekOrigin.Begin);
+            
+            localMessage.AddAttachment(new LocalAttachment(stream, $"{logs.Count()} offers"));
         }
 
         public async ValueTask<ReferenceNumber> PostListingExpiredAsync(Listing productListing)

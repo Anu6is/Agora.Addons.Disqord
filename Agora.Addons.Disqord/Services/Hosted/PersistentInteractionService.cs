@@ -67,7 +67,7 @@ namespace Agora.Addons.Disqord
                     ? HandleInteraction(interaction, roomId)
                     : await HandleModalInteraction(modalInteraction, roomId);
 
-                if (command is CreatePaymentCommand { Offer: not null })
+                if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
                     scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
 
                 await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);

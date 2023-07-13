@@ -84,12 +84,11 @@ namespace Agora.Addons.Disqord.Extensions
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
 
-            var minMax = SettingsFlags.HideMinMaxButtons.ToString();
             var toggleList = settings.Features.AsList().Select(x => 
             {
                 var setting = x.flag.Humanize();
-                var emoji = x.isSet && x.flag != minMax ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-
+                var emoji = x.isSet ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+                
                 return $"{emoji} {setting}";
             } );
 

@@ -7,6 +7,7 @@ using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
@@ -146,15 +147,33 @@ namespace Agora.Addons.Disqord.Menus.View
 
             if (room == null)
             {
-                await data.BeginTransactionAsync(async () =>
+                var transactionResult = await data.BeginTransactionAsync(async () =>
                 {
-                    var showroom = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Trade));
+                    var roomResult = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Trade));
+
+                    if (!roomResult.IsSuccessful) return roomResult;
 
                     if (settings.AvailableRooms.Add(ListingType.Trade.ToString()))
-                        await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                    {
+                        var updateResult = await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    _showrooms.Add(showroom);
+                        if (!updateResult.IsSuccessful) return updateResult;
+                    }                        
+
+                    _showrooms.Add(roomResult.Data);
+
+                    return Result.Success();
                 });
+
+                if (!transactionResult.IsSuccessful)
+                {
+                    await e.Interaction.Response()
+                                       .SendMessageAsync(
+                                            new LocalInteractionMessageResponse()
+                                                .WithIsEphemeral()
+                                                .AddEmbed(new LocalEmbed().WithDescription(transactionResult.FailureReason).WithDefaultColor()));
+                    return;
+                }
             }
 
             MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));

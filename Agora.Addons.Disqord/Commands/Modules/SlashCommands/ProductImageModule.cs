@@ -4,8 +4,9 @@ using Disqord;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Qmmands;
+using IServiceResult = Emporia.Domain.Services.IResult;
+using ServiceResult = Emporia.Domain.Services.Result;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -81,7 +82,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
-            Product item = listing switch
+            IServiceResult result = listing switch
             {
                 "Auction" => await Base.ExecuteAsync(
                     new UpdateAuctionItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
@@ -98,13 +99,18 @@ namespace Agora.Addons.Disqord.Commands
                     {
                         ImageUrls = images.ToArray()
                     }),
-                _ => null
-            };
+                "Giveaway" => await Base.ExecuteAsync(
+                    new UpdateGiveawayItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
+                    {
+                        ImageUrls = images.ToArray()
+                    }),
+                _ => ServiceResult.Failure("Unable to update listing.")
+            }; 
 
-            if (item == null) throw new InvalidOperationException("Unable to update listing.");
-
-            return Response(new LocalInteractionMessageResponse().WithContent($"Successfully uploaded {images.Count} image(s)").WithIsEphemeral());
-
+            if (result.IsSuccessful)
+                return Response(new LocalInteractionMessageResponse().WithContent($"Successfully uploaded {images.Count} image(s)").WithIsEphemeral());
+            else
+                return Response(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
         }
     }
 }

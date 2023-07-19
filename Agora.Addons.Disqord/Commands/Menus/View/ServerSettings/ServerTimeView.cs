@@ -1,10 +1,12 @@
 ﻿using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
@@ -53,20 +55,37 @@ namespace Agora.Addons.Disqord.Menus.View
                 var emporiumId = new EmporiumId(_context.Guild.Id);
 
 
-                await dataAccessor.BeginTransactionAsync(async () =>
+                var transactionResult = await dataAccessor.BeginTransactionAsync(async () =>
                 {
                     var emporiumId = new EmporiumId(_context.Guild.Id);
-                    var emporium = await mediator.Send(new UpdateLocalTimeCommand(emporiumId, Time.From(time)));
+                    var timeResult = await mediator.Send(new UpdateLocalTimeCommand(emporiumId, Time.From(time)));
+
+                    if (!timeResult.IsSuccessful) return timeResult;
+
                     var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
-                    settings.Offset = emporium.TimeOffset;
+                    settings.Offset = timeResult.Data.TimeOffset;
 
-                    await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                    var updateResult = await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    _context.Services.GetRequiredService<IEmporiaCacheService>().GetCachedEmporium(_context.Guild.Id).TimeOffset = emporium.TimeOffset;
+                    if (!updateResult.IsSuccessful) return updateResult;
+
+                    _context.Services.GetRequiredService<IEmporiaCacheService>().GetCachedEmporium(_context.Guild.Id).TimeOffset = timeResult.Data.TimeOffset;
 
                     MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Server Time", new LocalEmoji("🕰")));
+
+                    return Result.Success();
                 });
+
+                if (!transactionResult.IsSuccessful)
+                {
+                    await e.Interaction.Response()
+                                       .SendMessageAsync(
+                                            new LocalInteractionMessageResponse()
+                                                .WithIsEphemeral()
+                                                .AddEmbed(new LocalEmbed().WithDescription(transactionResult.FailureReason).WithDefaultColor()));
+                    return;
+                }
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())

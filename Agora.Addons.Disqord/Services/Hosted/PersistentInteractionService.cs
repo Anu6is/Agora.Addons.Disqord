@@ -7,6 +7,7 @@ using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;
@@ -108,7 +109,8 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                await mediator.Send(request);
+                var result = await mediator.Send(request) as IResult;
+
                 return true;
             }
             catch (Exception ex)

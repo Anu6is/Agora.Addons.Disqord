@@ -5,6 +5,7 @@ using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,26 +57,26 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            try
+            var result = await mediator.Send(new CreateCategoryCommand(new EmporiumId(_context.Guild.Id), CategoryTitle.Create(modalInput)));
+
+            if (result.IsSuccessful)
             {
-                _categories.Add(await mediator.Send(new CreateCategoryCommand(new EmporiumId(_context.Guild.Id), CategoryTitle.Create(modalInput))));
+                _categories.Add(result.Data);
+
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"Category {Markdown.Bold(modalInput)} Successfully Added!"));
+
+                MessageTemplate = message => message.AddEmbed(new LocalEmbed().WithDescription($"Number of registered categories: {Markdown.Bold(_categories.Count)}").WithDefaultColor());
+
+                AddCategoryComponents();
+                ReportChanges();
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
 
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
-
-                return;
-            }
-
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"Category {Markdown.Bold(modalInput)} Successfully Added!"));
-
-            MessageTemplate = message => message.AddEmbed(new LocalEmbed().WithDescription($"Number of registered categories: {Markdown.Bold(_categories.Count)}").WithDefaultColor());
-
-            AddCategoryComponents();
-            ReportChanges();
+                if (result is IExceptionResult exResult)
+                    await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
+            }          
 
             return;
         }
@@ -110,29 +111,29 @@ namespace Agora.Addons.Disqord.Menus.View
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories;
 
-            try
+            var result = await mediator.Send(new CreateSubcategoryCommand(new EmporiumId(_context.Guild.Id), CategoryTitle.Create(_selectedCategory), SubcategoryTitle.Create(modalInput)));
+
+            if (result.IsSuccessful)
             {
-                subcategories.Add(await mediator.Send(new CreateSubcategoryCommand(new EmporiumId(_context.Guild.Id), CategoryTitle.Create(_selectedCategory), SubcategoryTitle.Create(modalInput))));
+                subcategories.Add(result.Data);
+
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(modalInput)} Successfully Added to {_selectedCategory}"));
+
+                MessageTemplate = message =>
+                {
+                    message.AddEmbed(new LocalEmbed().WithDescription($"Subcategories registerd under {_selectedCategory}: {Markdown.Bold(subcategories.Skip(1).Count())}").WithDefaultColor());
+                };
+
+                AddSubcategoryComponents();
+                ReportChanges();
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
 
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
-
-                return;
+                if (result is IExceptionResult exResult)
+                    await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
             }
-
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(modalInput)} Successfully Added to {_selectedCategory}"));
-
-            MessageTemplate = message =>
-            {
-                message.AddEmbed(new LocalEmbed().WithDescription($"Subcategories registerd under {_selectedCategory}: {Markdown.Bold(subcategories.Skip(1).Count())}").WithDefaultColor());
-            };
-
-            AddSubcategoryComponents();
-            ReportChanges();
 
             return;
         }

@@ -18,7 +18,9 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 using Qommon;
-using static Disqord.Discord.Limits;
+
+using ServiceResult = Emporia.Domain.Services.Result;
+
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -46,25 +48,50 @@ namespace Agora.Addons.Disqord.Commands
 
             var resultLogId = resultLog == null ? 1 : resultLog.Id;
 
-            await Data.BeginTransactionAsync(async () =>
+            var transactionResult = await Data.BeginTransactionAsync(async () =>
             {
                 var time = serverTime ?? Time.From(DateTimeOffset.UtcNow.TimeOfDay);
-                var emporium = await Base.ExecuteAsync(new CreateEmporiumCommand(EmporiumId) { LocalTime = time });
-                var currency = await Base.ExecuteAsync(new CreateCurrencyCommand(EmporiumId, symbol, decimalPlaces));
+                var emporiumResult = await Base.ExecuteAsync(new CreateEmporiumCommand(EmporiumId) { LocalTime = time });
 
-                settings = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currency, resultLogId)
+                if (!emporiumResult.IsSuccessful) return emporiumResult;
+
+                var currencyResult = await Base.ExecuteAsync(new CreateCurrencyCommand(EmporiumId, symbol, decimalPlaces));
+
+                if (!currencyResult.IsSuccessful) return currencyResult;
+
+                var settingsResult = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currencyResult.Data, resultLogId)
                 {
                     AuditLogChannelId = auditLog?.Id ?? 0ul,
                     Economy = EconomyType.Disabled.ToString(),
-                    TimeOffset = emporium.TimeOffset
+                    TimeOffset = emporiumResult.Data.TimeOffset
                 });
 
-                await Context.Services.GetRequiredService<IMessageBroker>().TryRegisterAsync(emporium.Id);
+                if (!settingsResult.IsSuccessful) return settingsResult;
+
+                settings = settingsResult.Data;
+
+                await Context.Services.GetRequiredService<IMessageBroker>().TryRegisterAsync(emporiumResult.Data.Id);
                 await SettingsService.AddGuildSettingsAsync(settings);
-                await Cache.AddEmporiumAsync(emporium);
+                await Cache.AddEmporiumAsync(emporiumResult.Data);
+
+                return ServiceResult.Success();
             });
 
-            await Base.ExecuteAsync(new CreateEmporiumUserCommand(EmporiumId, ReferenceNumber.Create(Context.Author.Id)));
+            if (!transactionResult.IsSuccessful)
+            {
+                return Response(
+                        new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithDescription(transactionResult.FailureReason).WithDefaultColor()));
+            }
+
+            var userResult = await Base.ExecuteAsync(new CreateEmporiumUserCommand(EmporiumId, ReferenceNumber.Create(Context.Author.Id)));
+
+            if (!userResult.IsSuccessful)
+                return Response(
+                    new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithDescription(userResult.FailureReason).WithDefaultColor()));
 
             var settingsContext = new GuildSettingsContext(Context.AuthorId, Guild, settings, Context.Services.CreateScope().ServiceProvider);
             var options = new List<GuildSettingsOption>() { };
@@ -163,29 +190,29 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Select a category channel")] Snowflake category, 
                 [Description("Select a text/forum channel")] Snowflake channel)
             {
-                try
+                var transactionResult = await Data.BeginTransactionAsync(async () =>
                 {
-                    await Data.BeginTransactionAsync(async () =>
+                    var roomResult = await Base.ExecuteAsync(new CreateShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
+
+                    if (!roomResult.IsSuccessful) return roomResult;
+
+                    var settings = (DefaultDiscordGuildSettings)Settings;
+
+                    if (settings.AvailableRooms.Add(ListingType.Auction.ToString()))
                     {
-                        var room = await Base.ExecuteAsync(new CreateShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
+                        var updateResult = await Base.ExecuteAsync(new UpdateGuildSettingsCommand(settings));
 
-                        var settings = (DefaultDiscordGuildSettings)Settings;
+                        if (!updateResult.IsSuccessful) return updateResult;
+                    }
 
-                        if (settings.AvailableRooms.Add(ListingType.Auction.ToString()))
-                            await Base.ExecuteAsync(new UpdateGuildSettingsCommand(settings));
-                    });
-                 
+                    return ServiceResult.Success();
+                });
+
+                if (transactionResult.IsSuccessful)
                     return Response(new LocalInteractionMessageResponse().WithContent($"New {showroom} showroom registered - {Mention.Channel(channel)}").WithIsEphemeral());
-                }
-                catch (Exception ex)
-                {
-                    var message = ex switch
-                    {
-                        ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
-                        _ => "An error occured while processing this action. If this persists, please contact support."
-                    };
-                    return Response(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                }
+                else
+                    return Response(new LocalInteractionMessageResponse().WithContent(transactionResult.FailureReason).WithIsEphemeral());
+
             }
 
             [SlashCommand("remove")]

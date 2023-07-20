@@ -8,6 +8,7 @@ using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Humanizer.Localisation;
@@ -35,22 +36,26 @@ namespace Agora.Addons.Disqord
             _guildSettingsService = settingsService;
         }
 
-        public async ValueTask AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
+        public async ValueTask<IResult> AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
         {
+            IResult result = Result.Success();
+            
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
 
             if (authorizeAttributesWithRoles.Any())
-                await ValidateRolesAsync(currentUser, authorizeAttributesWithRoles);
+                result = await ValidateRolesAsync(currentUser, authorizeAttributesWithRoles);
+
+            if (!result.IsSuccessful) return result;
 
             var authorizeAttributesWithPolicies = authorizeAttributes.Where(a => a.Policy != AuthorizationPolicy.None);
 
             if (authorizeAttributesWithPolicies.Any())
-                await ValaidatePoliciesAsync(request, currentUser, authorizeAttributesWithPolicies);
+                result = await ValaidatePoliciesAsync(request, currentUser, authorizeAttributesWithPolicies);
 
-            return;
+            return result;
         }
 
-        private async Task ValidateRolesAsync(IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithRoles)
+        private async Task<IResult> ValidateRolesAsync(IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithRoles)
         {
             var authorizationError = string.Empty;
 
@@ -75,13 +80,13 @@ namespace Agora.Addons.Disqord
                 }
 
                 if (authorizationError.IsNotNull())
-                    throw new UnauthorizedAccessException(authorizationError);
+                    return Result.Failure(authorizationError);
             }
 
-            return;
+            return Result.Success();
         }
 
-        private async Task ValaidatePoliciesAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithPolicies)
+        private async Task<IResult> ValaidatePoliciesAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithPolicies)
         {
             var authorizationError = string.Empty;
 
@@ -109,16 +114,19 @@ namespace Agora.Addons.Disqord
                 }
 
                 if (authorizationError.IsNotNull())
-                    throw new UnauthorizedAccessException(authorizationError);
+                    return Result.Failure(authorizationError);
             }
 
-            return;
+            return Result.Success();
         }
 
         private async Task<string> ValidateUpdateAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
             var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
             var managerRole = settings.AdminRole == 0 ? Markdown.Bold("Manager Privileges") : Mention.Role(settings.AdminRole);
+
+            if (request is IProductListingBinder binder && binder.Showroom.Listings.FirstOrDefault() is null)
+                return "Invalid Action: This listing is no longer available.";
 
             switch (request)
             {
@@ -271,7 +279,9 @@ namespace Agora.Addons.Disqord
 
                     break;
                 case CreateDealCommand command:
-                    var trade = command.Showroom.Listings.First();
+                    var trade = command.Showroom.Listings.FirstOrDefault();
+
+                    if (trade == null) return "Invalid Action: Listing is not longer available";
 
                     if (currentUser.Equals(trade.Owner))
                         return "Transaction Denied: you cannot trade with yourself.";

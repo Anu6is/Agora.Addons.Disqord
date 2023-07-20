@@ -111,7 +111,9 @@ namespace Agora.Addons.Disqord
             {
                 var result = await mediator.Send(request) as IResult;
 
-                return true;
+                if (result.IsSuccessful) return true;
+
+                return false; //todo feedback
             }
             catch (Exception ex)
             {

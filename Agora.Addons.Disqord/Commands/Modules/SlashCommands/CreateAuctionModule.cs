@@ -109,7 +109,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous,
                 };
 
-                await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return Response(result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 

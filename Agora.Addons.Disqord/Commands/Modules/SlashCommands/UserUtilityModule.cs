@@ -33,7 +33,7 @@ namespace Agora.Addons.Disqord.Commands
 
             listings = listings.Where(x => x.Owner.EmporiumId.Value.Equals(Context.GuildId)).ToList();
 
-            if (!listings.Any()) 
+            if (listings.Count == 0) 
                 return Response(new LocalEmbed().WithDefaultColor().WithDescription("There are no active listings that you've bid on"));
 
             return View(new WatchlistView(userReference, listings.OrderBy(x => x.ExpiresAt()).ToArray()));

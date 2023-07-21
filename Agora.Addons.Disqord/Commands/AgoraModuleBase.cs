@@ -1,4 +1,5 @@
-﻿using Agora.Shared;
+﻿using Agora.Addons.Disqord.Extensions;
+using Agora.Shared;
 using Disqord;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
@@ -9,6 +10,7 @@ using Emporia.Extensions.Discord;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Qmmands;
 using Sentry;
 
 namespace Agora.Addons.Disqord.Commands
@@ -90,6 +92,39 @@ namespace Agora.Addons.Disqord.Commands
             Transaction.Finish();
 
             return base.OnAfterExecuted();
+        }
+
+        protected IResult OkResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithDefaultColor()));
+
+            return Response(message);
+        }
+
+        protected IResult SuccessResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.Teal)));
+
+            return Response(message);
+        }
+
+        protected IResult ErrorResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.OrangeRed)));
+
+            return Response(message);
         }
 
         public bool TryOverrideSchedule(out (DayOfWeek Weekday, TimeSpan Time)[] schedule)

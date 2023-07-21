@@ -46,7 +46,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             await Deferral(true);
 
-            if (!message.Attachments.Any())
+            if (message.Attachments.Count == 0)
                 return Response(new LocalEmbed().WithDefaultColor().WithDescription("There are no logs attached to this message"));
 
             var attachment = message.Attachments[0];

@@ -248,7 +248,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (category.IsFocused)
                 {
-                    if (!categoryChannels.Any())
+                    if (categoryChannels.Count() == 0)
                         category.Choices.Add("No category channels found!", "0");
                     else if (category.RawArgument == string.Empty)
                         category.Choices.AddRange(categoryChannels.Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))
@@ -268,7 +268,7 @@ namespace Agora.Addons.Disqord.Commands
                                             .Where(x => x.CategoryId.ToString().Equals(channelCategory)
                                                      && (x.Type == ChannelType.Text || x.Type == ChannelType.News || x.Type == ChannelType.Forum));
 
-                        if (!textChannels.Any())
+                        if (textChannels.Count() == 0)
                             channel.Choices.Add("No suitable channels exist in the selected category!", "0");
                         else if (channel.RawArgument == string.Empty)
                             channel.Choices.AddRange(textChannels.Select((x, index) => KeyValuePair.Create($"[{index + 1}] {x.Name}", x.Id.ToString()))

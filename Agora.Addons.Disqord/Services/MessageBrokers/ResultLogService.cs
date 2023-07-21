@@ -67,7 +67,7 @@ namespace Agora.Addons.Disqord
             if (owner != buyer)
                 embed.WithFooter("review this transaction | right-click -> apps -> review");
 
-            if (carousel != null && carousel.Images != null && carousel.Images.Any())
+            if (carousel != null && carousel.Images != null && carousel.Images.Count != 0)
                 embed.WithThumbnailUrl(carousel.Images[0].Url);
 
             if (productListing.Product.Description != null)

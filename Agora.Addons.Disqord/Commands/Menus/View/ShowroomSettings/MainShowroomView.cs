@@ -55,10 +55,10 @@ namespace Agora.Addons.Disqord.Menus.View
                                         .WithDescription("Channel permissions override server permissions. " +
                                         "If these checks reveal that permissions are missing, review the permissions granted to the Bot/@everyone on the channel.")
                                         .AddField("Logs", $"Result Log: {resultLog}{Environment.NewLine}Audit Log: {auditLog}")
-                                        .AddField("Auction Channels", auction.Any() ? string.Join(Environment.NewLine, auction) : "None Configured")
-                                        .AddField("Market Channels", market.Any() ? string.Join(Environment.NewLine, market) : "None Configured")
-                                        .AddField("Trade Channels", trade.Any() ? string.Join(Environment.NewLine, trade) : "None Configured")
-                                        .AddField("Giveaway Channels", giveaway.Any() ? string.Join(Environment.NewLine, giveaway) : "None Configured")
+                                        .AddField("Auction Channels", auction.Count() != 0 ? string.Join(Environment.NewLine, auction) : "None Configured")
+                                        .AddField("Market Channels", market.Count() != 0 ? string.Join(Environment.NewLine, market) : "None Configured")
+                                        .AddField("Trade Channels", trade.Count() != 0 ? string.Join(Environment.NewLine, trade) : "None Configured")
+                                        .AddField("Giveaway Channels", giveaway.Count() != 0 ? string.Join(Environment.NewLine, giveaway) : "None Configured")
                                         .WithDefaultColor();
 
             await e.Interaction.Followup().SendAsync(new LocalInteractionFollowup().AddEmbed(embed).WithIsEphemeral(true));

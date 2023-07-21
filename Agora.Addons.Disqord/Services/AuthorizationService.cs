@@ -42,14 +42,14 @@ namespace Agora.Addons.Disqord
             
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
 
-            if (authorizeAttributesWithRoles.Any())
+            if (authorizeAttributesWithRoles.Count() != 0)
                 result = await ValidateRolesAsync(currentUser, authorizeAttributesWithRoles);
 
             if (!result.IsSuccessful) return result;
 
             var authorizeAttributesWithPolicies = authorizeAttributes.Where(a => a.Policy != AuthorizationPolicy.None);
 
-            if (authorizeAttributesWithPolicies.Any())
+            if (authorizeAttributesWithPolicies.Count() != 0)
                 result = await ValaidatePoliciesAsync(request, currentUser, authorizeAttributesWithPolicies);
 
             return result;

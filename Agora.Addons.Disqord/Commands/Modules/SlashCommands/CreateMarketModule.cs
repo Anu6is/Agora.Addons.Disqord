@@ -64,7 +64,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -138,7 +138,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -211,7 +211,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -283,7 +283,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -348,7 +348,7 @@ namespace Agora.Addons.Disqord.Commands
                 }
                 else if (category.IsFocused)
                 {
-                    if (!emporium.Categories.Any())
+                    if (emporium.Categories.Count == 0)
                         category.Choices.Add("No configured server categories exist.");
                     else
                     {

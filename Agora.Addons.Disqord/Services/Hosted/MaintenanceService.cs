@@ -4,6 +4,7 @@ using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;
+using Emporia.Application.Common.Interfaces;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;

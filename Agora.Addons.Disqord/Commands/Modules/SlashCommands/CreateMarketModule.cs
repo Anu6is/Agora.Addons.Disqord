@@ -104,7 +104,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous
                 };
 
-                await Base.ExecuteAsync(new CreateStandardMarketCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateStandardMarketCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -177,7 +179,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous
                 };
 
-                await Base.ExecuteAsync(new CreateFlashMarketCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateFlashMarketCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -322,7 +326,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous
                 };
 
-                await Base.ExecuteAsync(new CreateMultiMarketCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateMultiMarketCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 

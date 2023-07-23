@@ -91,7 +91,9 @@ namespace Agora.Addons.Disqord.Commands
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent($"Only {Mention.User(buyer)} can remove this review!"));
 
-            await Base.ExecuteAsync(new RemoveCommentCommand(EmporiumId, ReferenceNumber.Create(owner), Comment.Create(message.Id.ToString())));
+            var result = await Base.ExecuteAsync(new RemoveCommentCommand(EmporiumId, ReferenceNumber.Create(owner), Comment.Create(message.Id.ToString())));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             var embed = LocalEmbed.CreateFrom(message.Embeds[0]).WithFooter("review this transaction | right-click -> apps -> review");
 

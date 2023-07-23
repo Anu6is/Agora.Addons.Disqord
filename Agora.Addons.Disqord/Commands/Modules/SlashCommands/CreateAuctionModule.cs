@@ -111,7 +111,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var result = await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, listing));
 
-                if (!result.IsSuccessful) return Response(result.FailureReason);
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -191,7 +191,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous
                 };
 
-                await Base.ExecuteAsync(new CreateVickreyAuctionCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateVickreyAuctionCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -270,7 +272,9 @@ namespace Agora.Addons.Disqord.Commands
                     Anonymous = anonymous
                 };
 
-                await Base.ExecuteAsync(new CreateLiveAuctionCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateLiveAuctionCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 

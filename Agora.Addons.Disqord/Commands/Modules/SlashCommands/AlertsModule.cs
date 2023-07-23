@@ -38,7 +38,9 @@ namespace Agora.Addons.Disqord.Commands
 
             profile.SetOutbidNotifications(enableAlerts);
 
-            await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
+            var result = await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             return Response(new LocalInteractionMessageResponse()
                     .WithIsEphemeral()
@@ -90,7 +92,9 @@ namespace Agora.Addons.Disqord.Commands
 
             profile.SetTradeDealNotifications(enableAlerts);
 
-            await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
+            var result = await Base.ExecuteAsync(new UpdateUserProfileCommand(profile));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             return Response(new LocalInteractionMessageResponse()
                     .WithIsEphemeral()

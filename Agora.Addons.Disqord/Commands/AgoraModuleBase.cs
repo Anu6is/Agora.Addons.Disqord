@@ -4,10 +4,12 @@ using Disqord;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Emporia.Application.Common;
+using Emporia.Application.Common.Interfaces;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qmmands;
@@ -38,6 +40,8 @@ namespace Agora.Addons.Disqord.Commands
 
         public ICommandModuleBase Base => this;
 
+        private IDisposable _loggingScope;
+
         public override async ValueTask OnBeforeExecuted()
         {
             Interlocked.Increment(ref _activeCommands);
@@ -57,7 +61,7 @@ namespace Agora.Addons.Disqord.Commands
             SettingsService = Context.Services.GetRequiredService<IGuildSettingsService>();
 
             Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"{Context.Bot.ApiClient.GetShardId(Context.GuildId)}");
-            Transaction.User = new User() { Id = Context.Author.Id.ToString(), Username = Context.Author.Tag };
+            Transaction.User = new User() { Id = Context.AuthorId.ToString(), Username = Context.Author.Tag };
             Transaction.SetTag("guild", Context.GuildId.ToString());
             Transaction.SetTag("channel", Context.ChannelId.ToString());
             Transaction.SetExtra("active_commands", _activeCommands);
@@ -73,6 +77,7 @@ namespace Agora.Addons.Disqord.Commands
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault(Context.ChannelId));
 
+            _loggingScope = Logger.BeginScope(SetScopeInformation());
 
             if (Context.Command is ApplicationCommand command)
             {
@@ -90,6 +95,8 @@ namespace Agora.Addons.Disqord.Commands
             Interlocked.Decrement(ref _activeCommands);
 
             Transaction.Finish();
+
+            _loggingScope.Dispose();
 
             return base.OnAfterExecuted();
         }
@@ -150,6 +157,19 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             return scheduleOverride;
+        }
+
+        private Dictionary<string, object> SetScopeInformation()
+        {
+            var loggingContext = Context.Services.GetRequiredService<ILoggingContext>();
+
+            loggingContext.ContextInfo.Add("User", $"{Context.AuthorId}: {Context.Author.GlobalName}");
+            loggingContext.ContextInfo.Add("Guild", Guild == null ? "Direct Message" : $"{Guild.Id}: {Guild.Name}");
+            loggingContext.ContextInfo.Add("Channel", Context.ChannelId.ToString());
+            loggingContext.ContextInfo.Add("ChannelType", Channel.Type.ToString());
+            loggingContext.ContextInfo.Add("Interaction", $"{Context.Interaction.CommandType}: {Context.Interaction.CommandName}");
+
+            return loggingContext.ContextInfo;
         }
 
         public async Task WaitForCommandsAsync(int waitTimeInMinutes)

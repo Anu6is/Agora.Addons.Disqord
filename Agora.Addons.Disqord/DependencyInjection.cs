@@ -2,6 +2,7 @@
 using Agora.Addons.Disqord.Parsers;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
+using Emporia.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +22,7 @@ namespace Agora.Addons.Disqord
         public static IServiceCollection AddDisqordCommands(this IServiceCollection services)
         {
             services.AddTransient<EmporiumTimeParser>();
+            services.AddScoped<ILoggingContext, LoggingContext>();
             services.AddSingleton<ICommandRateLimiter, AgoraCommandRateLimiter>();
 
             return services;

@@ -9,6 +9,7 @@ using Emporia.Domain.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -203,7 +204,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             try
             {
-                await mediator.Send(new DeleteCategoryCommand(new EmporiumId(_context.Guild.Id), title));
+                var result = await mediator.Send(new DeleteCategoryCommand(new EmporiumId(_context.Guild.Id), title));
             }
             catch (Exception ex) when (ex is ValidationException validationException)
             {
@@ -238,32 +239,28 @@ namespace Agora.Addons.Disqord.Menus.View
             var subcategory = category.SubCategories.First(x => x.Title.Equals(_selectedSubcategory));
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            try
+
+            var result = await mediator.Send(new DeleteSubcategoryCommand(new EmporiumId(_context.Guild.Id), categoryTitle, subcategory.Title));
+
+            if (!result.IsSuccessful)
             {
-                await mediator.Send(new DeleteSubcategoryCommand(new EmporiumId(_context.Guild.Id), categoryTitle, subcategory.Title));
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"Subcategory {Markdown.Bold(_selectedSubcategory)} Successfully Removed!"));
 
-                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+                _selectedSubcategory = string.Empty;
+                category.SubCategories.Remove(subcategory);
 
-                return;
+                MessageTemplate = message =>
+                {
+                    message.AddEmbed(new LocalEmbed().WithDescription($"Subcategories registerd under {_selectedCategory}: {Markdown.Bold(category.SubCategories.Skip(1).Count())}").WithDefaultColor());
+                };
+
+                AddSubcategoryComponents();
+                ReportChanges();
             }
-
-            await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"Subcategory {Markdown.Bold(_selectedSubcategory)} Successfully Removed!"));
-
-            _selectedSubcategory = string.Empty;
-            category.SubCategories.Remove(subcategory);
-
-            MessageTemplate = message =>
-            {
-                message.AddEmbed(new LocalEmbed().WithDescription($"Subcategories registerd under {_selectedCategory}: {Markdown.Bold(category.SubCategories.Skip(1).Count())}").WithDefaultColor());
-            };
-
-            AddSubcategoryComponents();
-            ReportChanges();
 
             return;
         }

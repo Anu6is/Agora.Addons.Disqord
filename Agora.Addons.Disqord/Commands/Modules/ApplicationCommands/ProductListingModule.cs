@@ -35,7 +35,9 @@ namespace Agora.Addons.Disqord.Commands
             if (embed.Footer.IconUrl == null)
                 return Response(responseEmbed.WithDescription("Item is not currently scheduled"));
 
-            await Base.ExecuteAsync(new UnscheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), embed.Title.Split(':')[0]));
+            var result = await Base.ExecuteAsync(new UnscheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(message.Id), embed.Title.Split(':')[0]));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             return Response(responseEmbed.WithDescription("Item will no longer be automatically relisted once sold/expired"));
         }

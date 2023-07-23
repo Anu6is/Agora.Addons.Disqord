@@ -150,7 +150,9 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Clear all current settings for the bot.")]
         public async Task<IResult> ServerReset()
         {
-            await Base.ExecuteAsync(new DeleteEmporiumCommand(new EmporiumId(Context.GuildId)));
+            var result = await Base.ExecuteAsync(new DeleteEmporiumCommand(new EmporiumId(Context.GuildId)));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             Cache.Clear(Context.GuildId);
             SettingsService.Clear(Context.GuildId);
@@ -222,22 +224,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Select a category channel")] Snowflake category,
                 [Description("Select a text/forum channel")] Snowflake channel)
             {
-                try
-                {
-                    await Base.ExecuteAsync(new DeleteShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
+                var result = await Base.ExecuteAsync(new DeleteShowroomCommand(EmporiumId, new ShowroomId(channel), (ListingType)showroom));
 
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
-                    return Response(new LocalInteractionMessageResponse().WithContent($"Removed {showroom} showroom - {Mention.Channel(channel)}").WithIsEphemeral());
-                }
-                catch (Exception ex)
-                {
-                    var message = ex switch
-                    {
-                        ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
-                        _ => "An error occured while processing this action. If this persists, please contact support."
-                    };
-                    return Response(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                }
+                return Response(new LocalInteractionMessageResponse().WithContent($"Removed {showroom} showroom - {Mention.Channel(channel)}").WithIsEphemeral());
             }
 
             [AutoComplete("add")]
@@ -293,26 +284,30 @@ namespace Agora.Addons.Disqord.Commands
 
             [SlashCommand("set")]
             [Description("Set a role to represent a Manager, Broker, Merchant or Buyer")]
-            public async Task SetRole(BotRole botRole, IRole serverRole)
+            public async Task<IResult> SetRole(BotRole botRole, IRole serverRole)
             {
                 UpdateRole(botRole, serverRole.Id);
 
-                await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+                var result = await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response(new LocalInteractionMessageResponse()
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                return Response(new LocalInteractionMessageResponse()
                         .AddEmbed(new LocalEmbed().WithDescription($"{botRole} set to {serverRole.Mention}").WithColor(Color.Teal))
                         .WithIsEphemeral());
             }
 
             [SlashCommand("clear")]
             [Description("Clear a previously set Manager, Broker, Merchant or Buyer role")]
-            public async Task ClearRole(BotRole botRole)
+            public async Task<IResult> ClearRole(BotRole botRole)
             {
                 UpdateRole(botRole, botRole <= BotRole.Merchant ? Context.GuildId : 0);
 
-                await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+                var result = await Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
-                await Response(new LocalInteractionMessageResponse()
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                return Response(new LocalInteractionMessageResponse()
                         .AddEmbed(new LocalEmbed().WithDescription($"{botRole} role cleared").WithDefaultColor())
                         .WithIsEphemeral());
             }

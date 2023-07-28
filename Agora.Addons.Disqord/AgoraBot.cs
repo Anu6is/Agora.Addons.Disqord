@@ -73,7 +73,7 @@ namespace Agora.Addons.Disqord
                 if (result is ChecksFailedResult checksFailedResult)
                     failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
 
-                Logger.LogError("Failed to log {type} exception {result} for {command}",
+                _logger.LogError("Failed to log {type} exception {result} for {command}",
                                 result.GetType(),
                                 failureReason ?? "no reason",
                                 context.Command == null ? "non command action" : context.Command.Name);

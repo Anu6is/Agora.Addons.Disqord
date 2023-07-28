@@ -4,12 +4,10 @@ using Disqord;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Emporia.Application.Common;
-using Emporia.Application.Common.Interfaces;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qmmands;
@@ -40,17 +38,17 @@ namespace Agora.Addons.Disqord.Commands
 
         public ICommandModuleBase Base => this;
 
-        private IDisposable _loggingScope;
-
         public override async ValueTask OnBeforeExecuted()
         {
             Interlocked.Increment(ref _activeCommands);
             
+            SetLogContext();
+
             var contextService = Context.Services.GetService<AgoraContextService>();
 
             if (contextService?.Context is IAgoraContext ctx && contextService.Context.Interaction.AuthorId == Context.AuthorId)
             {
-                Logger.LogInformation("Using sudo context");
+                Logger.LogDebug("Using sudo context");
 
                 Context = ctx.FromContext(Context);
             }
@@ -77,12 +75,10 @@ namespace Agora.Addons.Disqord.Commands
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault(Context.ChannelId));
 
-            _loggingScope = Logger.BeginScope(SetScopeInformation());
-
             if (Context.Command is ApplicationCommand command)
             {
                 var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
-                Logger.LogInformation("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
+                Logger.LogDebug("{Author} initiated {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
             }
 
             await base.OnBeforeExecuted();
@@ -90,13 +86,25 @@ namespace Agora.Addons.Disqord.Commands
             return;
         }
 
+        private void SetLogContext()
+        {
+            var loggerContext = Context.Services.GetRequiredService<ILoggerContext>();
+
+            loggerContext.ContextInfo.Add("ID", Context.Interaction?.Id);
+
+            if (Context.Command is ApplicationCommand command)
+                loggerContext.ContextInfo.Add("Command", $"{Context.Interaction?.CommandType}: {Context.Interaction?.CommandName} {command.Module.Alias} {command.Alias}");
+
+            loggerContext.ContextInfo.Add("User", Context.Author.GlobalName);
+            loggerContext.ContextInfo.Add($"{Channel.Type}Channel", Context.ChannelId);
+            loggerContext.ContextInfo.Add("Guild", Context.GuildId);
+        }
+
         public override ValueTask OnAfterExecuted()
         {
             Interlocked.Decrement(ref _activeCommands);
 
             Transaction.Finish();
-
-            _loggingScope.Dispose();
 
             return base.OnAfterExecuted();
         }
@@ -157,19 +165,6 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             return scheduleOverride;
-        }
-
-        private Dictionary<string, object> SetScopeInformation()
-        {
-            var loggingContext = Context.Services.GetRequiredService<ILoggingContext>();
-
-            loggingContext.ContextInfo.Add("User", $"{Context.AuthorId}: {Context.Author.GlobalName}");
-            loggingContext.ContextInfo.Add("Guild", Guild == null ? "Direct Message" : $"{Guild.Id}: {Guild.Name}");
-            loggingContext.ContextInfo.Add("Channel", Context.ChannelId.ToString());
-            loggingContext.ContextInfo.Add("ChannelType", Channel.Type.ToString());
-            loggingContext.ContextInfo.Add("Interaction", $"{Context.Interaction.CommandType}: {Context.Interaction.CommandName}");
-
-            return loggingContext.ContextInfo;
         }
 
         public async Task WaitForCommandsAsync(int waitTimeInMinutes)

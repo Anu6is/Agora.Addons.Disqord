@@ -40,7 +40,7 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                _logger.LogInformation("{Author} selected {button} in {guild}",
+                _logger.LogDebug("{Author} selected {button} in {guild}",
                                  interaction.Author.Name,
                                  interaction.CustomId,
                                  interaction.GuildId);
@@ -48,7 +48,10 @@ namespace Agora.Addons.Disqord
                 if (interaction.CustomId.StartsWith("#")) return;
 
                 using var scope = _scopeFactory.CreateScope();
-                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
+                var interactionContext = scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
+                var loggerContext = scope.ServiceProvider.GetRequiredService<ILoggerContext>();
+
+                SetLogContext(interactionContext, loggerContext);
 
                 var roomId = await DetermineShowroomAsync(args);
 
@@ -78,11 +81,11 @@ namespace Agora.Addons.Disqord
         }
 
         private async Task HandleInteractionResponseAsync(InteractionReceivedEventArgs args,
-                                                                 IComponentInteraction interaction,
-                                                                 IServiceScope scope,
-                                                                 IModalSubmitInteraction modalInteraction,
-                                                                 IBaseRequest command,
-                                                                 IMediator mediator)
+                                                          IComponentInteraction interaction,
+                                                          IServiceScope scope,
+                                                          IModalSubmitInteraction modalInteraction,
+                                                          IBaseRequest command,
+                                                          IMediator mediator)
         {
             try
             {
@@ -235,6 +238,20 @@ namespace Agora.Addons.Disqord
             }
 
             return null;
+        }
+
+        private static void SetLogContext(DiscordInteractionContext interactionContext, ILoggerContext loggerContext)
+        {
+            var interaction = interactionContext.Interaction;
+            
+            loggerContext.ContextInfo.Add("ID", interaction.Id);
+
+            if (interaction is IComponentInteraction component)
+            loggerContext.ContextInfo.Add("Command", $"{component.Type}: {component.ComponentType} ({component.CustomId})");
+
+            loggerContext.ContextInfo.Add("User", interaction.Author.GlobalName);
+            loggerContext.ContextInfo.Add($"{interaction.Channel.Type}Channel", interaction.ChannelId);
+            loggerContext.ContextInfo.Add("Guild", interaction.GuildId);
         }
     }
 }

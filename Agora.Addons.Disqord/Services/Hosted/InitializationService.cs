@@ -45,7 +45,7 @@ namespace Agora.Addons.Disqord
 
             await ResetLiveAuctionsAsync(stoppingToken);
 
-            _logger.LogInformation("Initialized...updating status");
+            _logger.LogDebug("Initialized...updating status");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord
 
                 try
                 {
-                    _logger.LogInformation("Reset timout for live auction {auction} to {countdown}", auction.Id, countdown);
+                    _logger.LogDebug("Reset timout for live auction {auction} to {countdown}", auction.Id, countdown);
 
                     using var timerScope = Bot.Services.CreateScope();
                     var timer = timerScope.ServiceProvider.GetRequiredService<IAuctionTimer>();

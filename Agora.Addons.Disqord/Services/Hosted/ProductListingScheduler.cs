@@ -23,7 +23,8 @@ namespace Agora.Addons.Disqord
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Bot.WaitUntilReadyAsync(stoppingToken);
-            _logger.LogInformation("Starting Product Listing Scheduler");
+
+            _logger.LogTrace("Starting Product Listing Scheduler");
 
             foreach (var job in _jobs)
                 await EnqueueAsync(job, stoppingToken);
@@ -35,14 +36,14 @@ namespace Agora.Addons.Disqord
         {
             await (job as RecurringJob).RepeatAsync(stoppingToken);
 
-            _logger.LogInformation("Queued Job: {RecurringJob}", job.GetType().Name);
+            _logger.LogTrace("Queued Job: {RecurringJob}", job.GetType().Name);
 
             return;
         }
 
         public override Task StopAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Stopping Product Listing Scheduler");
+            _logger.LogTrace("Stopping Product Listing Scheduler");
 
             foreach (var job in _jobs)
                 job.Dispose();

@@ -64,7 +64,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);

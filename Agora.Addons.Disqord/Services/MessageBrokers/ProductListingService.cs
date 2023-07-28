@@ -10,8 +10,8 @@ using Disqord.Http;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
-using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
@@ -22,6 +22,7 @@ namespace Agora.Addons.Disqord
     public sealed class ProductListingService : AgoraService, IProductListingService
     {
         private readonly DiscordBotBase _agora;
+        private readonly ILogger _logger;
         private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
@@ -36,6 +37,7 @@ namespace Agora.Addons.Disqord
                                         ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _logger = logger;
             _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
@@ -43,12 +45,19 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> PostProductListingAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value,
-                                        ShowroomId.Value,
-                                        Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value,
+                                                     ShowroomId.Value,
+                                                     Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) 
+                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+
+            if (channel is null)
+                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}"));
+
             var categorization = await GetCategoryAsync(productListing);
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
@@ -63,17 +72,24 @@ namespace Agora.Addons.Disqord
 
             var response = await _agora.SendMessageAsync(channelId, message);
 
+            result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
+           
             try
             {
                 if (channel is ITextChannel textChannel && textChannel.Type == ChannelType.News)
                 {
-                    await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
+                    if (!result.IsSuccessful)
+                        return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
+
                     await textChannel.CrosspostMessageAsync(response.Id);
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex) 
+            {
+                _logger.LogError(ex, "Failed to complete news channel publishing");
+            }
 
-            if (channelId != ShowroomId.Value) await response.PinAsync();
+            if (result.IsSuccessful && channelId != ShowroomId.Value) await response.PinAsync();
 
             return ReferenceNumber.Create(response.Id);
         }
@@ -87,18 +103,22 @@ namespace Agora.Addons.Disqord
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+
+            if (channel is null)
+                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}"));
+
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
 
-            if (channel is CachedCategoryChannel or CachedForumChannel)
-                channelId = productListing.ReferenceCode.Reference();
+            if (channel is CachedCategoryChannel or CachedForumChannel) channelId = productListing.ReferenceCode.Reference();
 
             try
             {
                 if (refreshMessage) await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
-                if (channel is IForumChannel forumChannel
-                    && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
-                    forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
+                var status = productListing.Status;
+                var updateTag =  status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
+
+                if (channel is IForumChannel forumChannel && updateTag) forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
                 return productListing.Product.ReferenceNumber;
             }
@@ -108,7 +128,7 @@ namespace Agora.Addons.Disqord
             }
             catch (Exception ex)
             {
-                Logger.LogError("Failed to update product listing: {exception}", ex);
+                _logger.LogError("Failed to update product listing: {exception}", ex);
             }
 
             return null;
@@ -116,6 +136,10 @@ namespace Agora.Addons.Disqord
 
         private async Task<IForumChannel> UpdateForumTagAsync(Listing productListing, IForumChannel forumChannel)
         {
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads);
+
+            if (!result.IsSuccessful) return forumChannel;
+
             forumChannel = await EnsureForumTagsExistAsync(forumChannel, AgoraTag.Active, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold, AgoraTag.Soon);
 
             var pending = forumChannel.Tags.FirstOrDefault(x => x.Name.Equals("Pending", StringComparison.OrdinalIgnoreCase))?.Id;
@@ -128,8 +152,8 @@ namespace Agora.Addons.Disqord
             {
                 if (productListing.Status != ListingStatus.Sold)
                 {
-                    var isActive = productListing.ScheduledPeriod.ScheduledStart <= SystemClock.Now && active != null;
-                    var isSoon = productListing.ExpiresIn <= TimeSpan.FromHours(1) && soon != null;
+                    var isActive = productListing.ScheduledPeriod.ScheduledStart <= SystemClock.Now && active is not null;
+                    var isSoon = productListing.ExpiresIn <= TimeSpan.FromHours(1) && soon is not null;
 
                     if (isActive)
                     {
@@ -141,11 +165,10 @@ namespace Agora.Addons.Disqord
                         
                         if (isSoon && !tagIds.Contains(soon.Value)) tagIds.Add(soon.Value);
 
-                        if (count != tagIds.Count)
-                            await ModifyThreadTagsAsync(thread, tagIds);
+                        if (count != tagIds.Count) await ModifyThreadTagsAsync(thread, tagIds);
                     }
                     
-                    if (soon != null && !isSoon && thread.TagIds.Contains(soon.Value))
+                    if (!isSoon && soon is not null && thread.TagIds.Contains(soon.Value))
                         await ModifyThreadTagsAsync(thread, thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != soon.GetValueOrDefault() && tag != locked.GetValueOrDefault()).ToList());
                 }
                 else if (locked != null)
@@ -153,9 +176,9 @@ namespace Agora.Addons.Disqord
                     await ModifyThreadTagsAsync(thread, thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != active.GetValueOrDefault() && tag != soon.GetValueOrDefault()).Append(locked.Value).ToList());
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Failed to update tags on forum post
+                _logger.LogError(ex, "Failed to update tags on forum post");
             }
 
             return forumChannel;
@@ -169,10 +192,11 @@ namespace Agora.Addons.Disqord
         private async Task RefreshProductListingAsync(Listing productListing, List<LocalEmbed> productEmbeds, ulong channelId, IDiscordGuildSettings settings)
         {
             var content = string.Empty;
+            var status = productListing.Status;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
+            var updateTag = status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
 
-            if (channel is IThreadChannel forumChannel
-                && (productListing.Status == ListingStatus.Active || productListing.Status == ListingStatus.Locked || productListing.Status == ListingStatus.Sold))
+            if (channel is IThreadChannel forumChannel && updateTag)
             {
                 var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
 
@@ -184,16 +208,20 @@ namespace Agora.Addons.Disqord
                     VickreyAuction { Product: AuctionItem item } => $"Bids: {item.Offers.Count}",
                     { Product: AuctionItem item } => $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}",
                     CommissionTrade trade => $"Commission: {trade.ValueTag}",
-                    RaffleGiveaway { Product: GiveawayItem item } => $"Ticket Price: {item.TicketPrice}",
+                    RaffleGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0 
+                        ? $"Ticket Price: {item.TicketPrice}" 
+                        : $"{item.Offers?.Count}/{item.MaxParticipants} Tickets | Price: {item.TicketPrice}",
+                    StandardGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0 
+                        ? string.Empty 
+                        : $"{item.Offers?.Count}/{item.MaxParticipants} Participants",
                     _ => string.Empty
                 };
             }
 
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
 
-            if (_interactionAccessor.Context == null
-                || (_interactionAccessor.Context.Interaction is IComponentInteraction component
-                && component.Message.Id != productListing.Product.ReferenceNumber.Value))
+            if (_interactionAccessor.Context == null 
+                || (_interactionAccessor.Context.Interaction is IComponentInteraction component && component.Message.Id != productListing.Product.ReferenceNumber.Value))
             {
                 await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
                 {
@@ -204,22 +232,12 @@ namespace Agora.Addons.Disqord
             }
             else
             {
-                var interaction = _interactionAccessor.Context.Interaction;
-
-                if (interaction.Response().HasResponded)
-                    await interaction.Followup().ModifyResponseAsync(x =>
-                    {
-                        x.Content = content;
-                        x.Embeds = productEmbeds;
-                        x.Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
-                    });
-                else
-                    await interaction.Response().ModifyMessageAsync(new LocalInteractionMessageResponse()
-                    {
-                        Content = content,
-                        Embeds = productEmbeds,
-                        Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton)
-                    });
+                await _interactionAccessor.Context.Interaction.ModifyMessageAsync(new LocalInteractionMessageResponse()
+                {
+                    Content = content,
+                    Embeds = productEmbeds,
+                    Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton)
+                });
             }
         }
 
@@ -229,10 +247,13 @@ namespace Agora.Addons.Disqord
 
             if (channel is CachedCategoryChannel or CachedForumChannel) return default;
 
-            await CheckPermissionsAsync(EmporiumId.Value,
-                                        ShowroomId.Value,
-                                        Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ReadMessageHistory |
-                                        Permissions.ManageThreads | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
+            var result = await CheckPermissionsAsync(EmporiumId.Value,
+                                                     ShowroomId.Value,
+                                                     Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds | Permissions.ReadMessageHistory |
+                                                     Permissions.ManageThreads | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
+
+            if (!result.IsSuccessful)
+                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var duration = listing.ScheduledPeriod.Duration switch
             {
@@ -264,33 +285,26 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask CloseBarteringChannelAsync(Listing productListing)
         {
+            var channelId = productListing.Product.ReferenceNumber.Value;
+            var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
+
+            if (showroom == null) return;
+
+            if (showroom is CachedCategoryChannel or CachedForumChannel)
+                channelId = productListing.ReferenceCode.Reference();
+
+            var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+            
             try
             {
-                var channelId = productListing.Product.ReferenceNumber.Value;
-                var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
-
-                if (showroom == null) return;
-
-                if (showroom is CachedCategoryChannel or CachedForumChannel)
-                    channelId = productListing.ReferenceCode.Reference();
-
-                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
-
                 if (productListing.Status != ListingStatus.Withdrawn && showroom is IForumChannel forum)
                 {
                     if (_interactionAccessor != null && _interactionAccessor.Context != null)
-                    {
-                        var interaction = _interactionAccessor.Context.Interaction;
-
-                        if (interaction.Response().HasResponded)
-                            await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithContent("Transaction Closed!").WithIsEphemeral());
-                        else
-                            await interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Transaction Closed!").WithIsEphemeral(true));
-                    }
+                        await _interactionAccessor.Context.Interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Transaction Closed!"));
 
                     if (_agora.GetChannel(EmporiumId.Value, channelId) is not CachedThreadChannel post) return;
 
-                    forum = await TagClosedPostAsync(productListing, forum, post);
+                    await TagClosedPostAsync(productListing, forum, post);
 
                     if (settings.InlineResults) return;
 
@@ -307,9 +321,23 @@ namespace Agora.Addons.Disqord
                     if (channel == null) return;
 
                     if (settings.InlineResults && productListing.Status > ListingStatus.Withdrawn)
-                        await _agora.DeleteMessageAsync(channel.Id, productListing.Product.ReferenceNumber.Value);
+                    {
+                        var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
+
+                        if (result.IsSuccessful)
+                            await _agora.DeleteMessageAsync(channelId, productListing.Product.ReferenceNumber.Value);
+                        else 
+                            await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+                    }
                     else
-                        await _agora.DeleteChannelAsync(channelId);
+                    {
+                        var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels);
+
+                        if (result.IsSuccessful)
+                            await _agora.DeleteChannelAsync(channelId);
+                        else 
+                            await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+                    }
                 }
             }
             catch (Exception ex)
@@ -322,6 +350,10 @@ namespace Agora.Addons.Disqord
 
         private async Task<IForumChannel> TagClosedPostAsync(Listing productListing, IForumChannel forum, CachedThreadChannel post)
         {
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads);
+
+            if (!result.IsSuccessful) return forum;
+
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Expired, AgoraTag.Locked, AgoraTag.Sold);
 
             var soon = forum.Tags.FirstOrDefault(x => x.Name.Equals("Ending Soon", StringComparison.OrdinalIgnoreCase))?.Id;
@@ -356,11 +388,16 @@ namespace Agora.Addons.Disqord
         {
             var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
-            if (channel is CachedCategoryChannel or CachedForumChannel) return;
+            if (channel is CachedCategoryChannel or CachedForumChannel or null) return;
 
             try
             {
-                await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
+                var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
+
+                if (result.IsSuccessful)
+                    await _agora.DeleteMessageAsync(ShowroomId.Value, productListing.Product.ReferenceNumber.Value);
+                else
+                    await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
             }
             catch (Exception ex)
             {
@@ -370,40 +407,82 @@ namespace Agora.Addons.Disqord
             return;
         }
 
-        private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
+        private ValueTask<IResult> CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
         {
             var currentMember = _agora.GetCurrentMember(guildId);
-            var channel = _agora.GetChannel(guildId, channelId) ?? throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+            var channel = _agora.GetChannel(guildId, channelId);
+
+            if (channel is null)
+                return Result.Failure($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
-            if (!channelPerms.HasFlag(permissions))
-            {
-                var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
-                var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+            if (channelPerms.HasFlag(permissions)) return Result.Success();
 
-                if (feedbackId.HasValue && feedbackId != channelId)
+            var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
+            
+            return Result.Failure(message);
+        }
+
+        private async Task<ulong> GetFeedbackChannelAsync(ulong guildId, ulong channelId)
+        {
+            var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+
+            if (feedbackId.HasValue && feedbackId != channelId)
+            {
+                return feedbackId.Value;
+            }
+            else
+            {
+                var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
+
+                if (settings.AuditLogChannelId != 0)
+                    return settings.AuditLogChannelId;
+                else if (settings.ResultLogChannelId > 1)
+                    return settings.ResultLogChannelId;
+            }
+
+            return 0;
+        }
+
+        private async Task<ulong> TrySendFeedbackAsync(ulong guildId, ulong channelId, string message)
+        {
+            var interaction = _interactionAccessor?.Context?.Interaction;
+            var embed = new LocalEmbed().WithDescription(message).WithColor(Color.Red);
+
+            _logger.LogDebug("Action failure feedback: {message}", message);
+
+            try
+            {
+                if (interaction is null || interaction is IComponentInteraction)
                 {
-                    await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    var feedbackId = await GetFeedbackChannelAsync(guildId, channelId);
+
+                    if (feedbackId == 0) return feedbackId;
+                    
+                    var response = await _agora.SendMessageAsync(feedbackId, new LocalMessage().AddEmbed(embed));
+                    return response.Id;
                 }
                 else
                 {
-                    var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
-
-                    if (settings.AuditLogChannelId != 0)
-                        await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId > 1)
-                        await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    await interaction.SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed));
+                    return interaction.Id;
                 }
-
-                throw new InvalidOperationException(message);
             }
-
-            return;
+            catch (Exception)
+            {
+                //unable to notify the user
+            }
+         
+            return 0;
         }
 
         private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.SendMessagesInThreads | Permissions.ManageChannels);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.SendMessagesInThreads | Permissions.ManageChannels);
+
+            if (!result.IsSuccessful)
+                return await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
 
             forum = await EnsureForumTagsExistAsync(forum, AgoraTag.Pending, AgoraTag.Active, AgoraTag.Soon, AgoraTag.Expired, AgoraTag.Sold);
 
@@ -494,7 +573,10 @@ namespace Agora.Addons.Disqord
 
         private async ValueTask<ulong> CreateCategoryChannelAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels | Permissions.ManageMessages);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels | Permissions.ManageMessages);
+
+            if (!result.IsSuccessful)
+                return await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
 
             var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value,
                                                                productListing.Product.Title.Value,
@@ -507,19 +589,15 @@ namespace Agora.Addons.Disqord
 
         private async Task<string> GetCategoryAsync(Listing productListing)
         {
-            string categorization = string.Empty;
             var subcategoryId = productListing.Product?.SubCategoryId;
 
-            if (subcategoryId != null)
-            {
-                var emporium = await _agora.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(productListing.Owner.EmporiumId.Value);
-                var category = emporium.Categories.FirstOrDefault(c => c.SubCategories.Any(s => s.Id.Equals(subcategoryId)));
-                var subcategory = category.SubCategories.FirstOrDefault(s => s.Id.Equals(subcategoryId));
+            if (subcategoryId == null) return string.Empty;
 
-                categorization = $"{category.Title}{(subcategory.Title.Equals(category.Title.Value) ? "" : $": {subcategory.Title}")}";
-            }
+            var emporium = await _agora.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(productListing.Owner.EmporiumId.Value);
+            var category = emporium.Categories.FirstOrDefault(c => c.SubCategories.Any(s => s.Id.Equals(subcategoryId)));
+            var subcategory = category.SubCategories.FirstOrDefault(s => s.Id.Equals(subcategoryId));
 
-            return categorization;
+            return $"{category.Title}{(subcategory.Title.Equals(category.Title.Value) ? "" : $": {subcategory.Title}")}";
         }
 
         public async ValueTask NotifyPendingListingAsync(Listing productListing)

@@ -58,10 +58,6 @@ namespace Agora.Addons.Disqord.Commands
             else
                 _switcher.SetOverrideLevel(_configuration.GetOverrideLoglevel("Microsoft.EntityFrameworkCore"));
 
-            Logger.LogTrace("ENABLED");
-            Logger.LogDebug("ENABLED");
-            Logger.LogInformation("ENABLED");
-
             await Response($"Logging set to {logLevel}");
         }
 
@@ -136,27 +132,6 @@ namespace Agora.Addons.Disqord.Commands
 
             await Response(status);
         }
-
-        //[RequireBotOwner]
-        //[SkipAuthentication]
-        //[SlashCommand("convert")]
-        //[RequireGuild(551567205461131305)]
-        //[Description("Run the conversion process")]
-        //public async Task RunConversion([Description("The name of the service to convert to")] string serviceName)
-        //{
-        //    RebootInProgress = true;
-
-        //    Logger.LogInformation("Starting conversion");
-
-        //    await Deferral();
-        //    await Context.Bot.SetPresenceAsync(UserStatus.DoNotDisturb, new LocalActivity("Maintenance: System Conversion", ActivityType.Playing));
-
-        //    var convertedCount = await Bot.Services.GetRequiredService<ConversionService>().ConvertAsync(Context);
-
-        //    Logger.LogInformation("Conversion completed. {COUNT} guilds processed", convertedCount);
-
-        //    Restart(serviceName);
-        //}
 
         private async Task<IResult> GetStatsAsync()
         {

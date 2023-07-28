@@ -428,19 +428,12 @@ namespace Agora.Addons.Disqord
         {
             var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
 
-            if (feedbackId.HasValue && feedbackId != channelId)
-            {
-                return feedbackId.Value;
-            }
-            else
-            {
-                var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
+            if (feedbackId.HasValue && feedbackId != channelId) return feedbackId.Value;
+            
+            var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
 
-                if (settings.AuditLogChannelId != 0)
-                    return settings.AuditLogChannelId;
-                else if (settings.ResultLogChannelId > 1)
-                    return settings.ResultLogChannelId;
-            }
+            if (settings.AuditLogChannelId != 0) return settings.AuditLogChannelId;
+            else if (settings.ResultLogChannelId > 1) return settings.ResultLogChannelId;
 
             return 0;
         }

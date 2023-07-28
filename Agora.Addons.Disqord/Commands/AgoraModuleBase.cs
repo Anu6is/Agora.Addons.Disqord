@@ -137,7 +137,7 @@ namespace Agora.Addons.Disqord.Commands
 
             if (isEphimeral) message.WithIsEphemeral();
             if (content.IsNotNull()) message.WithContent(content);
-            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.OrangeRed)));
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.Red)));
 
             return Response(message);
         }

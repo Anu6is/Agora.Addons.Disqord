@@ -41,6 +41,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
 
+            if (participants is null) return Response(invalidMessage);
             if (participants.Count() != 2) return Response(invalidMessage);
             if (message.Embeds.Count != 1) return Response(invalidMessage);
 
@@ -78,10 +79,13 @@ namespace Agora.Addons.Disqord.Commands
             if (message.Author.Id != Context.Bot.CurrentUser.Id) return Response(invalidMessage);
 
             var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
+            
+            if (participants is null) return Response(invalidMessage);
+            if (participants.Count() != 2) return Response(invalidMessage);
+            if (message.Embeds.Count != 1) return Response(invalidMessage);
+
             var owner = participants.First();
             var buyer = participants.Last();
-
-            if (participants.Count() != 2) return Response(invalidMessage);
 
             if (message.Embeds[0].Footer == null || !message.Embeds[0].Footer.Text.Equals("✅"))
                 return Response(new LocalInteractionMessageResponse()

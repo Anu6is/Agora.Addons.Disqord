@@ -1,4 +1,5 @@
-﻿using Disqord;
+﻿using Agora.Addons.Disqord.Extensions;
+using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
@@ -67,14 +68,26 @@ namespace Agora.Addons.Disqord
 
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
 
-                var command = modalInteraction == null
-                    ? HandleInteraction(interaction, roomId)
+                var result = modalInteraction == null
+                    ? Result.Success(HandleInteraction(interaction, roomId))
                     : await HandleModalInteraction(modalInteraction, roomId);
 
-                if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
-                    scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
+                if (!result.IsSuccessful) 
+                {
+                    await interaction.SendMessageAsync(
+                            new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                }
+                else
+                {
+                    var command = result.Data;
 
-                await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);
+                    if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
+                        scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
+
+                    await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);
+                }
             }
 
             return;

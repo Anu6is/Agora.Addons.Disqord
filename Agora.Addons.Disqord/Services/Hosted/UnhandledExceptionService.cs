@@ -143,7 +143,9 @@ namespace Agora.Addons.Disqord
                     scope.SetExtra("Shard", client.ApiClient.GetShardId(interaction.GuildId));
                     scope.SetExtra("Arguments", interaction.CustomId);
                     scope.SetExtra("Guild Permissions", member?.CalculateGuildPermissions().ToString());
-                    scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());
+
+                    if (channel is not null)
+                        scope.SetExtra("Channel Permissions", member?.CalculateChannelPermissions(channel).ToString());
                 });
             }
             catch (Exception ex)

@@ -62,7 +62,15 @@ namespace Agora.Addons.Disqord
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                if (!await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator)) return;
+                var authorize = await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator);
+
+                if (!authorize.IsSuccessful)
+                {
+                    await interaction.SendMessageAsync(
+                            new LocalInteractionMessageResponse().WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(authorize.FailureReason)));
+                    return;
+                }
 
                 if (!await ConfirmInteractionAsync(interaction)) return;
 
@@ -102,9 +110,18 @@ namespace Agora.Addons.Disqord
         {
             try
             {
-                if (command != null) await mediator.Send(command);
+                if (command is not null) 
+                { 
+                    var result = await mediator.Send(command) as IResult;
 
-                if (modalInteraction != null) await HandleResponse(modalInteraction);
+                    if (result is not null && !result.IsSuccessful)
+                        await interaction.SendMessageAsync(
+                                new LocalInteractionMessageResponse()
+                                    .WithIsEphemeral()
+                                    .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                } 
+
+                if (modalInteraction is not null) await HandleResponse(modalInteraction);
             }
             catch (Exception ex)
             {
@@ -113,7 +130,7 @@ namespace Agora.Addons.Disqord
             }
         }
 
-        private async Task<bool> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
+        private async Task<IResult> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
                                                            IComponentInteraction interaction,
                                                            ulong roomId,
                                                            IServiceScope scope,
@@ -121,22 +138,20 @@ namespace Agora.Addons.Disqord
         {
             var request = AuthorizeInteraction(interaction, roomId);
 
-            if (request == null) return true;
+            if (request == null) return Result.Success();
 
             try
             {
                 var result = await mediator.Send(request) as IResult;
 
-                if (result.IsSuccessful) return true;
-
-                return false; //todo feedback
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError("{command} failed with error: {err}", request.GetType().Name, ex.Message);
 
                 await SendErrorResponseAsync(args, interaction, scope, ex);
-                return false;
+                return Result.Exception("Authorization Error: Unable to confirm user permissions.", ex);
             }
         }
 

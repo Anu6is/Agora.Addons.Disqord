@@ -71,7 +71,7 @@ namespace Agora.Addons.Disqord
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var hostRole = guildSettings.MerchantRole;
 
-            if (hostRole == 0ul || hostRole == GuildId) return result;
+            if (hostRole == 0ul || hostRole == GuildId) return Result.Success();
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
@@ -92,13 +92,11 @@ namespace Agora.Addons.Disqord
 
             var hasRole = buyerRole == 0ul || buyerRole == GuildId || member.RoleIds.Contains(buyerRole);
 
-            if (criteria is not null) result = await criteria(user, command);
+            if (!hasRole) return Result.Failure("Unauthorized access: Buyer role required.");
 
-            if (!result.IsSuccessful) return result;
+            if (criteria is null) return Result.Success();
 
-            if (hasRole) return Result.Success();
-            
-            return Result.Failure("Unauthorized access: Buyer role required.");
+            return await criteria(user, command);
         }
 
         public ValueTask<IResult> ValidateUser(IEmporiumUser user) => Result.Success();

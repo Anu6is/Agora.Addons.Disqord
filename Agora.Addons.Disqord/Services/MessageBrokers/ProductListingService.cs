@@ -285,6 +285,8 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask CloseBarteringChannelAsync(Listing productListing)
         {
+            if (productListing.Status <= ListingStatus.Withdrawn) return;
+
             var channelId = productListing.Product.ReferenceNumber.Value;
             var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
@@ -297,7 +299,7 @@ namespace Agora.Addons.Disqord
             
             try
             {
-                if (productListing.Status != ListingStatus.Withdrawn && showroom is IForumChannel forum)
+                if (showroom is IForumChannel forum)
                 {
                     if (_interactionAccessor != null && _interactionAccessor.Context != null)
                         await _interactionAccessor.Context.Interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Transaction Closed!"));
@@ -320,12 +322,12 @@ namespace Agora.Addons.Disqord
 
                     if (channel == null) return;
 
-                    if (settings.InlineResults && productListing.Status > ListingStatus.Withdrawn)
+                    if (showroom is ICategoryChannel)
                     {
                         var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
 
                         if (result.IsSuccessful)
-                            await _agora.DeleteMessageAsync(channelId, productListing.Product.ReferenceNumber.Value);
+                            await _agora.DeleteMessageAsync(channel.Id, productListing.Product.ReferenceNumber.Value);
                         else 
                             await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
                     }

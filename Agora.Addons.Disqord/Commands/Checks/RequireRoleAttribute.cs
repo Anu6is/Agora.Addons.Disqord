@@ -3,7 +3,6 @@ using Disqord.Bot.Commands;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
-using Services = Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
@@ -30,26 +29,15 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var user = EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(_author ? context.AuthorId : (member as IMember).Id));
-            
-            Services.IResult result = null;
 
-            switch (_role)
+            var result = _role switch
             {
-                case AuthorizationRole.Administrator:
-                    result = await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user);
-                    break;
-                case AuthorizationRole.Broker:
-                    result = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
-                    break;
-                case AuthorizationRole.Host:
-                    result = await context.Services.GetRequiredService<IUserManager>().IsHost(user);
-                    break;
-                case AuthorizationRole.Buyer:
-                    result = await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
-                    break;
-                default:
-                    break;
-            }
+                AuthorizationRole.Administrator => await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user),
+                AuthorizationRole.Broker => await context.Services.GetRequiredService<IUserManager>().IsBroker(user),
+                AuthorizationRole.Host => await context.Services.GetRequiredService<IUserManager>().IsHost(user),
+                AuthorizationRole.Buyer => await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user),
+                _ => null
+            };
 
             if (result.IsSuccessful)
                 return Results.Success;

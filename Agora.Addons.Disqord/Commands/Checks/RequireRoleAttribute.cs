@@ -3,6 +3,7 @@ using Disqord.Bot.Commands;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Services = Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
@@ -29,30 +30,33 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var user = EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(_author ? context.AuthorId : (member as IMember).Id));
-            var hasAccess = false;
+            
+            Services.IResult result = null;
 
             switch (_role)
             {
                 case AuthorizationRole.Administrator:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user);
+                    result = await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user);
                     break;
                 case AuthorizationRole.Broker:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
+                    result = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
                     break;
                 case AuthorizationRole.Host:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsHost(user);
+                    result = await context.Services.GetRequiredService<IUserManager>().IsHost(user);
                     break;
                 case AuthorizationRole.Buyer:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
+                    result = await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
                     break;
                 default:
                     break;
             }
 
-            if (hasAccess)
+            if (result.IsSuccessful)
                 return Results.Success;
             else
-                return _author ? Results.Failure($"The {_role} role is required to set the {parameter.Name}") : Results.Failure($"The selected member requires the {_role} role");
+                return _author 
+                    ? Results.Failure($"The {_role} role is required to set the {parameter.Name}") 
+                    : Results.Failure($"The selected member requires the {_role} role");
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Disqord;
+﻿using Agora.Addons.Disqord.Extensions;
+using Disqord;
 using Disqord.Bot;
 using Disqord.Bot.Hosting;
 using Disqord.Extensions.Interactivity;
@@ -7,6 +8,7 @@ using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using FluentValidation;
 using MediatR;
@@ -39,7 +41,7 @@ namespace Agora.Addons.Disqord
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)
             {
-                _logger.LogInformation("{Author} selected {button} in {guild}",
+                _logger.LogDebug("{Author} selected {button} in {guild}",
                                  interaction.Author.Name,
                                  interaction.CustomId,
                                  interaction.GuildId);
@@ -47,7 +49,10 @@ namespace Agora.Addons.Disqord
                 if (interaction.CustomId.StartsWith("#")) return;
 
                 using var scope = _scopeFactory.CreateScope();
-                scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
+                var interactionContext = scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(args);
+                var loggerContext = scope.ServiceProvider.GetRequiredService<ILoggerContext>();
+
+                SetLogContext(interactionContext, loggerContext);
 
                 var roomId = await DetermineShowroomAsync(args);
 
@@ -57,46 +62,75 @@ namespace Agora.Addons.Disqord
 
                 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-                if (!await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator)) return;
+                var authorize = await AuthorizeInteractionAsync(args, interaction, roomId, scope, mediator);
+
+                if (!authorize.IsSuccessful)
+                {
+                    await interaction.SendMessageAsync(
+                            new LocalInteractionMessageResponse().WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(authorize.FailureReason)));
+                    return;
+                }
 
                 if (!await ConfirmInteractionAsync(interaction)) return;
 
                 var modalInteraction = await SendModalInteractionResponseAsync(interaction);
 
-                var command = modalInteraction == null
-                    ? HandleInteraction(interaction, roomId)
+                var result = modalInteraction == null
+                    ? Result.Success(HandleInteraction(interaction, roomId))
                     : await HandleModalInteraction(modalInteraction, roomId);
 
-                if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
-                    scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
+                if (!result.IsSuccessful) 
+                {
+                    await interaction.SendMessageAsync(
+                            new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                }
+                else
+                {
+                    var command = result.Data;
 
-                await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);
+                    if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
+                        scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
+
+                    await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);
+                }
             }
 
             return;
         }
 
         private async Task HandleInteractionResponseAsync(InteractionReceivedEventArgs args,
-                                                                 IComponentInteraction interaction,
-                                                                 IServiceScope scope,
-                                                                 IModalSubmitInteraction modalInteraction,
-                                                                 IBaseRequest command,
-                                                                 IMediator mediator)
+                                                          IComponentInteraction interaction,
+                                                          IServiceScope scope,
+                                                          IModalSubmitInteraction modalInteraction,
+                                                          IBaseRequest command,
+                                                          IMediator mediator)
         {
             try
             {
-                if (command != null) await mediator.Send(command);
+                if (command is not null) 
+                { 
+                    var result = await mediator.Send(command) as IResult;
 
-                if (modalInteraction != null) await HandleResponse(modalInteraction);
+                    if (result is not null && !result.IsSuccessful)
+                        await interaction.SendMessageAsync(
+                                new LocalInteractionMessageResponse()
+                                    .WithIsEphemeral()
+                                    .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                } 
+
+                if (modalInteraction is not null) await HandleResponse(modalInteraction);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing command");
-                await SendErrorResponseAsync(args, modalInteraction as IInteraction ?? interaction, scope, ex);
+                await SendErrorResponseAsync(args, modalInteraction as IUserInteraction ?? interaction, scope, ex);
             }
         }
 
-        private async Task<bool> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
+        private async Task<IResult> AuthorizeInteractionAsync(InteractionReceivedEventArgs args,
                                                            IComponentInteraction interaction,
                                                            ulong roomId,
                                                            IServiceScope scope,
@@ -104,19 +138,20 @@ namespace Agora.Addons.Disqord
         {
             var request = AuthorizeInteraction(interaction, roomId);
 
-            if (request == null) return true;
+            if (request == null) return Result.Success();
 
             try
             {
-                await mediator.Send(request);
-                return true;
+                var result = await mediator.Send(request) as IResult;
+
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError("{command} failed with error: {err}", request.GetType().Name, ex.Message);
 
                 await SendErrorResponseAsync(args, interaction, scope, ex);
-                return false;
+                return Result.Exception("Authorization Error: Unable to confirm user permissions.", ex);
             }
         }
 
@@ -185,7 +220,7 @@ namespace Agora.Addons.Disqord
             return roomId;
         }
 
-        private static async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IInteraction interaction, IServiceScope scope, Exception ex)
+        private static async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IUserInteraction interaction, IServiceScope scope, Exception ex)
         {
             var message = ex switch
             {
@@ -205,10 +240,7 @@ namespace Agora.Addons.Disqord
             if (message.EndsWith("contact support."))
                 response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
 
-            if (interaction.Response().HasResponded)
-                await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithIsEphemeral().WithContent(message));
-            else
-                await interaction.Response().SendMessageAsync(response);
+            await interaction.SendMessageAsync(response);
 
             return;
         }
@@ -231,6 +263,20 @@ namespace Agora.Addons.Disqord
             }
 
             return null;
+        }
+
+        private static void SetLogContext(DiscordInteractionContext interactionContext, ILoggerContext loggerContext)
+        {
+            var interaction = interactionContext.Interaction;
+            
+            loggerContext.ContextInfo.Add("ID", interaction.Id);
+
+            if (interaction is IComponentInteraction component)
+            loggerContext.ContextInfo.Add("Command", $"{component.Type}: {component.ComponentType} ({component.CustomId})");
+
+            loggerContext.ContextInfo.Add("User", interaction.Author.GlobalName);
+            loggerContext.ContextInfo.Add($"{interaction.Channel.Type}Channel", interaction.ChannelId);
+            loggerContext.ContextInfo.Add("Guild", interaction.GuildId);
         }
     }
 }

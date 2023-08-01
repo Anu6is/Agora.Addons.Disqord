@@ -9,6 +9,7 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ namespace Agora.Addons.Disqord
     public sealed class AuditLogService : AgoraService, IAuditLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly ILogger _logger;
         private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
@@ -35,6 +37,7 @@ namespace Agora.Addons.Disqord
                                ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _logger = logger;
             _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
@@ -42,7 +45,9 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingCreatedAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var intermediary = string.Empty;
             var value = productListing.ValueTag.ToString();
@@ -53,7 +58,7 @@ namespace Agora.Addons.Disqord
             var original = productListing switch
             {
                 StandardMarket { Discount: > 0, Product: MarketItem item } => $"{Markdown.Strikethrough(item.Price.ToString())} ",
-                FlashMarket { Discount: > 0, Product: MarketItem item } market => $"{Markdown.Strikethrough(item.Price.ToString())} ",
+                FlashMarket { Discount: > 0, Product: MarketItem item } => $"{Markdown.Strikethrough(item.Price.ToString())} ",
                 MassMarket { Product: MarketItem item } market => market.CostPerItem.Value * item.Quantity.Amount > item.CurrentPrice
                                                                 ? $"{Markdown.Strikethrough(Money.Create(market.CostPerItem.Value * item.Quantity.Amount, item.Price.Currency))} "
                                                                 : string.Empty,
@@ -71,9 +76,11 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SteelBlue);
 
-            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var response = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
         }
 
         public ValueTask<ReferenceNumber> LogListingUpdatedAsync(Listing productListing)
@@ -83,7 +90,9 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingWithdrawnAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -96,14 +105,18 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.OrangeRed);
 
-            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var response = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
         }
 
         public async ValueTask<ReferenceNumber> LogOfferSubmittedAsync(Listing productListing, Offer offer)
         {
-            await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(productListing.Owner.EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Anonymous
@@ -128,15 +141,19 @@ namespace Agora.Addons.Disqord
             if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
                 embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Attached Message From")} {Mention.User(submitter)}: {tradeOffer.Details}"));
 
-            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
+            var response = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
 
         }
 
         public async ValueTask<ReferenceNumber> LogOfferRevokedAsync(Listing productListing, Offer offer)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var user = string.Empty;
             var title = productListing.Product.Title.ToString();
@@ -168,9 +185,11 @@ namespace Agora.Addons.Disqord
             if (offer is Deal tradeOffer && !string.IsNullOrWhiteSpace(tradeOffer.Details))
                 embeds.Add(new LocalEmbed().WithDefaultColor().WithDescription($"{Markdown.Bold("Reason:")} {tradeOffer.Details}"));
 
-            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
+            var response = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().WithEmbeds(embeds));
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
         }
 
         public ValueTask<ReferenceNumber> LogOfferAcceptedAsync(Listing productListing, Offer offer)
@@ -180,7 +199,9 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask<ReferenceNumber> LogListingSoldAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var title = productListing.Product.Title.ToString();
             var value = productListing.CurrentOffer.Submission.ToString();
@@ -205,14 +226,18 @@ namespace Agora.Addons.Disqord
                                         .WithColor(Color.Teal);
 
             var localMessage = new LocalMessage().AddEmbed(embed);
-            var id = await TrySendMessageAsync(ShowroomId.Value, localMessage);
+            var response = await TrySendMessageAsync(ShowroomId.Value, localMessage);
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
         }
 
         public async ValueTask<ReferenceNumber> LogListingExpiredAsync(Listing productListing)
         {
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var title = productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -229,63 +254,91 @@ namespace Agora.Addons.Disqord
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
                                         .WithColor(Color.SlateGray);
 
-            var id = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
+            var response = await TrySendMessageAsync(ShowroomId.Value, new LocalMessage().AddEmbed(embed));
 
-            return ReferenceNumber.Create(id);
+            if (!response.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, response.FailureReason));
+
+            return ReferenceNumber.Create(response.Data);
         }
 
-        private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
+        private async ValueTask<IResult> CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
         {
             var currentMember = _agora.GetCurrentMember(guildId);
             var channel = _agora.GetChannel(guildId, channelId);
 
-            if (channel == null)
+            if (channel is null)
             {
                 await ClearChannelSetting();
-
-                throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+                return Result.Failure($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
             }
 
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
-            if (!channelPerms.HasFlag(permissions))
-            {
-                var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
-                var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+            if (channelPerms.HasFlag(permissions)) return Result.Success();
 
-                if (feedbackId.HasValue && feedbackId != channelId)
+            var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
+
+            return Result.Failure(message);
+        }
+
+        private async Task<ulong> GetFeedbackChannelAsync(ulong guildId, ulong channelId)
+        {
+            var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+
+            if (feedbackId.HasValue && feedbackId != channelId) return feedbackId.Value;
+
+            var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
+
+            if (settings.AuditLogChannelId != 0) return settings.AuditLogChannelId;
+            else if (settings.ResultLogChannelId > 1) return settings.ResultLogChannelId;
+
+            return 0;
+        }
+
+        private async Task<ulong> TrySendFeedbackAsync(ulong guildId, ulong channelId, string message)
+        {
+            var interaction = _interactionAccessor?.Context?.Interaction;
+            var embed = new LocalEmbed().WithDescription(message).WithColor(Color.Red);
+
+            _logger.LogDebug("Action failure feedback: {message}", message);
+
+            try
+            {
+                if (interaction is null || interaction is IComponentInteraction)
                 {
-                    await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    var feedbackId = await GetFeedbackChannelAsync(guildId, channelId);
+
+                    if (feedbackId == 0) return feedbackId;
+
+                    var response = await _agora.SendMessageAsync(feedbackId, new LocalMessage().AddEmbed(embed));
+                    return response.Id;
                 }
                 else
                 {
-                    var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
-
-                    if (settings.AuditLogChannelId != 0)
-                        await TrySendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId > 1)
-                        await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    await interaction.SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed));
+                    return interaction.Id;
                 }
-
-                throw new InvalidOperationException(message);
+            }
+            catch (Exception)
+            {
+                //unable to notify the user
             }
 
-            return;
+            return 0;
         }
 
-        private async Task<Snowflake> TrySendMessageAsync(Snowflake channelId, LocalMessage message)
+        private async Task<IResult<Snowflake>> TrySendMessageAsync(Snowflake channelId, LocalMessage message)
         {
             try
             {
                 var msg = await _agora.SendMessageAsync(channelId, message);
-                return msg.Id;
+                return Result.Success(msg.Id);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await ClearChannelSetting();
+                return Result<Snowflake>.Exception("An error occured while attempting to update the audit log. Log channel has been disabled", ex);
             }
-
-            return 0;
         }
 
         private async Task ClearChannelSetting()

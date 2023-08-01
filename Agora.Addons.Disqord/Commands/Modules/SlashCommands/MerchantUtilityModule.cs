@@ -25,14 +25,18 @@ namespace Agora.Addons.Disqord.Commands
 
             if (when == RescheduleOption.Never)
             {
-                await Base.ExecuteAsync(new UnscheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId), product.ListingType));
-                
+                var result = await Base.ExecuteAsync(new UnscheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId), product.ListingType));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
                 return Response(responseEmbed.WithDescription("Item will no longer be automatically relisted once sold/expired"));
             }
             else
             {
-                await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId), product.ListingType, when));
-                
+                var result = await Base.ExecuteAsync(new ScheduleListingCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId), product.ListingType, when));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
                 return Response(responseEmbed.WithDescription($"Item will be automatically relisted {(when == RescheduleOption.Always ? "" : $"once {when}")}"));
             }
         }

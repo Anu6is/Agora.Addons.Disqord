@@ -29,30 +29,22 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var user = EmporiumUser.Create(new EmporiumId(context.GuildId.Value), ReferenceNumber.Create(_author ? context.AuthorId : (member as IMember).Id));
-            var hasAccess = false;
 
-            switch (_role)
+            var result = _role switch
             {
-                case AuthorizationRole.Administrator:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user);
-                    break;
-                case AuthorizationRole.Broker:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
-                    break;
-                case AuthorizationRole.Host:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().IsHost(user);
-                    break;
-                case AuthorizationRole.Buyer:
-                    hasAccess = await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user);
-                    break;
-                default:
-                    break;
-            }
+                AuthorizationRole.Administrator => await context.Services.GetRequiredService<IUserManager>().IsAdministrator(user),
+                AuthorizationRole.Broker => await context.Services.GetRequiredService<IUserManager>().IsBroker(user),
+                AuthorizationRole.Host => await context.Services.GetRequiredService<IUserManager>().IsHost(user),
+                AuthorizationRole.Buyer => await context.Services.GetRequiredService<IUserManager>().ValidateBuyerAsync(user),
+                _ => null
+            };
 
-            if (hasAccess)
+            if (result.IsSuccessful)
                 return Results.Success;
             else
-                return _author ? Results.Failure($"The {_role} role is required to set the {parameter.Name}") : Results.Failure($"The selected member requires the {_role} role");
+                return _author 
+                    ? Results.Failure($"The {_role} role is required to set the {parameter.Name}") 
+                    : Results.Failure($"The selected member requires the {_role} role");
         }
     }
 }

@@ -9,6 +9,7 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ namespace Agora.Addons.Disqord
     public sealed class ResultLogService : AgoraService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly ILogger _logger;
         private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
@@ -35,6 +37,7 @@ namespace Agora.Addons.Disqord
                                 ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
+            _logger = logger;
             _commandAccessor = commandAccessor;
             _settingsService = settingsService;
             _interactionAccessor = interactionAccessor;
@@ -47,7 +50,9 @@ namespace Agora.Addons.Disqord
             if (channel is CachedCategoryChannel or CachedForumChannel)
                 ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
 
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
@@ -67,7 +72,7 @@ namespace Agora.Addons.Disqord
             if (owner != buyer)
                 embed.WithFooter("review this transaction | right-click -> apps -> review");
 
-            if (carousel != null && carousel.Images != null && carousel.Images.Any())
+            if (carousel != null && carousel.Images != null && carousel.Images.Count != 0)
                 embed.WithThumbnailUrl(carousel.Images[0].Url);
 
             if (productListing.Product.Description != null)
@@ -77,8 +82,11 @@ namespace Agora.Addons.Disqord
 
             var localMessage = new LocalMessage().WithContent(participants).AddEmbed(embed);
 
-            await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
-            
+            result = await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
+
+            if (result is IExceptionResult) 
+                await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+
             var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
             var delivered = await SendHiddenMessage(productListing, message);
 
@@ -95,22 +103,18 @@ namespace Agora.Addons.Disqord
             return ReferenceNumber.Create(message.Id);
         }
 
-        private async Task AttachOfferLogsAsync(LocalMessage localMessage, Product product, ulong emporiumId, ulong showroomId)
+        private async Task<IResult> AttachOfferLogsAsync(LocalMessage localMessage, Product product, ulong emporiumId, ulong showroomId)
         {
-            if (product is MarketItem || product is TradeItem) return;
+            if (product is MarketItem || product is TradeItem) return Result.Failure("Listing type does not support attachments");
 
             var settings = await _settingsService.GetGuildSettingsAsync(emporiumId);
 
-            if (product is AuctionItem && !settings.Features.AttachListingLogs) return;
+            if (product is AuctionItem && !settings.Features.AttachListingLogs) return Result.Failure("Attachment settings disabled");
 
-            try
-            {
-                await CheckPermissionsAsync(emporiumId, showroomId, Permissions.SendAttachments);
-            }
-            catch (Exception)
-            {
-                return;
-            }
+            var result = await CheckPermissionsAsync(emporiumId, showroomId, Permissions.SendAttachments);
+
+            if (!result.IsSuccessful) 
+                return Result.Exception("The bot lacks the necessary permissions to attach logs", null);
 
             IEnumerable<OfferLog> logs = product switch
             {
@@ -129,6 +133,8 @@ namespace Agora.Addons.Disqord
             stream.Seek(0, SeekOrigin.Begin);
             
             localMessage.AddAttachment(new LocalAttachment(stream, $"{logs.Count()} offers"));
+
+            return Result.Success();
         }
 
         public async ValueTask<ReferenceNumber> PostListingExpiredAsync(Listing productListing)
@@ -138,7 +144,9 @@ namespace Agora.Addons.Disqord
             if (channel is CachedCategoryChannel or CachedForumChannel)
                 ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
 
-            await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result =await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
@@ -188,12 +196,12 @@ namespace Agora.Addons.Disqord
             return true;
         }
 
-        private async ValueTask CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
+        private async ValueTask<IResult> CheckPermissionsAsync(ulong guildId, ulong channelId, Permissions permissions)
         {
             var currentMember = _agora.GetCurrentMember(guildId);
             var channel = _agora.GetChannel(guildId, channelId);
 
-            if (channel == null)
+            if (channel is null)
             {
                 var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
 
@@ -201,34 +209,62 @@ namespace Agora.Addons.Disqord
 
                 await _settingsService.UpdateGuildSettingsAync(settings);
 
-                throw new NoMatchFoundException($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
+                return Result.Failure($"Unable to verify channel permissions for {Mention.Channel(channelId)}");
             }
 
             var channelPerms = currentMember.CalculateChannelPermissions(channel);
 
-            if (!channelPerms.HasFlag(permissions))
-            {
-                var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
-                var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+            if (channelPerms.HasFlag(permissions)) return Result.Success();
 
-                if (feedbackId.HasValue && feedbackId != channelId)
+            var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
+
+            return Result.Failure(message);
+        }
+
+        private async Task<ulong> GetFeedbackChannelAsync(ulong guildId, ulong channelId)
+        {
+            var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
+
+            if (feedbackId.HasValue && feedbackId != channelId) return feedbackId.Value;
+
+            var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
+
+            if (settings.AuditLogChannelId != 0) return settings.AuditLogChannelId;
+            else if (settings.ResultLogChannelId > 1) return settings.ResultLogChannelId;
+
+            return 0;
+        }
+
+        private async Task<ulong> TrySendFeedbackAsync(ulong guildId, ulong channelId, string message)
+        {
+            var interaction = _interactionAccessor?.Context?.Interaction;
+            var embed = new LocalEmbed().WithDescription(message).WithColor(Color.Red);
+
+            _logger.LogDebug("Action failure feedback: {message}", message);
+
+            try
+            {
+                if (interaction is null || interaction is IComponentInteraction)
                 {
-                    await _agora.SendMessageAsync(feedbackId.Value, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    var feedbackId = await GetFeedbackChannelAsync(guildId, channelId);
+
+                    if (feedbackId == 0) return feedbackId;
+
+                    var response = await _agora.SendMessageAsync(feedbackId, new LocalMessage().AddEmbed(embed));
+                    return response.Id;
                 }
                 else
                 {
-                    var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
-
-                    if (settings.AuditLogChannelId != 0)
-                        await _agora.SendMessageAsync(settings.AuditLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
-                    else if (settings.ResultLogChannelId > 1)
-                        await _agora.SendMessageAsync(settings.ResultLogChannelId, new LocalMessage().AddEmbed(new LocalEmbed().WithDescription(message).WithColor(Color.Red)));
+                    await interaction.SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed));
+                    return interaction.Id;
                 }
-
-                throw new InvalidOperationException(message);
+            }
+            catch (Exception)
+            {
+                //unable to notify the user
             }
 
-            return;
+            return 0;
         }
 
         private async Task LockPostAsync()

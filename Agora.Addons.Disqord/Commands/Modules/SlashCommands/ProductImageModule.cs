@@ -4,8 +4,9 @@ using Disqord;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
-using Emporia.Domain.Entities;
 using Qmmands;
+using IServiceResult = Emporia.Domain.Services.IResult;
+using Services = Emporia.Domain.Services;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -25,14 +26,19 @@ namespace Agora.Addons.Disqord.Commands
         {
             await Deferral(isEphemeral: true);
 
-            var listing = await GetListingTypeAsync();
+            var result = await GetListingTypeAsync();
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
+
             var images = new List<string>() { image1.Url };
 
             if (image2 != null) images.Add(image2.Url);
             if (image3 != null) images.Add(image3.Url);
             if (image4 != null) images.Add(image4.Url);
 
-            return await UpdateImagesAsync(listing, images);
+            var listing = result as Services.Result<string>;
+
+            return await UpdateImagesAsync(listing.Data, images);
         }
 
         [SlashCommand("link")]
@@ -46,42 +52,47 @@ namespace Agora.Addons.Disqord.Commands
         {
             await Deferral(isEphemeral: true);
 
-            var listing = await GetListingTypeAsync();
+            var result = await GetListingTypeAsync();
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
+
             var images = new List<string>() { image1 };
 
             if (image2 != null) images.Add(image2);
             if (image3 != null) images.Add(image3);
             if (image4 != null) images.Add(image4);
 
-            return await UpdateImagesAsync(listing, images);
+            var listing = result as Services.Result<string>;
+
+            return await UpdateImagesAsync(listing.Data, images);
         }
 
-        private async Task<string> GetListingTypeAsync()
+        private async Task<IServiceResult> GetListingTypeAsync()
         {
             var listing = string.Empty;
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
             var rooms = emporium.Showrooms.Where(x => x.Id.Value == ShowroomId.Value).Select(x => x.ListingType).ToArray();
 
-            if (rooms.Length == 0) throw new InvalidOperationException("Room not found in </server rooms:1013361602499723275> list");
+            if (rooms.Length == 0) return Services.Result.Failure("Room not found in </server rooms:1013361602499723275> list");
 
             if (rooms.Length == 1) listing = rooms[0];
             else
             {
                 var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
-                if (product == null) throw new InvalidOperationException("Unable to retrieve product details.");
+                if (product == null) return Services.Result.Failure("Unable to retrieve product details.");
 
                 listing = product.ListingType;
             }
 
-            return listing;
+            return Services.Result.Success(listing);
         }
 
         private async Task<IResult> UpdateImagesAsync(string listing, List<string> images)
         {
             var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
-            Product item = listing switch
+            IServiceResult result = listing switch
             {
                 "Auction" => await Base.ExecuteAsync(
                     new UpdateAuctionItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
@@ -98,13 +109,18 @@ namespace Agora.Addons.Disqord.Commands
                     {
                         ImageUrls = images.ToArray()
                     }),
-                _ => null
-            };
+                "Giveaway" => await Base.ExecuteAsync(
+                    new UpdateGiveawayItemCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(product.ProductId))
+                    {
+                        ImageUrls = images.ToArray()
+                    }),
+                _ => Services.Result.Failure("Unable to update listing.")
+            }; 
 
-            if (item == null) throw new InvalidOperationException("Unable to update listing.");
-
-            return Response(new LocalInteractionMessageResponse().WithContent($"Successfully uploaded {images.Count} image(s)").WithIsEphemeral());
-
+            if (result.IsSuccessful)
+                return Response(new LocalInteractionMessageResponse().WithContent($"Successfully uploaded {images.Count} image(s)").WithIsEphemeral());
+            else
+                return Response(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
         }
     }
 }

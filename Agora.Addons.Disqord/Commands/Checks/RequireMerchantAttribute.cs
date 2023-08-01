@@ -18,8 +18,9 @@ namespace Agora.Addons.Disqord.Checks
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");
 
             var userManager = context.Services.GetRequiredService<IUserManager>();
+            var result = await userManager.IsHost(EmporiumUser.Create(new EmporiumId(context.GuildId), ReferenceNumber.Create(context.AuthorId)));
 
-            if (await userManager.IsHost(EmporiumUser.Create(new EmporiumId(context.GuildId), ReferenceNumber.Create(context.AuthorId)))) return Results.Success;
+            if (result.IsSuccessful) return Results.Success;
 
             return Results.Failure($"Only users with the {Mention.Role(settings.MerchantRole)} role can execute this command.");
         }

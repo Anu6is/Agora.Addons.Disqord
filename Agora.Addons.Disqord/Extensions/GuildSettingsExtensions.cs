@@ -125,7 +125,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Merchant Role", settings.MerchantRole == 0 || settings.MerchantRole == settings.GuildId ? Mention.Everyone : Mention.Role(new Snowflake(settings.MerchantRole)))
                 .AddInlineField("Buyer Role", settings.BuyerRole == 0 || settings.BuyerRole == settings.GuildId ? Mention.Everyone : Mention.Role(new Snowflake(settings.BuyerRole)))
                 .AddInlineBlankField()
-                .AddField("Allowed Listings", settings.AllowedListings.Any() ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
+                .AddField("Allowed Listings", settings.AllowedListings.Count != 0 ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
 
             if (highlightField != null)
                 embed.Fields.Value.FirstOrDefault(x => x.Name == highlightField)?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");
@@ -162,7 +162,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             var rooms = showrooms.Where(x => x.ListingType == listingType.ToString());
 
-            if (rooms.Any())
+            if (rooms.Count() != 0)
             {
                 var details = string.Join(Environment.NewLine, rooms.Select(s =>
                 {

@@ -6,6 +6,7 @@ using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
@@ -51,7 +52,14 @@ namespace Agora.Addons.Disqord.Menus.View
         [Button(Label = "Update Hours", Style = LocalButtonComponentStyle.Primary, Row = 4)]
         public async ValueTask UpdateHours(ButtonEventArgs e)
         {
-            var room = _showrooms.First(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
+            var room = _showrooms.FirstOrDefault(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
+            
+            if (room is null)
+            {
+                e.Button.IsDisabled = true;
+                return;
+            }
+            
             var response = new LocalInteractionModalResponse()
                 .WithCustomId(e.Interaction.Message.Id.ToString())
                 .WithTitle($"Update Business Hours")
@@ -145,15 +153,33 @@ namespace Agora.Addons.Disqord.Menus.View
 
             if (room == null)
             {
-                await data.BeginTransactionAsync(async () =>
+                var transactionResult = await data.BeginTransactionAsync(async () =>
                 {
-                    var showroom = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
+                    var roomResult = await mediator.Send(new CreateShowroomCommand(new EmporiumId(Context.Guild.Id), new ShowroomId(SelectedChannelId), ListingType.Auction));
+
+                    if (!roomResult.IsSuccessful) return roomResult;
 
                     if (settings.AvailableRooms.Add(ListingType.Auction.ToString()))
-                        await mediator.Send(new UpdateGuildSettingsCommand(settings));
+                    {
+                        var updateResult = await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
-                    _showrooms.Add(showroom);
+                        if (!updateResult.IsSuccessful) return updateResult;
+                    }
+
+                    _showrooms.Add(roomResult.Data);
+
+                    return Result.Success();
                 });
+
+                if (!transactionResult.IsSuccessful)
+                {
+                    await e.Interaction.Response()
+                                       .SendMessageAsync(
+                                            new LocalInteractionMessageResponse()
+                                                .WithIsEphemeral()
+                                                .AddEmbed(new LocalEmbed().WithDescription(transactionResult.FailureReason).WithDefaultColor()));
+                    return;
+                }
             }
 
             MessageTemplate = message => message.WithEmbeds(settings.ToEmbed(_showrooms));
@@ -170,6 +196,8 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
                 if (button.Label != "Close")
                     button.IsDisabled = !exists;
+                else
+                    button.IsDisabled = false;
 
             return base.UpdateAsync();
         }

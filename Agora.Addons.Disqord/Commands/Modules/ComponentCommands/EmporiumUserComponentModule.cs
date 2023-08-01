@@ -1,4 +1,5 @@
 ﻿using Disqord;
+using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Components;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
@@ -17,6 +18,7 @@ namespace Agora.Addons.Disqord.Commands
             _mediator = mediator;
         }
 
+        [RequireBotPermissions(Permissions.ReadMessageHistory)]
         [SelectionCommand("rate-owner:*:*:*")]
         public async Task<IResult> RateOwner(Snowflake owner, Snowflake buyer, Snowflake message, string[] selectedValue)
         {

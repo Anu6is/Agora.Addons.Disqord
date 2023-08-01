@@ -196,6 +196,8 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
                 if (button.Label != "Close")
                     button.IsDisabled = !exists;
+                else
+                    button.IsDisabled = false;
 
             return base.UpdateAsync();
         }

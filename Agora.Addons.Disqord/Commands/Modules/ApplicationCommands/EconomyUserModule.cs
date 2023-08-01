@@ -3,6 +3,7 @@ using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Persistence.Models;
 using Disqord;
+using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
@@ -25,6 +26,7 @@ namespace Agora.Addons.Disqord.Commands
 
         [MessageCommand("Review Transaction")]
         [Description("Rate the owner after a successful transaction")]
+        [RequireBotPermissions(Permissions.ReadMessageHistory)]
         public IResult ReviewTransaction(IUserMessage message)
         {
             var invalidMessage = new LocalInteractionMessageResponse()

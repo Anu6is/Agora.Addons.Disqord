@@ -193,7 +193,10 @@ namespace Agora.Addons.Disqord.Menus.View
             var exists = _showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Trade.ToString());
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
-                button.IsDisabled = !exists;
+                if (button.Label != "Close")
+                    button.IsDisabled = !exists;
+                else
+                    button.IsDisabled = false;
 
             return base.UpdateAsync();
         }

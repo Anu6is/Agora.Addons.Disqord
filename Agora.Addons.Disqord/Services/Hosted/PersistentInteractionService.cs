@@ -126,7 +126,7 @@ namespace Agora.Addons.Disqord
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing command");
-                await SendErrorResponseAsync(args, modalInteraction as IInteraction ?? interaction, scope, ex);
+                await SendErrorResponseAsync(args, modalInteraction as IUserInteraction ?? interaction, scope, ex);
             }
         }
 
@@ -220,7 +220,7 @@ namespace Agora.Addons.Disqord
             return roomId;
         }
 
-        private static async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IInteraction interaction, IServiceScope scope, Exception ex)
+        private static async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IUserInteraction interaction, IServiceScope scope, Exception ex)
         {
             var message = ex switch
             {
@@ -240,10 +240,7 @@ namespace Agora.Addons.Disqord
             if (message.EndsWith("contact support."))
                 response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
 
-            if (interaction.Response().HasResponded)
-                await interaction.Followup().SendAsync(new LocalInteractionFollowup().WithIsEphemeral().WithContent(message));
-            else
-                await interaction.Response().SendMessageAsync(response);
+            await interaction.SendMessageAsync(response);
 
             return;
         }

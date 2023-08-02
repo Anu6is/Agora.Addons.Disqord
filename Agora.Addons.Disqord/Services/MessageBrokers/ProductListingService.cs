@@ -252,7 +252,7 @@ namespace Agora.Addons.Disqord
         {
             var channel = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
-            if (channel is CachedCategoryChannel or CachedForumChannel) return default;
+            if (channel is CachedCategoryChannel or CachedForumChannel or CachedStageChannel) return default;
 
             var result = await CheckPermissionsAsync(EmporiumId.Value,
                                                      ShowroomId.Value,
@@ -299,7 +299,7 @@ namespace Agora.Addons.Disqord
 
             if (showroom == null) return;
 
-            if (showroom is CachedCategoryChannel or CachedForumChannel)
+            if (showroom is CachedCategoryChannel or CachedForumChannel or CachedStageChannel)
                 channelId = productListing.ReferenceCode.Reference();
 
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);

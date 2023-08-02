@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord.Commands
                 loggerContext.ContextInfo.Add("Command", $"{Context.Interaction?.CommandType}: {Context.Interaction?.CommandName} {command.Module.Alias} {command.Alias}");
 
             loggerContext.ContextInfo.Add("User", Context.Author.GlobalName);
-            loggerContext.ContextInfo.Add($"{Channel.Type}Channel", Context.ChannelId);
+            loggerContext.ContextInfo.Add($"{Channel?.Type}Channel", Context.ChannelId);
             loggerContext.ContextInfo.Add("Guild", Context.GuildId);
         }
 

@@ -68,7 +68,14 @@ namespace Agora.Addons.Disqord
                 return ReferenceNumber.Create(await CreateForumPostAsync(forum, message, productListing, categorization));
 
             if (channel is CachedCategoryChannel)
-                channelId = await CreateCategoryChannelAsync(productListing);
+            {
+                var category = await CreateCategoryChannelAsync(productListing);
+
+                if (!category.IsSuccessful) 
+                    return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, category.FailureReason));
+
+                channelId = category.Data;
+            }
 
             var response = await _agora.SendMessageAsync(channelId, message);
 
@@ -566,12 +573,11 @@ namespace Agora.Addons.Disqord
             return forum.Tags.Where(x => tagNames.Any(name => name.Trim().Equals(x.Name))).Select(x => x.Id);
         }
 
-        private async ValueTask<ulong> CreateCategoryChannelAsync(Listing productListing)
+        private async ValueTask<IResult<ulong>> CreateCategoryChannelAsync(Listing productListing)
         {
             var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageChannels | Permissions.ManageMessages);
 
-            if (!result.IsSuccessful)
-                return await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+            if (!result.IsSuccessful) return Result<ulong>.Failure(result.FailureReason);
 
             var showroom = await _agora.CreateTextChannelAsync(EmporiumId.Value,
                                                                productListing.Product.Title.Value,
@@ -579,7 +585,7 @@ namespace Agora.Addons.Disqord
 
             productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
 
-            return showroom.Id.RawValue;
+            return Result.Success(showroom.Id.RawValue);
         }
 
         private async Task<string> GetCategoryAsync(Listing productListing)

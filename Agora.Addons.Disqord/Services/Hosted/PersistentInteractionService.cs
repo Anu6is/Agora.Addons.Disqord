@@ -108,24 +108,37 @@ namespace Agora.Addons.Disqord
                                                           IBaseRequest command,
                                                           IMediator mediator)
         {
+            IResult result = null;
             try
             {
-                if (command is not null) 
-                { 
-                    var result = await mediator.Send(command) as IResult;
+                if (command is not null) result = await mediator.Send(command) as IResult;
 
-                    if (result is not null && !result.IsSuccessful)
+                var inError = result is not null && !result.IsSuccessful;
+                
+                if (modalInteraction is not null) 
+                {
+                    if (inError)
+                        await modalInteraction.SendMessageAsync(
+                            new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                    else 
+                        await HandleResponse(modalInteraction);
+                }
+                else if (interaction is not null)
+                {
+                    if (inError)
                         await interaction.SendMessageAsync(
-                                new LocalInteractionMessageResponse()
-                                    .WithIsEphemeral()
-                                    .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
-                } 
-
-                if (modalInteraction is not null) await HandleResponse(modalInteraction);
+                            new LocalInteractionMessageResponse()
+                                .WithIsEphemeral()
+                                .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
+                    else
+                        await HandleResponse(interaction);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error executing command");
+                _logger.LogError(ex, "Error executing {command}", command?.GetType().Name ?? modalInteraction?.CustomId);
                 await SendErrorResponseAsync(args, modalInteraction as IUserInteraction ?? interaction, scope, ex);
             }
         }
@@ -231,9 +244,9 @@ namespace Agora.Addons.Disqord
                 _ => "An error occured while processing this action. If this persists, please contact support."
             };
 
-            await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
-
             if (message == null) return;
+            
+            await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
 
             var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
 

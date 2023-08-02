@@ -50,6 +50,7 @@ namespace Agora.Addons.Disqord
 
         private static Task HandleResponse(IModalSubmitInteraction interaction) => interaction.CustomId switch
         {
+            { } when interaction.Response().HasResponded => Task.CompletedTask,
             { } when interaction.CustomId.StartsWith("extend")
                     => interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Product listing extended!").WithIsEphemeral()),
             { } when interaction.CustomId.StartsWith("edit")

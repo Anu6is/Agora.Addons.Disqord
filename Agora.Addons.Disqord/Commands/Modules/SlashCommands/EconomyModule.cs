@@ -50,7 +50,10 @@ namespace Agora.Addons.Disqord.Commands
             var cachedUser = await Cache.GetUserAsync(Context.GuildId, user.Id);
             var userBalance = await _economy.GetBalanceAsync(cachedUser.ToEmporiumUser(), Settings.DefaultCurrency);
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"Balance: {userBalance}")).WithIsEphemeral());
+            if (!userBalance.IsSuccessful)
+                return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(userBalance.FailureReason));
+
+            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"Balance: {userBalance.Data}")).WithIsEphemeral());
         }
 
 
@@ -64,8 +67,22 @@ namespace Agora.Addons.Disqord.Commands
             var donator = await Cache.GetUserAsync(Context.GuildId, Context.AuthorId);
             var receiver = await Cache.GetUserAsync(Context.GuildId, user.Id);
 
-            await _economy.DecreaseBalanceAsync(donator.ToEmporiumUser(), donation);
-            await _economy.IncreaseBalanceAsync(receiver.ToEmporiumUser(), donation);
+
+            var transactionResult = await Data.BeginTransactionAsync(async () =>
+            {
+                var result = await _economy.DecreaseBalanceAsync(donator.ToEmporiumUser(), donation);
+
+                if (!result.IsSuccessful) return result;
+
+                result = await _economy.IncreaseBalanceAsync(receiver.ToEmporiumUser(), donation);
+
+                if (!result.IsSuccessful) return result;
+
+                return result;
+            });
+
+            if (!transactionResult.IsSuccessful)
+                ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(transactionResult.FailureReason));
 
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}")));
         }
@@ -80,7 +97,10 @@ namespace Agora.Addons.Disqord.Commands
             var donation = Money.Create((decimal)amount, Settings.DefaultCurrency);
             var receiver = await Cache.GetUserAsync(Context.GuildId, user.Id);
 
-            await _economy.IncreaseBalanceAsync(receiver.ToEmporiumUser(), donation);
+            var result = await _economy.IncreaseBalanceAsync(receiver.ToEmporiumUser(), donation);
+
+            if (!result.IsSuccessful)
+                return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} added {donation} to {user.Mention}")));
 
@@ -96,7 +116,10 @@ namespace Agora.Addons.Disqord.Commands
             var withdrawl = Money.Create((decimal)amount, Settings.DefaultCurrency);
             var member = await Cache.GetUserAsync(Context.GuildId, user.Id);
 
-            await _economy.DecreaseBalanceAsync(member.ToEmporiumUser(), withdrawl);
+            var result = await _economy.DecreaseBalanceAsync(member.ToEmporiumUser(), withdrawl);
+
+            if (!result.IsSuccessful)
+                return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} removed {withdrawl} from {user.Mention}")));
 
@@ -109,7 +132,10 @@ namespace Agora.Addons.Disqord.Commands
         {
             var member = await Cache.GetUserAsync(Context.GuildId, user.Id);
 
-            await _economy.DeleteBalanceAsync(member.ToEmporiumUser(), Settings.DefaultCurrency);
+            var result = await _economy.DeleteBalanceAsync(member.ToEmporiumUser(), Settings.DefaultCurrency);
+
+            if (!result.IsSuccessful)
+                return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
             return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} reset {user.Mention}")));
 

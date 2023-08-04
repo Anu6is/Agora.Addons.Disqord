@@ -15,6 +15,7 @@ using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Agora.Addons.Disqord
 {
@@ -49,14 +50,22 @@ namespace Agora.Addons.Disqord
                                                      ShowroomId.Value,
                                                      Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
-            if (!result.IsSuccessful) 
-                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
+            if (!result.IsSuccessful)
+            {
+                var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+
+                return id == 0 ? null : ReferenceNumber.Create(id);
+            }
 
             var channelId = ShowroomId.Value;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
 
             if (channel is null)
-                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}"));
+            {
+                var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}");
+
+                return id == 0 ? null : ReferenceNumber.Create(id);
+            }
 
             var categorization = await GetCategoryAsync(productListing);
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
@@ -65,14 +74,22 @@ namespace Agora.Addons.Disqord
                                             .WithComponents(productListing.Buttons(settings.Features.AcceptOffers, hideMinButton));
 
             if (channel is CachedForumChannel forum)
-                return ReferenceNumber.Create(await CreateForumPostAsync(forum, message, productListing, categorization));
+            {
+                var id = await CreateForumPostAsync(forum, message, productListing, categorization);
+
+                return id == 0 ? null : ReferenceNumber.Create(id);
+            }
 
             if (channel is CachedCategoryChannel)
             {
                 var category = await CreateCategoryChannelAsync(productListing);
 
-                if (!category.IsSuccessful) 
-                    return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, category.FailureReason));
+                if (!category.IsSuccessful)
+                {
+                    var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, category.FailureReason);
+
+                    return id == 0 ? null : ReferenceNumber.Create(id);
+                }
 
                 channelId = category.Data;
             }
@@ -86,7 +103,11 @@ namespace Agora.Addons.Disqord
                 if (channel is ITextChannel textChannel && textChannel.Type == ChannelType.News)
                 {
                     if (!result.IsSuccessful)
-                        return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
+                    {
+                        var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+
+                        return id == 0 ? null : ReferenceNumber.Create(id);
+                    }
 
                     await textChannel.CrosspostMessageAsync(response.Id);
                 }
@@ -112,7 +133,11 @@ namespace Agora.Addons.Disqord
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
 
             if (channel is null)
-                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}"));
+            {
+                var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, $"Unable to post to {Mention.Channel(channelId)}");
+
+                return id == 0 ? null : ReferenceNumber.Create(id);
+            }
 
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
 
@@ -260,7 +285,11 @@ namespace Agora.Addons.Disqord
                                                      Permissions.ManageThreads | Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads);
 
             if (!result.IsSuccessful)
-                return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
+            {
+                var id = await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+
+                return id == 0 ? null : ReferenceNumber.Create(id);
+            }
 
             var duration = listing.ScheduledPeriod.Duration switch
             {

@@ -83,16 +83,17 @@ namespace Agora.Addons.Disqord
         public async ValueTask<IResult> ValidateBuyerAsync(IEmporiumUser user, IBaseRequest command = null, Func<IEmporiumUser, IBaseRequest, Task<IResult>> criteria = null)
         {
             var result = await IsAdministrator(user);
+           
+            if (!result.IsSuccessful)
+            {
+                var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
+                var buyerRole = guildSettings.BuyerRole;
+                var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
-            if (result.IsSuccessful) return result;
+                var hasRole = buyerRole == 0ul || buyerRole == GuildId || member.RoleIds.Contains(buyerRole);
 
-            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
-            var buyerRole = guildSettings.BuyerRole;
-            var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
-
-            var hasRole = buyerRole == 0ul || buyerRole == GuildId || member.RoleIds.Contains(buyerRole);
-
-            if (!hasRole) return Result.Failure("Unauthorized access: Buyer role required.");
+                if (!hasRole) return Result.Failure("Unauthorized access: Buyer role required.");
+            }
 
             if (criteria is null) return Result.Success();
 

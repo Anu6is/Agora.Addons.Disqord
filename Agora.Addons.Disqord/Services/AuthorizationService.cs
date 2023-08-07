@@ -265,7 +265,7 @@ namespace Agora.Addons.Disqord
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.TicketPrice.Currency);
 
-                        if (userBalance.Data >= item.TicketPrice) Result.Success();
+                        if (userBalance.Data >= item.TicketPrice) return Result.Success();
 
                         return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });

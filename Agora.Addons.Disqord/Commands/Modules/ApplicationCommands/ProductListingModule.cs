@@ -71,6 +71,7 @@ namespace Agora.Addons.Disqord.Commands
                 var listing = await GetActiveListing(message);
 
                 if (listing is null) return ErrorResponse(embeds: responseEmbed.WithDescription("Unable to view activity logs for this listing"));
+                if (listing is VickreyAuction) return ErrorResponse(embeds: responseEmbed.WithDescription("Sealed bids cannot be revealed until the auction ends!"));
 
                 var admin = await _userManager.IsAdministrator(listing.Owner);
 

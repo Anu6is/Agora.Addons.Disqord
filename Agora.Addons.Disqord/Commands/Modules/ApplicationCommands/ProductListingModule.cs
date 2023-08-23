@@ -1,10 +1,14 @@
 ﻿using Agora.Addons.Disqord.Checks;
 using Agora.Addons.Disqord.Extensions;
 using Disqord;
+using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
+using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
+using Emporia.Application.Features.Queries;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Qmmands;
 using System.Text;
 using System.Text.Json;
@@ -16,8 +20,13 @@ namespace Agora.Addons.Disqord.Commands
     public sealed class ProductListingModule : AgoraModuleBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IUserManager _userManager;
 
-        public ProductListingModule(IHttpClientFactory clientFactory) => _httpClientFactory = clientFactory;
+        public ProductListingModule(IUserManager userManager, IHttpClientFactory clientFactory)
+        {
+            _userManager = userManager;
+            _httpClientFactory = clientFactory;
+        }
 
         [MessageCommand("Cancel Reschedule")]
         [Description("Cancel automatic re-listing the item once it's sold/expired")]
@@ -48,18 +57,70 @@ namespace Agora.Addons.Disqord.Commands
         {
             await Deferral(true);
 
+            List<OfferLog> logs;
+            IDiscordCommandResult commandResult;
+
+            var responseEmbed = new LocalEmbed().WithDefaultColor();
+
             if (message.Attachments.Count == 0)
-                return Response(new LocalEmbed().WithDefaultColor().WithDescription("There are no logs attached to this message"));
+            {
+                commandResult = ValidateListingMessage(message, responseEmbed);
 
-            var attachment = message.Attachments[0];
-            var logContent = await GetLogContentAsync(attachment.Url);
+                if (commandResult != null) return commandResult;
 
-            if (logContent == null)
-                return Response(new LocalEmbed().WithDefaultColor().WithDescription("Error: Unable to retrieve log file"));
+                var listing = await GetActiveListing(message);
 
-            var logs = await ParseLogContentAsync(logContent);
+                if (listing is null) return ErrorResponse(embeds: responseEmbed.WithDescription("Unable to view activity logs for this listing"));
 
-            return Response(ParseLogs(message.Embeds[0].Title, logs));
+                var admin = await _userManager.IsAdministrator(listing.Owner);
+
+                if (!admin.IsSuccessful && listing.Owner.ReferenceNumber.Value != Context.AuthorId)
+                    return ErrorResponse(embeds: responseEmbed.WithDescription("Unauthorized Access: Only the OWNER can view the activity log!"));
+
+                var offers = (listing.Product as AuctionItem)?.Offers.Select(x => new OfferLog(x.UserReference.Value, x.Amount.Value.ToString(), x.SubmittedOn)) 
+                          ?? (listing.Product as GiveawayItem)?.Offers.Select(x => new OfferLog(x.UserReference.Value, x.Submission.Value, x.SubmittedOn));
+
+                logs = offers.ToList();
+            }
+            else
+            {
+                commandResult = ValidateResultMessage(message, responseEmbed);
+
+                if (commandResult != null) return commandResult;
+
+                var attachment = message.Attachments[0];
+                var logContent = await GetLogContentAsync(attachment.Url);
+
+                if (logContent == null) return ErrorResponse(embeds: responseEmbed.WithDescription("Error: Unable to retrieve log file"));
+
+                logs = await ParseLogContentAsync(logContent);
+            }
+
+            return logs.Count == 0 
+                ? OkResponse(embeds: responseEmbed.WithDescription("No available logs exist")) 
+                : SuccessResponse(embeds: ParseLogs(message.Embeds[0].Title, logs));
+        }
+
+        private async Task<Listing> GetActiveListing(IUserMessage message)
+        {
+            var embed = message.Embeds[0];
+            var type = embed.Title.Split(':')[0];
+            var reference = ReferenceNumber.Create(message.Id);
+
+            var query = type switch
+            {
+                { } when type.Contains("Auction", StringComparison.OrdinalIgnoreCase) => new GetListingDetailsQuery(EmporiumId, ShowroomId, "Auction") { ReferenceNumber = reference},
+                { } when type.Contains("Giveaway", StringComparison.OrdinalIgnoreCase) => new GetListingDetailsQuery(EmporiumId, ShowroomId, "Giveaway") { ReferenceNumber = reference },
+                _ => null
+            };
+
+            if (query is null) return null;
+
+            var response = await Base.ExecuteAsync(query);
+
+            if (response is null || response.Data is null) return null;
+
+            return response.Data.Listing;
         }
 
         private async Task<string> GetLogContentAsync(string logUrl)

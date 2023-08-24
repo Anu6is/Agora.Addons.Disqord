@@ -1,4 +1,4 @@
-﻿using Agora.Addons.Disqord.Commands;
+using Agora.Addons.Disqord.Commands;
 using Agora.Addons.Disqord.Parsers;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
@@ -6,6 +6,7 @@ using Disqord;
 using Disqord.Bot.Hosting;
 using Disqord.Gateway;
 using Emporia;
+using Emporia.Application.Common;
 using Emporia.Extensions.Discord;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -63,6 +64,7 @@ namespace Agora.Addons.Disqord
         public static IServiceCollection AddDisqordCommands(this IServiceCollection services)
         {
             services.AddTransient<EmporiumTimeParser>();
+            services.AddScoped<ILoggerContext, LoggerContext>();
             services.AddSingleton<ICommandRateLimiter, AgoraCommandRateLimiter>();
 
             return services;

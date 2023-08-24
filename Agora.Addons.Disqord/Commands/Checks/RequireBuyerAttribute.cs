@@ -20,7 +20,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
 
             var validBuyer = await userManager.ValidateBuyerAsync(EmporiumUser.Create(new EmporiumId(context.GuildId), ReferenceNumber.Create(context.AuthorId)));
 
-            if (validBuyer) return Results.Success;
+            if (validBuyer.IsSuccessful) return Results.Success;
 
             return Results.Failure($"Only users with the {Mention.Role(settings.BuyerRole)} role can execute this command.");
         }

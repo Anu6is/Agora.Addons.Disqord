@@ -24,7 +24,7 @@ namespace Agora.Addons.Disqord
 
             var message = Bot.GetMessage(showroomId, productId) ?? await Bot.FetchMessageAsync(showroomId, productId) as IUserMessage;
 
-            if (message == null || !message.Embeds.Any()) return null;
+            if (message == null || message.Embeds.Count == 0) return null;
 
             var embed = message.Embeds[0];
             var owner = embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner"))?.Value;

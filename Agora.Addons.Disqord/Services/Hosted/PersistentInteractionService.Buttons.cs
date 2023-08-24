@@ -1,4 +1,6 @@
-﻿using Disqord;
+﻿using Agora.Addons.Disqord.Extensions;
+using Disqord;
+using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using MediatR;
@@ -77,6 +79,23 @@ namespace Agora.Addons.Disqord
             { } when interaction.CustomId.StartsWith("withdraw") => new WithdrawListingCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("withdraw", "")),
             { } when interaction.CustomId.StartsWith("revert") => new RevertTransactionCommand(new EmporiumId(interaction.GuildId.Value), new ShowroomId(showroomId), ReferenceNumber.Create(interaction.Message.Id), interaction.CustomId.Replace("revert", "")),
             _ => null
+        };
+
+        private static Task HandleResponse(IComponentInteraction interaction) => interaction.CustomId switch
+        {
+            { } when interaction.CustomId.StartsWith("undobid")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Bid removed!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("optout")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Ticket returned!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("join")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Good Luck!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("revertMarket")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Offer removed!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("buy") || interaction.CustomId.StartsWith("bundle")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Congratulations on your purchase!").WithIsEphemeral()),
+            { } when interaction.CustomId.StartsWith("minbid") || interaction.CustomId.StartsWith("maxbid")
+                    => interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Bid successfully submitted!").WithIsEphemeral()),
+            _ => Task.CompletedTask
         };
 
         private static LocalInteractionModalResponse ExtendListingModal(IComponentInteraction interaction)

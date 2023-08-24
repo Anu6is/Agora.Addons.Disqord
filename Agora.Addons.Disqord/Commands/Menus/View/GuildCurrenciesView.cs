@@ -7,11 +7,13 @@ using Disqord.Rest;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Common.Enums;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using static Disqord.Discord.Limits;
 using static Disqord.Discord.Limits.Component;
 
 namespace Agora.Addons.Disqord.Menus.View
@@ -57,39 +59,34 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            try
+            var result = await mediator.Send(new DeleteCurrencyCommand(new EmporiumId(_context.Guild.Id), _code));
+
+            if (!result.IsSuccessful)
             {
-                await mediator.Send(new DeleteCurrencyCommand(new EmporiumId(_context.Guild.Id), _code));
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral(true).WithContent($"Successfully Removed {Markdown.Bold(_code)}"));
 
-                await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
+                _currencies.Remove(Currency.Create(_code));
+                _selection.Options.Remove(_selection.Options.First(x => x.IsDefault.HasValue && x.IsDefault.Value));
 
-                return;
+                MessageTemplate = message =>
+                {
+                    message.AddEmbed(
+                    new LocalEmbed()
+                        .WithTitle($"Registered currencies {_currencies.Count}")
+                        .WithDescription(_currencies.Count == 0
+                            ? "No Currencies Exist"
+                            : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}  | Format: {x}"))}")
+                        .WithDefaultColor());
+                };
+
+                _code = string.Empty;
+
+                ReportChanges();
             }
-
-            await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral(true).WithContent($"Successfully Removed {Markdown.Bold(_code)}"));
-
-            _currencies.Remove(Currency.Create(_code));
-            _selection.Options.Remove(_selection.Options.First(x => x.IsDefault.HasValue && x.IsDefault.Value));
-
-            MessageTemplate = message =>
-            {
-                message.AddEmbed(
-                new LocalEmbed()
-                    .WithTitle($"Registered currencies {_currencies.Count}")
-                    .WithDescription(_currencies.Count == 0
-                        ? "No Currencies Exist"
-                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits}  | Format: {x}"))}")
-                    .WithDefaultColor());
-            };
-
-            _code = string.Empty;
-
-            ReportChanges();
         }
 
         [Button(Label = "Update", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 0)]
@@ -284,38 +281,37 @@ namespace Agora.Addons.Disqord.Menus.View
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var result = await mediator.Send(new CreateCurrencyCommand(new EmporiumId(_context.Guild.Id), code, decimals, symbol));
 
-            try
+            if (result.IsSuccessful)
             {
-                _currencies.Add(await mediator.Send(new CreateCurrencyCommand(new EmporiumId(_context.Guild.Id), code, decimals, symbol)));
+                _currencies.Add(result.Data);
 
                 var option = new LocalSelectionComponentOption(code, Guid.NewGuid().ToString());
                 _selection.Options.Add(option);
+
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(code)} Successfully Added!"));
+
+                MessageTemplate = message =>
+                {
+                    message.AddEmbed(
+                    new LocalEmbed()
+                        .WithTitle($"Registered currencies {_currencies.Count}")
+                        .WithDescription(_currencies.Count == 0
+                            ? "No Currencies Exist"
+                            : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
+                        .WithDefaultColor());
+                };
+
+                ReportChanges();
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
 
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
-
-                return;
+                if (result is IExceptionResult exResult)
+                    await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
             }
-
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent($"{Markdown.Bold(code)} Successfully Added!"));
-
-            MessageTemplate = message =>
-            {
-                message.AddEmbed(
-                new LocalEmbed()
-                    .WithTitle($"Registered currencies {_currencies.Count}")
-                    .WithDescription(_currencies.Count == 0
-                        ? "No Currencies Exist"
-                        : $"{string.Join(Environment.NewLine, _currencies.Select(x => $"Symbol: {Markdown.Bold(x.Symbol)} | Decimals: {x.DecimalDigits} | Format: {x}"))}")
-                    .WithDefaultColor());
-            };
-
-            ReportChanges();
 
             return;
         }

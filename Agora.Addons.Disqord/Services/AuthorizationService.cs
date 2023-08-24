@@ -8,6 +8,7 @@ using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Humanizer.Localisation;
@@ -35,90 +36,76 @@ namespace Agora.Addons.Disqord
             _guildSettingsService = settingsService;
         }
 
-        public async ValueTask AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
+        public async ValueTask<IResult> AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
         {
+            IResult result = Result.Success();
+            
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
 
             if (authorizeAttributesWithRoles.Any())
-                await ValidateRolesAsync(currentUser, authorizeAttributesWithRoles);
+                result = await ValidateRolesAsync(currentUser, authorizeAttributesWithRoles);
+
+            if (!result.IsSuccessful) return result;
 
             var authorizeAttributesWithPolicies = authorizeAttributes.Where(a => a.Policy != AuthorizationPolicy.None);
 
             if (authorizeAttributesWithPolicies.Any())
-                await ValaidatePoliciesAsync(request, currentUser, authorizeAttributesWithPolicies);
+                result = await ValaidatePoliciesAsync(request, currentUser, authorizeAttributesWithPolicies);
 
-            return;
+            return result;
         }
 
-        private async Task ValidateRolesAsync(IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithRoles)
+        private async Task<IResult> ValidateRolesAsync(IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithRoles)
         {
-            var authorizationError = string.Empty;
+            IResult result = Result.Success();
 
             foreach (var role in authorizeAttributesWithRoles.Select(a => a.Role))
             {
-                switch (role)
+                result = role switch
                 {
-                    case AuthorizationRole.Administrator:
-                        if (!await _userManager.IsAdministrator(currentUser)) authorizationError = "Unauthorized access: Manager role required.";
-                        break;
-                    case AuthorizationRole.Broker:
-                        if (!await _userManager.IsBroker(currentUser)) authorizationError = "Unauthorized access: Broker role required.";
-                        break;
-                    case AuthorizationRole.Host:
-                        if (!await _userManager.IsHost(currentUser)) authorizationError = "Unauthorized access: Merchant role required.";
-                        break;
-                    case AuthorizationRole.Buyer:
-                        if (!await _userManager.ValidateBuyerAsync(currentUser)) authorizationError = "Unathorized access: Buyer role required.";
-                        break;
-                    default:
-                        break;
-                }
+                    AuthorizationRole.Administrator => await _userManager.IsAdministrator(currentUser),
+                    AuthorizationRole.Broker => await _userManager.IsBroker(currentUser),
+                    AuthorizationRole.Host => await _userManager.IsHost(currentUser),
+                    AuthorizationRole.Buyer => await _userManager.ValidateBuyerAsync(currentUser),
+                    _ => null
+                };
 
-                if (authorizationError.IsNotNull())
-                    throw new UnauthorizedAccessException(authorizationError);
+                if (!result.IsSuccessful) return result;
             }
 
-            return;
+            return result;
         }
 
-        private async Task ValaidatePoliciesAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithPolicies)
+        private async Task<IResult> ValaidatePoliciesAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributesWithPolicies)
         {
             var authorizationError = string.Empty;
 
             foreach (var policy in authorizeAttributesWithPolicies.Select(a => a.Policy))
             {
-                switch (policy)
+                authorizationError = policy switch
                 {
-                    case AuthorizationPolicy.CanModify:
-                        authorizationError = await ValidateUpdateAsync(currentUser, request);
-                        break;
-                    case AuthorizationPolicy.CanSubmitOffer:
-                        authorizationError = await ValidateSubmissionAsync(currentUser, request);
-                        break;
-                    case AuthorizationPolicy.Manager:
-                        authorizationError = await ValidateManagerAsync(currentUser, request);
-                        break;
-                    case AuthorizationPolicy.StaffOnly:
-                        authorizationError = ValidateStaff();
-                        break;
-                    case AuthorizationPolicy.OwnerOnly:
-                        authorizationError = ValidateOwner(currentUser, request);
-                        break;
-                    default:
-                        break;
-                }
+                    AuthorizationPolicy.CanSubmitOffer => await ValidateSubmissionAsync(currentUser, request),
+                    AuthorizationPolicy.CanModify => await ValidateUpdateAsync(currentUser, request),
+                    AuthorizationPolicy.Manager => await ValidateManagerAsync(currentUser, request),
+                    AuthorizationPolicy.OwnerOnly => ValidateOwner(currentUser, request),
+                    AuthorizationPolicy.StaffOnly => ValidateStaff(),
+                    _ => null
+                };
 
-                if (authorizationError.IsNotNull())
-                    throw new UnauthorizedAccessException(authorizationError);
+                if (authorizationError.IsNotNull()) return Result.Failure(authorizationError);
             }
 
-            return;
+            return Result.Success();
         }
 
         private async Task<string> ValidateUpdateAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
+            IResult result = null;
             var settings = await _guildSettingsService.GetGuildSettingsAsync(currentUser.EmporiumId.Value);
             var managerRole = settings.AdminRole == 0 ? Markdown.Bold("Manager Privileges") : Mention.Role(settings.AdminRole);
+
+            if (request is IProductListingBinder binder && binder.Showroom.Listings.FirstOrDefault() is null)
+                return "Invalid Action: This listing is no longer available.";
 
             switch (request)
             {
@@ -138,12 +125,16 @@ namespace Agora.Addons.Disqord
                     if (!settings.Features.ConfirmTransactions) return "Invalid Operation: This action has been disabled.";
                     break;
                 case WithdrawListingCommand command:
-                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
+                    result = await _userManager.IsAdministrator(currentUser);
+
+                    if (result.IsSuccessful) return string.Empty;
                     if (!settings.Features.RecallListings && command.Showroom.Listings.First().CurrentOffer != null)
                         return "Invalid Operation: Listing cannot be withdrawn once an offer has been submitted.";
                     break;
                 case UndoBidCommand command:
-                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
+                    result = await _userManager.IsAdministrator(currentUser);
+
+                    if (result.IsSuccessful) return string.Empty;
 
                     var listing = command.Showroom.Listings.First();
                     var currentOffer = listing.CurrentOffer;
@@ -164,7 +155,9 @@ namespace Agora.Addons.Disqord
                         return $"Invalid Operation: This action is no longer available. Changes cannot be made once an offer was previously submitted.";
                     break;
                 case IProductListingBinder command:
-                    if (await _userManager.IsAdministrator(currentUser)) return string.Empty;
+                    result = await _userManager.IsAdministrator(currentUser);
+
+                    if (result.IsSuccessful) return string.Empty;
                     if (command.Showroom.Listings.First().CurrentOffer != null)
                         return "Invalid Operation: Updates cannot be made once an offer has been submitted.";
                     break;
@@ -184,16 +177,20 @@ namespace Agora.Addons.Disqord
                 case CreateCommissionTradeCommand command:
                     var validCommission = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
 
                         var cmd = command as CreateCommissionTradeCommand;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, cmd.TradeItemModel.PreferredOffer.Currency);
 
-                        return userBalance >= cmd.TradeItemModel.PreferredOffer;
+                        if (!userBalance.IsSuccessful) return userBalance;
+
+                        if (userBalance.Data >= cmd.TradeItemModel.PreferredOffer) return Result.Success();
+
+                        return Result.Failure("Transaction Denied: Insufficient balance available to request this commission.");
                     });
 
-                    if (!validCommission) return "Transaction Denied: Insufficient balance available to request this commission.";
+                    if (!validCommission.IsSuccessful) return validCommission.FailureReason;
 
                     break;
                 case CreateBidCommand command:
@@ -206,23 +203,24 @@ namespace Agora.Addons.Disqord
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
 
                         var cmd = command as CreateBidCommand;
                         var item = listing.Product as AuctionItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
 
-                        if (cmd.UseMinimum)
-                            return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MinValue;
+                        if (cmd.UseMinimum && userBalance.Data >= item.CurrentPrice.Value + item.BidIncrement.MinValue) return Result.Success();
 
-                        if (cmd.UseMaximum)
-                            return userBalance >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value;
+                        if (cmd.UseMaximum && userBalance.Data >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value) return Result.Success();
 
-                        return userBalance >= cmd.Amount;
+                        if (cmd.Amount > 0 && userBalance.Data >= cmd.Amount) return Result.Success();
+
+                        return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });
 
-                    if (!validBid) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+                    if (!validBid.IsSuccessful) return validBid.FailureReason;
+
                     break;
 
                 case CreatePaymentCommand command:
@@ -235,7 +233,7 @@ namespace Agora.Addons.Disqord
 
                     var validPurchase = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
 
                         var cmd = command as CreatePaymentCommand;                        
 
@@ -243,10 +241,13 @@ namespace Agora.Addons.Disqord
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.Price.Currency);
 
-                        return userBalance >= cmd.PaymentAmount || (cmd.Offer.HasValue && userBalance >= cmd.Offer.Value);
+                        if (userBalance.Data >= cmd.PaymentAmount || (cmd.Offer.HasValue && userBalance.Data >= cmd.Offer.Value)) return Result.Success();
+
+                        return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });
 
-                    if (!validPurchase) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+                    if (!validPurchase.IsSuccessful) return validPurchase.FailureReason;
+
                     break;
                 case CreateTicketCommand command:
                     var giveaway = command.Showroom.Listings.FirstOrDefault();
@@ -257,21 +258,25 @@ namespace Agora.Addons.Disqord
 
                     var validClaim = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
 
                         var cmd = command as CreateTicketCommand;
                         var item = cmd.Showroom.Listings.First().Product as GiveawayItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.TicketPrice.Currency);
 
-                        return userBalance >= item.TicketPrice;
+                        if (userBalance.Data >= item.TicketPrice) return Result.Success();
+
+                        return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });
 
-                    if (!validClaim) return "Transaction Denied: Insufficient balance available to complete this transaction.";
+                    if (!validClaim.IsSuccessful) return validClaim.FailureReason;
 
                     break;
                 case CreateDealCommand command:
-                    var trade = command.Showroom.Listings.First();
+                    var trade = command.Showroom.Listings.FirstOrDefault();
+
+                    if (trade == null) return "Invalid Action: Listing is not longer available";
 
                     if (currentUser.Equals(trade.Owner))
                         return "Transaction Denied: you cannot trade with yourself.";
@@ -283,17 +288,20 @@ namespace Agora.Addons.Disqord
 
                     var validRequest = await _userManager.ValidateBuyerAsync(trade.Owner, command, async (owner, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return true;
+                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
 
                         var cmd = command as CreateDealCommand;
                         var request = cmd.Showroom.Listings.First() as CommissionTrade;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(owner, request.Commission.Currency);
 
-                        return userBalance >= request.Commission;
+                        if (userBalance.Data >= request.Commission) return Result.Success();
+
+                        return Result.Failure("Transaction Denied: Requester's remaining balance is insufficient for payout.");
                     });
 
-                    if (!validRequest) return "Transaction Denied: Requester's remaining balance is insufficient for payout.";
+                    if (!validRequest.IsSuccessful) return validRequest.FailureReason;
+
                     break;
                 default:
                     return string.Empty;
@@ -304,26 +312,42 @@ namespace Agora.Addons.Disqord
 
         private async Task<string> ValidateManagerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
-            var isManager = request switch
-            {
-                WithdrawListingCommand command => await _userManager.IsAdministrator(currentUser)
-                                               || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
-                UndoBidCommand command => await _userManager.IsAdministrator(currentUser)
-                                       || command.Showroom.Listings.FirstOrDefault() is VickreyAuction
-                                       || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner)
-                                       || command.Bidder.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId),
-                ScheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
-                                               || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
-                UnscheduleListingCommand command => await _userManager.IsAdministrator(currentUser)
-                                               || currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
-                RevertTransactionCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner) 
-                                                 || currentUser.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId),
-                IProductListingBinder binder => await _userManager.IsBroker(currentUser)
-                                             || currentUser.Equals(binder.Showroom.Listings.FirstOrDefault()?.Owner),
-                _ => false
-            };
 
-            return isManager ? string.Empty : "Unauthorized Access: You cannot perform this action.";
+            if (currentUser.Equals((request as IProductListingBinder)?.Showroom.Listings.FirstOrDefault()?.Owner)) return string.Empty;
+
+            var result = await _userManager.IsAdministrator(currentUser);
+
+            if (result.IsSuccessful) return string.Empty;
+
+            switch (request)
+            {
+                case WithdrawListingCommand command:
+                    if (currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner)) return string.Empty;
+                    
+                    break;
+                case UndoBidCommand command:
+                    if (command.Showroom.Listings.FirstOrDefault() is VickreyAuction
+                        || command.Bidder.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId)) return string.Empty;
+
+                    break;
+                case ScheduleListingCommand:
+                case UnscheduleListingCommand:
+                    break;
+                case RevertTransactionCommand command:
+                    if (currentUser.Id.Equals(command.Showroom.Listings.FirstOrDefault()?.CurrentOffer.UserId)) return string.Empty;
+
+                    break;
+                case IProductListingBinder:
+                    result = await _userManager.IsBroker(currentUser);
+
+                    if (result.IsSuccessful) return string.Empty;
+
+                    break;
+                default:
+                    break;
+            }
+
+            return "Unauthorized Access: You cannot perform this action.";
         }
 
         private static string ValidateStaff() => "Not implemented";

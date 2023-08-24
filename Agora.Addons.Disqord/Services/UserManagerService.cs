@@ -7,6 +7,7 @@ using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -30,60 +31,76 @@ namespace Agora.Addons.Disqord
             GuildId = (commandAccessor.Context?.GuildId ?? interactionAccessor.Context?.GuildId);
         }
 
-        public async ValueTask<bool> IsAdministrator(IEmporiumUser user)
+        public async ValueTask<IResult> IsAdministrator(IEmporiumUser user)
         {
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
-            if (member == null) return false;
-            if (member.GetGuild() == null) return false;
-            if (member.CalculateGuildPermissions().HasFlag(Permissions.ManageGuild)) return true;
+            if (member == null) return Result.Failure("Unauthorized access: Unable to verify user permissions.");
+            if (member.GetGuild() == null) return Result.Failure("Unauthorized access: Unable to verify user permissions.");
+            if (member.CalculateGuildPermissions().HasFlag(Permissions.ManageGuild)) return Result.Success();
 
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var adminRole = guildSettings.AdminRole;
 
-            return adminRole == GuildId || member.RoleIds.Contains(adminRole);
+            if (adminRole == GuildId || member.RoleIds.Contains(adminRole)) return Result.Success();
+
+            return Result.Failure("Unauthorized access: Manager role required.");
         }
 
-        public async ValueTask<bool> IsBroker(IEmporiumUser user)
+        public async ValueTask<IResult> IsBroker(IEmporiumUser user)
         {
-            if (await IsAdministrator(user)) return true;
+            var result = await IsAdministrator(user);
+
+            if (result.IsSuccessful) return result;
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var brokerRole = guildSettings.BrokerRole;
 
-            return brokerRole == GuildId || member.RoleIds.Contains(brokerRole);
+            if (brokerRole == GuildId || member.RoleIds.Contains(brokerRole)) return Result.Success();
+
+            return Result.Failure("Unauthorized access: Broker role required.");
         }
 
-        public async ValueTask<bool> IsHost(IEmporiumUser user)
+        public async ValueTask<IResult> IsHost(IEmporiumUser user)
         {
-            if (await IsBroker(user)) return true;
+            var result = await IsBroker(user);
+
+            if (result.IsSuccessful) return result;
 
             var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
             var hostRole = guildSettings.MerchantRole;
 
-            if (hostRole == 0ul || hostRole == GuildId) return true;
+            if (hostRole == 0ul || hostRole == GuildId) return Result.Success();
 
             var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
-            return member.RoleIds.Contains(hostRole);
+            if (member.RoleIds.Contains(hostRole)) return Result.Success();
+
+            return Result.Failure("Unauthorized access: Merchant role required.");
         }
 
-        public async ValueTask<bool> ValidateBuyerAsync(IEmporiumUser user, IBaseRequest command = null, Func<IEmporiumUser, IBaseRequest, Task<bool>> criteria = null)
+        public async ValueTask<IResult> ValidateBuyerAsync(IEmporiumUser user, IBaseRequest command = null, Func<IEmporiumUser, IBaseRequest, Task<IResult>> criteria = null)
         {
-            var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
-            var buyerRole = guildSettings.BuyerRole;
-            var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
+            var result = await IsAdministrator(user);
+           
+            if (!result.IsSuccessful)
+            {
+                var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
+                var buyerRole = guildSettings.BuyerRole;
+                var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
 
-            var hasRole = buyerRole == 0ul
-                        || buyerRole == GuildId
-                        || member.RoleIds.Contains(buyerRole)
-                        || await IsAdministrator(user);
+                var hasRole = buyerRole == 0ul || buyerRole == GuildId || member.RoleIds.Contains(buyerRole);
 
-            return hasRole && (criteria == null || await criteria(user, command));
+                if (!hasRole) return Result.Failure("Unauthorized access: Buyer role required.");
+            }
+
+            if (criteria is null) return Result.Success();
+
+            return await criteria(user, command);
         }
 
-        public ValueTask<bool> ValidateUser(IEmporiumUser user) => ValueTask.FromResult(true);
+        public ValueTask<IResult> ValidateUser(IEmporiumUser user) => Result.Success();
 
         private async ValueTask<IMember> GetMemberAsync(Snowflake id)
         {

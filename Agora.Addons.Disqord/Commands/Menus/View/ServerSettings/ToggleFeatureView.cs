@@ -5,7 +5,6 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -37,7 +36,7 @@ namespace Agora.Addons.Disqord.Menus.View
         }
 
         [Button(Label = "Toggle", Style = LocalButtonComponentStyle.Primary, Position = 1, Row = 4)]
-        public ValueTask ConfirmTransactions(ButtonEventArgs e)
+        public ValueTask ToggleFeatureButton(ButtonEventArgs e)
         {
             _settings.Flags = _settings.Features.ToggleFlag(_flag);
             e.Button.Label = $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable"))} {_featureText}";

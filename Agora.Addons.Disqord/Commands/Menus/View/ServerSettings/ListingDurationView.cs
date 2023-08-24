@@ -6,7 +6,6 @@ using Disqord.Rest;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
-using FluentValidation;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,23 +52,43 @@ namespace Agora.Addons.Disqord.Menus.View
             var maximum = rows.Last().Components.OfType<ITextInputComponent>().First().Value;
             var emporium = await _context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(e.Interaction.GuildId.Value);
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
-
+            
             if (minimum.IsNotNull())
             {
                 var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(minimum);
 
-                if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult) throw new ValidationException("Invalid format: Minimum Duration");
-
-                settings.MinimumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+                if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult) 
+                    settings.MinimumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+                else
+                {
+                    await modal.Response().SendMessageAsync(
+                        new LocalInteractionMessageResponse()
+                            .WithIsEphemeral()
+                            .AddEmbed(
+                                new LocalEmbed()
+                                    .WithColor(Color.Red)
+                                    .WithDescription("Invalid format: Minimum Duration")));
+                    return;
+                }
             }
 
             if (maximum.IsNotNull())
             {
                 var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(maximum);
 
-                if (result is not ISuccessfulTimeParsingResult<DateTime> successfulResult) throw new ValidationException("Invalid format: Maximum Duration");
-
-                settings.MaximumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+                if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult)
+                        settings.MaximumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+                else
+                {
+                    await modal.Response().SendMessageAsync(
+                        new LocalInteractionMessageResponse()
+                            .WithIsEphemeral()
+                            .AddEmbed(
+                                new LocalEmbed()
+                                    .WithColor(Color.Red)
+                                    .WithDescription("Invalid format: Maximum Duration")));
+                    return;
+                }
             }
 
             using var scope = _context.Services.CreateScope();

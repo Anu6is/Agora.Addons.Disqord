@@ -1,4 +1,5 @@
-﻿using Agora.Shared;
+﻿using Agora.Addons.Disqord.Extensions;
+using Agora.Shared;
 using Disqord;
 using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
@@ -9,6 +10,7 @@ using Emporia.Extensions.Discord;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Qmmands;
 using Sentry;
 
 namespace Agora.Addons.Disqord.Commands
@@ -40,11 +42,13 @@ namespace Agora.Addons.Disqord.Commands
         {
             Interlocked.Increment(ref _activeCommands);
             
+            SetLogContext();
+
             var contextService = Context.Services.GetService<AgoraContextService>();
 
             if (contextService?.Context is IAgoraContext ctx && contextService.Context.Interaction.AuthorId == Context.AuthorId)
             {
-                Logger.LogInformation("Using sudo context");
+                Logger.LogDebug("Using sudo context");
 
                 Context = ctx.FromContext(Context);
             }
@@ -55,7 +59,7 @@ namespace Agora.Addons.Disqord.Commands
             SettingsService = Context.Services.GetRequiredService<IGuildSettingsService>();
 
             Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"{Context.Bot.ApiClient.GetShardId(Context.GuildId)}");
-            Transaction.User = new User() { Id = Context.Author.Id.ToString(), Username = Context.Author.Tag };
+            Transaction.User = new User() { Id = Context.AuthorId.ToString(), Username = Context.Author.Tag };
             Transaction.SetTag("guild", Context.GuildId.ToString());
             Transaction.SetTag("channel", Context.ChannelId.ToString());
             Transaction.SetExtra("active_commands", _activeCommands);
@@ -71,16 +75,29 @@ namespace Agora.Addons.Disqord.Commands
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault(Context.ChannelId));
 
-
             if (Context.Command is ApplicationCommand command)
             {
                 var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
-                Logger.LogInformation("{Author} executed {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
+                Logger.LogDebug("{Author} initiated {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
             }
 
             await base.OnBeforeExecuted();
 
             return;
+        }
+
+        private void SetLogContext()
+        {
+            var loggerContext = Context.Services.GetRequiredService<ILoggerContext>();
+
+            loggerContext.ContextInfo.Add("ID", Context.Interaction?.Id);
+
+            if (Context.Command is ApplicationCommand command)
+                loggerContext.ContextInfo.Add("Command", $"{Context.Interaction?.CommandType}: {Context.Interaction?.CommandName} {command.Module.Alias} {command.Alias}");
+
+            loggerContext.ContextInfo.Add("User", Context.Author.GlobalName);
+            loggerContext.ContextInfo.Add($"{Channel?.Type}Channel", Context.ChannelId);
+            loggerContext.ContextInfo.Add("Guild", Context.GuildId);
         }
 
         public override ValueTask OnAfterExecuted()
@@ -90,6 +107,39 @@ namespace Agora.Addons.Disqord.Commands
             Transaction.Finish();
 
             return base.OnAfterExecuted();
+        }
+
+        protected IResult OkResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithDefaultColor()));
+
+            return Response(message);
+        }
+
+        protected IResult SuccessResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.Teal)));
+
+            return Response(message);
+        }
+
+        protected IResult ErrorResponse(bool isEphimeral = false, string content = "", params LocalEmbed[] embeds)
+        {
+            var message = new LocalInteractionMessageResponse();
+
+            if (isEphimeral) message.WithIsEphemeral();
+            if (content.IsNotNull()) message.WithContent(content);
+            if (embeds.Length != 0) message.WithEmbeds(embeds.Select(x => x.WithColor(Color.Red)));
+
+            return Response(message);
         }
 
         public bool TryOverrideSchedule(out (DayOfWeek Weekday, TimeSpan Time)[] schedule)

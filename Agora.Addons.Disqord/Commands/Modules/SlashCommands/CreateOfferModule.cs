@@ -24,7 +24,9 @@ namespace Agora.Addons.Disqord.Commands
             else
                 reference = Cache.GetCachedProduct(EmporiumId.Value, Context.ChannelId).ProductId;
 
-            await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(reference), (decimal)amount));
+            var result = await Base.ExecuteAsync(new CreateBidCommand(EmporiumId, ShowroomId, ReferenceNumber.Create(reference), (decimal)amount));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             return Response(new LocalInteractionMessageResponse().WithContent("Bid Succesfully Submitted!").WithIsEphemeral());
         }

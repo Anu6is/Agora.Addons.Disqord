@@ -136,7 +136,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 var bot = Context.Services.GetRequiredService<AgoraBot>();
                 var channel = bot.GetChannel(Context.Guild.Id, SelectedChannelId);
 
-                if (channel == null) throw new InvalidOperationException("Unable to locate the specified channel.");
+                if (channel == null) return false;
 
                 var currentMember = bot.GetCurrentMember(Context.Guild.Id);
                 var currentPermissions = currentMember.CalculateChannelPermissions(channel);

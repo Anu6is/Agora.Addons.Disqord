@@ -3,6 +3,7 @@ using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Persistence.Models;
 using Disqord;
+using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Rest;
 using Emporia.Application.Features.Commands;
@@ -25,6 +26,7 @@ namespace Agora.Addons.Disqord.Commands
 
         [MessageCommand("Review Transaction")]
         [Description("Rate the owner after a successful transaction")]
+        [RequireBotPermissions(Permissions.ReadMessageHistory)]
         public IResult ReviewTransaction(IUserMessage message)
         {
             var invalidMessage = new LocalInteractionMessageResponse()
@@ -41,6 +43,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
 
+            if (participants is null) return Response(invalidMessage);
             if (participants.Count() != 2) return Response(invalidMessage);
             if (message.Embeds.Count != 1) return Response(invalidMessage);
 
@@ -78,10 +81,13 @@ namespace Agora.Addons.Disqord.Commands
             if (message.Author.Id != Context.Bot.CurrentUser.Id) return Response(invalidMessage);
 
             var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
+            
+            if (participants is null) return Response(invalidMessage);
+            if (participants.Count() != 2) return Response(invalidMessage);
+            if (message.Embeds.Count != 1) return Response(invalidMessage);
+
             var owner = participants.First();
             var buyer = participants.Last();
-
-            if (participants.Count() != 2) return Response(invalidMessage);
 
             if (message.Embeds[0].Footer == null || !message.Embeds[0].Footer.Text.Equals("✅"))
                 return Response(new LocalInteractionMessageResponse()
@@ -91,7 +97,9 @@ namespace Agora.Addons.Disqord.Commands
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent($"Only {Mention.User(buyer)} can remove this review!"));
 
-            await Base.ExecuteAsync(new RemoveCommentCommand(EmporiumId, ReferenceNumber.Create(owner), Comment.Create(message.Id.ToString())));
+            var result = await Base.ExecuteAsync(new RemoveCommentCommand(EmporiumId, ReferenceNumber.Create(owner), Comment.Create(message.Id.ToString())));
+
+            if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
             var embed = LocalEmbed.CreateFrom(message.Embeds[0]).WithFooter("review this transaction | right-click -> apps -> review");
 

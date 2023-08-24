@@ -20,7 +20,9 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var user = await context.Services.GetRequiredService<IEmporiaCacheService>().GetUserAsync(context.GuildId.Value, context.AuthorId);
             var userBalance = await economy.GetBalanceAsync(user.ToEmporiumUser(), settings.DefaultCurrency);
 
-            if (decimal.TryParse(amount.ToString(), out var result) && userBalance.Value >= result)
+            if (!userBalance.IsSuccessful) return Results.Failure(userBalance.FailureReason);
+
+            if (decimal.TryParse(amount.ToString(), out var result) && userBalance.Data.Value >= result)
                 return Results.Success;
             else
                 return Results.Failure("You lack the funds required to complete this transaction");

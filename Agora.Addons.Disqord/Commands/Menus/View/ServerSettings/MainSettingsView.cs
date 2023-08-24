@@ -22,6 +22,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Shill Bidding", "Allow item owners to bid on their item listings.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ShillBidding, "Shill Bidding", ctx, opts)),
                       new ("Confirm Transactions", "Confirm Market and Trade transactions before they are closed", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ConfirmTransactions, "Transaction Confirmation", ctx, opts)),
                       new ("Recall Listings", "Allow users to withdraw a listing after an offer was made.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.RecallListings, "Recall Listings", ctx, opts)),
+                      new ("Attach Logs", "Attach all offers made to the results posting.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.AttachLogs, "Attach Logs", ctx, opts)),
                       new ("Manager Role", "Role that has admin privilages for listed items.", (ctx, opts) => new RoleAssignmentView(ctx, opts)),
                       new ("Broker Role", "Role that can create listing for other users.", (ctx, opts) => new RoleAssignmentView(ctx, opts)),
                       new ("Merchant Role", "Role that can create listings. Default: @everyone.", (ctx, opts) => new RoleAssignmentView(ctx, opts)),

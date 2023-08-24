@@ -98,7 +98,7 @@ namespace Agora.Addons.Disqord.Extensions
                     if (trade.AllowOffers && listing.Product is TradeItem item)
                         firstRowButtons.AddComponent(LocalComponent.Button($"#offers", "View Offers")
                                                                    .WithStyle(LocalButtonComponentStyle.Primary)
-                                                                   .WithIsDisabled(!item.Offers.Any()));
+                                                                   .WithIsDisabled(item.Offers.Count == 0));
 
                     firstRowButtons.AddComponent(LocalComponent.Button(trade.AllowOffers ? "barter" : "trade", trade.AllowOffers ? "Submit Offer" : "Claim")
                                                                .WithStyle(LocalButtonComponentStyle.Success)
@@ -159,7 +159,7 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithIsDisabled(listing is VickreyAuction || hideMinButton)
                                   .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
                     LocalComponent.Button("custombid", "Custom Bid")
-                                  .WithStyle(LocalButtonComponentStyle.Primary)
+                                  .WithStyle(LocalButtonComponentStyle.Success)
                                   .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
                     LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
                                   .WithStyle(LocalButtonComponentStyle.Primary)
@@ -174,7 +174,7 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithStyle(LocalButtonComponentStyle.Primary)
                                   .WithIsDisabled(listing is VickreyAuction || hideMinButton),
                     LocalComponent.Button("custombid", "Custom Bid")
-                                  .WithStyle(LocalButtonComponentStyle.Primary),
+                                  .WithStyle(LocalButtonComponentStyle.Success),
                     LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
                                   .WithStyle(LocalButtonComponentStyle.Primary)
                                   .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
@@ -366,7 +366,7 @@ namespace Agora.Addons.Disqord.Extensions
 
             return listing switch
             {
-                StandardTrade { Product: TradeItem product } => product.Offers.Any()
+                StandardTrade { Product: TradeItem product } => product.Offers.Count != 0
                     ? embed.AddInlineField("Submitted Offers", product.SuggestedOffer).AddInlineBlankField()
                     : embed.AddInlineBlankField().AddInlineBlankField(),
                 _ => embed.AddInlineBlankField().AddInlineBlankField()

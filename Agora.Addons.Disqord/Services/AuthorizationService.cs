@@ -214,7 +214,7 @@ namespace Agora.Addons.Disqord
 
                         if (cmd.UseMaximum && userBalance.Data >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value) return Result.Success();
 
-                        if (userBalance.Data >= cmd.Amount) return Result.Success();
+                        if (cmd.Amount > 0 && userBalance.Data >= cmd.Amount) return Result.Success();
 
                         return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });

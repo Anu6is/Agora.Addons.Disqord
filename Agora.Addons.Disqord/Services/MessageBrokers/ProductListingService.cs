@@ -556,7 +556,15 @@ namespace Agora.Addons.Disqord
                 x.TagIds = tags.Take(20).ToArray();
             });
 
-            await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
+            try
+            {
+                await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
+            }
+            catch (Exception)
+            {
+                //Failed to subscribe to the owner to the post
+            }
+
             productListing.SetReference(ReferenceCode.Create($"{productListing.ReferenceCode}:{showroom.Id}"));
 
             return showroom.Id.RawValue;

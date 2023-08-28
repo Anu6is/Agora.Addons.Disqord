@@ -3,6 +3,7 @@ using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord.Bot;
 using Disqord.Gateway;
+using Disqord.Gateway.Api;
 using Microsoft.Extensions.Logging;
 
 namespace Agora.Addons.Disqord
@@ -17,5 +18,12 @@ namespace Agora.Addons.Disqord
         public int GetTotalGuilds() => Bot.GetGuilds().Count;
 
         public int GetTotalMembers() => Bot.GetGuilds().Values.Sum(guild => guild.MemberCount);
+
+        public string GetShardState(int index)
+        {
+            if (index < 0 || index >= Bot.ApiClient.Shards.Count) return "Invalid Shard Id";
+
+            return Bot.ApiClient.Shards[ShardId.FromIndex(index)]?.State.ToString();
+        }
     }
 }

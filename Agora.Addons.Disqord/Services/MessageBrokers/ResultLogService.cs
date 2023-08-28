@@ -52,7 +52,7 @@ namespace Agora.Addons.Disqord
 
             var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
-            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
+            if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, productListing.ShowroomId.Value, result.FailureReason));
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
@@ -80,12 +80,14 @@ namespace Agora.Addons.Disqord
 
             embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer));
 
-            var localMessage = new LocalMessage().WithContent(participants).AddEmbed(embed);
+            var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
+            var link = isForumPost ? $"\n{Discord.MessageJumpLink(EmporiumId.Value, productListing.Product.ReferenceNumber.Value, productListing.ReferenceCode.Reference())}" : string.Empty;
+            var localMessage = new LocalMessage().WithContent($"{participants}{link}").AddEmbed(embed);
 
             result = await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
 
             if (result is IExceptionResult) 
-                await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
+                await TrySendFeedbackAsync(EmporiumId.Value, productListing.ShowroomId.Value, result.FailureReason);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
             var delivered = await SendHiddenMessage(productListing, message);

@@ -28,8 +28,8 @@ namespace Agora.Addons.Disqord.Extensions
                     await interaction.Followup().ModifyResponseAsync(x =>
                     {
                         x.Content = response.Content;
-                        x.Embeds = response.Embeds.Value?.ToArray();
-                        x.Components = response.Components.Value?.ToArray();
+                        x.Embeds = response.Embeds.HasValue ? response.Embeds.Value.ToArray() : null;
+                        x.Components = response.Components.HasValue ? response.Components.Value.ToArray() : null;
                     });
                 else
                     await interaction.Response().ModifyMessageAsync(response);

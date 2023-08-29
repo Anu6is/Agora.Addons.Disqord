@@ -19,11 +19,11 @@ namespace Agora.Addons.Disqord
 
         public int GetTotalMembers() => Bot.GetGuilds().Values.Sum(guild => guild.MemberCount);
 
-        public string GetShardState(int index)
+        public int GetShardState(int index)
         {
-            if (index < 0 || index >= Bot.ApiClient.Shards.Count) return "Invalid Shard Id";
+            if (index < 0 || index >= Bot.ApiClient.Shards.Count) return 0;
 
-            return Bot.ApiClient.Shards[ShardId.FromIndex(index)]?.State.ToString();
+            return (int)Bot.ApiClient.Shards[ShardId.FromIndex(index)].State;
         }
     }
 }

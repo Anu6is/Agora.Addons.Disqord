@@ -4,6 +4,7 @@ using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
+using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Features.Queries;
@@ -21,11 +22,84 @@ namespace Agora.Addons.Disqord.Commands
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IUserManager _userManager;
+        private readonly Random _random;
 
-        public ProductListingModule(IUserManager userManager, IHttpClientFactory clientFactory)
+        public ProductListingModule(Random random, IUserManager userManager, IHttpClientFactory clientFactory)
         {
+            _random = random;
             _userManager = userManager;
             _httpClientFactory = clientFactory;
+        }
+
+        [MessageCommand("Reroll Giveaway")]
+        [Description("Select a new winner for the giveaway award")]
+        public async Task<IResult> RerollGiveaway(IUserMessage message)
+        {
+            await Deferral(true);
+
+            var responseEmbed = new LocalEmbed().WithDefaultColor();
+            var response = ValidateResultMessage(message, responseEmbed);
+
+            if (response != null) return response;
+
+            var embed = message.Embeds[0];
+
+            if (!embed.Title.Contains("Giveaway") || message.Attachments.Count == 0)
+                return Response(responseEmbed.WithDescription("Command can only be executed on a successful Giveaway result!"));
+
+            var attachment = message.Attachments[0];
+            var logContent = await GetLogContentAsync(attachment.Url);
+
+            if (logContent == null) return ErrorResponse(embeds: responseEmbed.WithDescription("Error: Unable to retrieve giveaway results"));
+
+            _ = Mention.TryParseUser(embed.Fields.First(x => x.Name.Equals("Owner")).Value, out var owner);
+
+            var admin = await _userManager.IsAdministrator(EmporiumUser.Create(EmporiumId, ReferenceNumber.Create(owner.RawValue)));
+
+            if (!admin.IsSuccessful && owner.RawValue != Context.AuthorId)
+                return ErrorResponse(embeds: responseEmbed.WithDescription("Unauthorized Access: Only the OWNER can reroll the Giveaway!"));
+
+            var logs = await ParseLogContentAsync(logContent);
+            var claimant = embed.Fields.First(x => x.Name.Equals("Claimed By")).Value;
+
+            if (claimant.Equals("*REROLLED*"))
+                return ErrorResponse(embeds: responseEmbed.WithDescription("Invalid Action: Giveaway has already been rerolled!"));
+
+            var winners = Mention.ParseUsers(claimant);
+
+            var participants = logs.Where(x => !winners.Any(user => user.Equals(x.User))).ToArray();
+
+            if (participants.Length == 0)
+                return Response(responseEmbed.WithDescription("Not enough remaining participants to reroll..."));
+
+            var modifiedEmbed = LocalEmbed.CreateFrom(embed);
+
+            modifiedEmbed.Fields.Value.First(x => x.Name.Equals("Claimed By")).Value = "*REROLLED*";
+
+            await message.ModifyAsync(x => x.Embeds = new[] { modifiedEmbed });
+
+            var winner = participants.OrderBy(x => _random.Next()).First();
+            var index = modifiedEmbed.Description.Value.LastIndexOf("for") + 4;
+            var description = modifiedEmbed.Description.Value[..index] + Markdown.Bold(winner.Submission);
+            
+            modifiedEmbed.Description = description;
+            modifiedEmbed.Fields.Value.First(x => x.Name.Equals("Claimed By")).Value = Mention.User(winner.User);
+
+            var success = new LocalInteractionMessageResponse().WithContent("Giveaway successfully rerolled");
+            var followup = new LocalInteractionMessageResponse().WithContent($"{Mention.User(owner)} | {Mention.User(winner.User)}").AddEmbed(modifiedEmbed);
+
+            var stream = new MemoryStream();
+
+            await using var writer = new StreamWriter(stream, leaveOpen: true);
+            await writer.WriteAsync(logContent);
+            await writer.FlushAsync();
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            await Context.Interaction.SendMessageAsync(success);
+            await Context.Interaction.SendMessageAsync(followup.AddAttachment(new LocalAttachment(stream, $"{logs.Count} offers")).WithIsEphemeral(false));
+
+            return Results.Success;
         }
 
         [MessageCommand("Cancel Reschedule")]

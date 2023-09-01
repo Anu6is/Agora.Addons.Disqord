@@ -203,14 +203,26 @@ namespace Agora.Addons.Disqord
 
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
+            var winners = productListing switch
+            {
+                StandardGiveaway giveaway => giveaway.Winners,
+                RaffleGiveaway giveaway => giveaway.Winners,
+                _ => Array.Empty<Ticket>()
+            };
+
             var title = productListing.Product.Title.ToString();
-            var value = productListing.CurrentOffer.Submission.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
+            var claimant = winners.Length <= 1
+                ? Mention.User(buyer)
+                : string.Join(" | ", winners.Select(x => Mention.User(x.UserReference.Value)));
             var duration = DateTimeOffset.UtcNow.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
             var stock = productListing is MassMarket or MultiItemMarket
                 ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
                 : productListing.Product.Quantity.Amount;
+            var value = winners.Length <= 1
+                ? Markdown.Bold(productListing.CurrentOffer.Submission)
+                : string.Join(", ", winners.Select(x => Markdown.Bold(x.Submission)));
             var quantity = stock == 1 ? string.Empty : $"{stock} ";
 
             var description = new StringBuilder()
@@ -218,8 +230,8 @@ namespace Agora.Addons.Disqord
                 .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" was ").Append(Markdown.Underline("claimed"))
                 .Append(" after ").Append(duration.Humanize())
-                .Append(productListing.Product is GiveawayItem ? " with " : " for ").Append(Markdown.Bold(value))
-                .Append(" by ").Append(Mention.User(buyer));
+                .Append(productListing.Product is GiveawayItem ? " with " : " for ").Append(value)
+                .Append(" by ").Append(claimant);
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")

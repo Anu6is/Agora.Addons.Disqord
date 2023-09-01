@@ -44,6 +44,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Length of time the Giveaway should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("Total amount of winners to select. Defaults to 1"), Minimum(0), Maximum(5)] double winners = 1,
                 [Description("Maximum number of available tickets."), Minimum(0)] double maxParticipants = 0,
                 [Description("Scheduled start of the Giveaway (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
@@ -82,6 +83,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     MaxParticipants = (uint)maxParticipants,
+                    TotalWinners = (uint)winners,
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
@@ -113,8 +115,9 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Length of time the Giveaway should run. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("Maximum number of available tickets. 0 for unlimited."), Minimum(0)] uint maxParticipants = 0,
-                [Description("Maximum number of tickets a user can purchase."), Minimum(1)] uint maxTicketsPerUser = 1,
+                [Description("Total amount of winners to select. Defaults to 1"), Minimum(0), Maximum(5)] double winners = 1,
+                [Description("Maximum number of available tickets. 0 for unlimited."), Minimum(0)] double maxParticipants = 0,
+                [Description("Maximum number of tickets a user can purchase."), Minimum(1)] double maxTicketsPerUser = 1,
                 [Description("Scheduled start of the Giveaway (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
@@ -154,7 +157,8 @@ namespace Agora.Addons.Disqord.Commands
                     Category = emporiumCategory?.Title,
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
-                    MaxParticipants = maxParticipants,
+                    MaxParticipants = (uint)maxParticipants,
+                    TotalWinners = (uint)winners,
                 };
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
@@ -162,7 +166,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var listing = new RaffleGiveawayModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
-                    MaxTicketsPerUser = maxTicketsPerUser,
+                    MaxTicketsPerUser = (uint)maxTicketsPerUser,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous

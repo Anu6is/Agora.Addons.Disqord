@@ -265,6 +265,7 @@ namespace Agora.Addons.Disqord.Extensions
             FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
             MassMarket market => new LocalEmbedAuthor().WithName($"Cost per Item: {market.CostPerItem.Value.ToString($"N{market.CostPerItem.Currency.DecimalDigits}")}"),
             MultiItemMarket market => new LocalEmbedAuthor().WithName($"Limited to 1 per purchase {(market.AmountPerBundle > 0 ? $"or {market.AmountPerBundle} per bundle" : "")}"),
+            StandardGiveaway giveaway => giveaway.Product is GiveawayItem item && item.TotalWinners > 1 ? new LocalEmbedAuthor().WithName($"Total winners: {item.TotalWinners}") : null,
             RaffleGiveaway giveaway => new LocalEmbedAuthor().WithName($"Max tickets per user: {(giveaway.MaxTicketsPerUser == 0 ? "Unlimited" : giveaway.MaxTicketsPerUser)}"),
             _ => null
         };

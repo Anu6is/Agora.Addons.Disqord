@@ -4,12 +4,14 @@ using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Disqord.Bot.Commands.Interaction;
+using Disqord.Extensions.Interactivity;
 using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Features.Queries;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Humanizer;
 using Qmmands;
 using System.Text;
 using System.Text.Json;
@@ -65,12 +67,27 @@ namespace Agora.Addons.Disqord.Commands
             if (claimant.Equals("*REROLLED*"))
                 return ErrorResponse(embeds: responseEmbed.WithDescription("Invalid Action: Giveaway has already been rerolled!"));
 
-            var winners = Mention.ParseUsers(claimant);
+            var originalWinnerIds = Mention.ParseUsers(claimant).ToArray();
+            var excludedWinnerIds = originalWinnerIds.ToArray();
+            var participants = logs.Where(x => !originalWinnerIds.Any(userId => userId.Equals(x.User))).ToArray();
 
-            var participants = logs.Where(x => !winners.Any(user => user.Equals(x.User))).ToArray();
-
-            if (participants.Length == 0)
+            if (participants.Length == 0 || participants.Length < originalWinnerIds.Length)
                 return Response(responseEmbed.WithDescription("Not enough remaining participants to reroll..."));
+
+            if (originalWinnerIds.Length > 1)
+            {
+                var result = await SelectRerollPositions(message, originalWinnerIds);
+
+                if (result is null)
+                {
+                    await message.ModifyAsync(x => x.Components = Array.Empty<LocalRowComponent>());
+                    return OkResponse(embeds: new LocalEmbed().WithDescription("Selection timeout expired"));
+                }
+
+                excludedWinnerIds = result.SelectedValues.Select(x => Snowflake.Parse(x)).ToArray();
+
+                await result.ModifyMessageAsync(new LocalInteractionMessageResponse().WithComponents(Array.Empty<LocalRowComponent>()));
+            }
 
             var modifiedEmbed = LocalEmbed.CreateFrom(embed);
 
@@ -78,15 +95,19 @@ namespace Agora.Addons.Disqord.Commands
 
             await message.ModifyAsync(x => x.Embeds = new[] { modifiedEmbed });
 
-            var winner = participants.OrderBy(x => _random.Next()).First();
+            var retainedWinnerIds = originalWinnerIds.Except(excludedWinnerIds).ToArray();
+            var oldWinners = logs.Where(x => retainedWinnerIds.Any(userId => userId.Equals(x.User)));
+            var newWinners = participants.OrderBy(x => _random.Next()).Take(excludedWinnerIds.Length);
             var index = modifiedEmbed.Description.Value.LastIndexOf("for") + 4;
-            var description = modifiedEmbed.Description.Value[..index] + Markdown.Bold(winner.Submission);
-            
-            modifiedEmbed.Description = description;
-            modifiedEmbed.Fields.Value.First(x => x.Name.Equals("Claimed By")).Value = Mention.User(winner.User);
+            var winners = oldWinners.Concat(newWinners);
+            var mentions = string.Join(" | ", winners.Select(x => Mention.User(x.User)));
+            var description = modifiedEmbed.Description.Value[..index] + string.Join(", ", winners.Select(x => Markdown.Bold(x.Submission)));
 
-            var success = new LocalInteractionMessageResponse().WithContent("Giveaway successfully rerolled");
-            var followup = new LocalInteractionMessageResponse().WithContent($"{Mention.User(owner)} | {Mention.User(winner.User)}").AddEmbed(modifiedEmbed);
+            modifiedEmbed.Description = description;
+            modifiedEmbed.Fields.Value.First(x => x.Name.Equals("Claimed By")).Value = mentions;
+
+            var success = new LocalInteractionMessageResponse().WithContent("Giveaway successfully rerolled").WithIsEphemeral();
+            var followup = new LocalInteractionMessageResponse().WithContent($"{Mention.User(owner)} | {mentions}").AddEmbed(modifiedEmbed);
 
             var stream = new MemoryStream();
 
@@ -100,6 +121,31 @@ namespace Agora.Addons.Disqord.Commands
             await Context.Interaction.SendMessageAsync(followup.AddAttachment(new LocalAttachment(stream, $"{logs.Count} offers")).WithIsEphemeral(false));
 
             return Results.Success;
+        }
+
+        private async Task<ISelectionComponentInteraction> SelectRerollPositions(IUserMessage message, Snowflake[] originalWinnerIds)
+        {
+            await message.ModifyAsync(x =>
+            {
+                x.Components = new[]
+                {
+                    LocalComponent.Row(
+                        LocalComponent.Selection($"reroll:{message.Id}",
+                            originalWinnerIds.Select((x, index) =>
+                            {
+                                var place = index+1;
+                                return new LocalSelectionComponentOption($"{place.ToOrdinalWords()} Place", x.ToString());
+                            }).ToArray()
+                        ).WithPlaceholder("Select the positions to re-roll").WithMinimumSelectedOptions(1).WithMaximumSelectedOptions(originalWinnerIds.Length)
+                    )
+                };
+            });
+
+            await Context.Interaction.SendMessageAsync(
+                new LocalInteractionMessageResponse()
+                    .WithContent($"Select the positions to re-roll - {Discord.MessageJumpLink(Context.GuildId, Context.ChannelId, message.Id)}"));
+
+            return await Context.WaitForInteractionAsync<ISelectionComponentInteraction>($"reroll:{message.Id}", x => x.AuthorId == Context.AuthorId, TimeSpan.FromSeconds(60));
         }
 
         [MessageCommand("Cancel Reschedule")]

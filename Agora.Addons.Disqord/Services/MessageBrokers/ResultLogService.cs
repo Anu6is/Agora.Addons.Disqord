@@ -54,22 +54,34 @@ namespace Agora.Addons.Disqord
 
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, productListing.ShowroomId.Value, result.FailureReason));
 
+            var winners = productListing switch
+            {
+                StandardGiveaway giveaway => giveaway.Winners,
+                RaffleGiveaway giveaway => giveaway.Winners,
+                _ => Array.Empty<Ticket>()
+            };
+
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
-            var participants = $"{Mention.User(owner)} | {Mention.User(buyer)}";
+            var claimant = winners.Length <= 1 
+                ? Mention.User(buyer) 
+                : string.Join(" | ", winners.Select(x => Mention.User(x.UserReference.Value)));
+            var participants = $"{Mention.User(owner)} | {claimant}";
             var stock = productListing is MassMarket or MultiItemMarket
                 ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
                 : productListing.Product.Quantity.Amount;
-
+            var value = winners.Length <= 1 
+                ? Markdown.Bold(productListing.CurrentOffer.Submission) 
+                : string.Join(", ", winners.Select(x => Markdown.Bold(x.Submission)));
             var quantity = stock == 1 ? string.Empty : $"{stock} ";
             var listing = productListing is CommissionTrade ? "Trade Request" : productListing.ToString();
             var embed = new LocalEmbed().WithTitle($"{listing} Claimed")
-                                        .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} for {Markdown.Bold(productListing.CurrentOffer.Submission)}")
+                                        .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} for {value}")
                                         .WithColor(Color.Teal);
 
             var carousel = productListing.Product.Carousel;
 
-            if (owner != buyer)
+            if (owner != buyer && winners.Length <= 1)
                 embed.WithFooter("review this transaction | right-click -> apps -> review");
 
             if (carousel != null && carousel.Images != null && carousel.Images.Count != 0)
@@ -78,7 +90,7 @@ namespace Agora.Addons.Disqord
             if (productListing.Product.Description != null)
                 embed.AddField("Description", productListing.Product.Description.Value);
 
-            embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", Mention.User(buyer));
+            embed.AddInlineField("Owner", Mention.User(owner)).AddInlineField("Claimed By", claimant);
 
             var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
             var link = isForumPost ? $"\n{Discord.MessageJumpLink(EmporiumId.Value, productListing.Product.ReferenceNumber.Value, productListing.ReferenceCode.Reference())}" : string.Empty;

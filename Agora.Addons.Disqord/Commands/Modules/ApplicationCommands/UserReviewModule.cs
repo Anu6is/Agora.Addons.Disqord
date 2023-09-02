@@ -15,11 +15,11 @@ namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireBuyer]
-    public sealed class EconomyUserModule : AgoraModuleBase
+    public sealed class UserReviewModule : AgoraModuleBase
     {
         private readonly IUserProfileService _profileCache;
 
-        public EconomyUserModule(IUserProfileService userProfile)
+        public UserReviewModule(IUserProfileService userProfile)
         {
             _profileCache = userProfile;
         }

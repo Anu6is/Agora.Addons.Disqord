@@ -81,7 +81,7 @@ namespace Agora.Addons.Disqord.Commands
                 if (result is null)
                 {
                     await message.ModifyAsync(x => x.Components = Array.Empty<LocalRowComponent>());
-                    return OkResponse(embeds: new LocalEmbed().WithDescription("Selection timeout expired"));
+                    return ErrorResponse(embeds: new LocalEmbed().WithDescription("Re-roll selection cancelled due to timeout"));
                 }
 
                 excludedWinnerIds = result.SelectedValues.Select(x => Snowflake.Parse(x)).ToArray();
@@ -134,7 +134,7 @@ namespace Agora.Addons.Disqord.Commands
                             originalWinnerIds.Select((x, index) =>
                             {
                                 var place = index+1;
-                                return new LocalSelectionComponentOption($"{place.ToOrdinalWords()} Place", x.ToString());
+                                return new LocalSelectionComponentOption($"{place.ToOrdinalWords().Titleize()} Place", x.ToString());
                             }).ToArray()
                         ).WithPlaceholder("Select the positions to re-roll").WithMinimumSelectedOptions(1).WithMaximumSelectedOptions(originalWinnerIds.Length)
                     )

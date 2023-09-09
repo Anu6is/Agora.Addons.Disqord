@@ -34,7 +34,8 @@ namespace Agora.Addons.Disqord.Menus.View
                 .WithTitle("Set Listings Duration")
                 .WithComponents(
                     LocalComponent.Row(LocalComponent.TextInput("minimum", "Set Minimum", TextInputComponentStyle.Short).WithPlaceholder("example: 1m").WithIsRequired(false)),
-                    LocalComponent.Row(LocalComponent.TextInput("maximum", "Set Maximum", TextInputComponentStyle.Short).WithPlaceholder("example: 7d").WithIsRequired(false)));
+                    LocalComponent.Row(LocalComponent.TextInput("maximum", "Set Maximum", TextInputComponentStyle.Short).WithPlaceholder("example: 7d").WithIsRequired(false)),
+                    LocalComponent.Row(LocalComponent.TextInput("default", "Set Default", TextInputComponentStyle.Short).WithPlaceholder("example: 12h").WithIsRequired(false)));
 
             await e.Interaction.Response().SendModalAsync(modalResponse);
 
@@ -47,9 +48,10 @@ namespace Agora.Addons.Disqord.Menus.View
             if (response == null) return;
 
             var modal = response.Interaction as IModalSubmitInteraction;
-            var rows = modal.Components.OfType<IRowComponent>();
-            var minimum = rows.First().Components.OfType<ITextInputComponent>().First().Value;
-            var maximum = rows.Last().Components.OfType<ITextInputComponent>().First().Value;
+            var rows = modal.Components.OfType<IRowComponent>().ToArray();
+            var minimum = rows[0].Components.OfType<ITextInputComponent>().First().Value;
+            var maximum = rows[1].Components.OfType<ITextInputComponent>().First().Value;
+            var @default = rows[2].Components.OfType<ITextInputComponent>().First().Value;
             var emporium = await _context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(e.Interaction.GuildId.Value);
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
             
@@ -91,6 +93,41 @@ namespace Agora.Addons.Disqord.Menus.View
                 }
             }
 
+            if (@default.IsNotNull())
+            {
+                var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(@default);
+
+                if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult)
+                {
+                    var duration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+
+                    if (settings.MinimumDuration > duration || settings.MaximumDuration < duration) 
+                    {
+                        await modal.Response().SendMessageAsync(
+                         new LocalInteractionMessageResponse()
+                             .WithIsEphemeral()
+                             .AddEmbed(
+                                 new LocalEmbed()
+                                     .WithColor(Color.Red)
+                                     .WithDescription("Invalid Default: Default duration must be greater than the minimum or less than the maximum")));
+                        return;
+                    }
+
+                    settings.DefaultDuration = duration;
+                }
+                else
+                {
+                    await modal.Response().SendMessageAsync(
+                        new LocalInteractionMessageResponse()
+                            .WithIsEphemeral()
+                            .AddEmbed(
+                                new LocalEmbed()
+                                    .WithColor(Color.Red)
+                                    .WithDescription("Invalid format: Default Duration")));
+                    return;
+                }
+            }
+
             using var scope = _context.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
@@ -112,6 +149,8 @@ namespace Agora.Addons.Disqord.Menus.View
             using var scope = _context.Services.CreateScope();
             {
                 scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+                settings.DefaultDuration = settings.MinimumDurationDefault ? settings.MinimumDuration : settings.MaximumDuration;
 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
             }

@@ -62,7 +62,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 scheduledStart ??= currentDateTime;
                 duration = duration == default ? defaultDuration : duration;
@@ -129,7 +133,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 scheduledStart ??= currentDateTime;
                 duration = duration == default ? defaultDuration : duration;
@@ -197,7 +205,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 scheduledStart ??= currentDateTime;
                 currency ??= Settings.DefaultCurrency.Code;

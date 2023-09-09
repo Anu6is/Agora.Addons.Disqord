@@ -69,7 +69,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero 
+                    ? Settings.MinimumDurationDefault 
+                        ? Settings.MinimumDuration 
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
@@ -151,7 +155,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;
@@ -233,7 +241,11 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.MinimumDurationDefault ? Settings.MinimumDuration : Settings.MaximumDuration;
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
+                        : Settings.MaximumDuration
+                    : Settings.DefaultDuration;
 
                 quantity ??= Stock.Create(1);
                 scheduledStart ??= currentDateTime;

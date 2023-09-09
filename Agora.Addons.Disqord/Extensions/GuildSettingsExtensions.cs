@@ -93,9 +93,13 @@ namespace Agora.Addons.Disqord.Extensions
             } );
 
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
+            
+            if (settings.DefaultDuration == TimeSpan.Zero)
+                settings.DefaultDuration = settings.MinimumDurationDefault ? settings.MinimumDuration : settings.MaximumDuration;
+            
             var minDuration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var maxDuration = settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
-            var defaultDuration = settings.MinimumDurationDefault ? $"Minimum: {minDuration}" : $"Maximum: {maxDuration}";
+            var defaultDuration = settings.DefaultDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var missing = settings.FindMissingRequirement();
             var description = missing is null
                 ? Markdown.Italics("Select an option from the drop-down list to modify the selected setting.")

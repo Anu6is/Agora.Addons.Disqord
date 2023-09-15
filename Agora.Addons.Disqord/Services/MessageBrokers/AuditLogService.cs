@@ -51,7 +51,7 @@ namespace Agora.Addons.Disqord
 
             var intermediary = string.Empty;
             var value = productListing.ValueTag.ToString();
-            var title = productListing.Product.Title.ToString();
+            var title = GetJumpLink(productListing);
             var owner = productListing.Owner.ReferenceNumber.Value;
             var host = Mention.User(productListing.User.ReferenceNumber.Value);
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
@@ -118,7 +118,7 @@ namespace Agora.Addons.Disqord
 
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
-            var title = productListing.Product.Title.ToString();
+            var title = GetJumpLink(productListing);
             var owner = productListing.Anonymous
                       ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||"
                       : Mention.User(productListing.Owner.ReferenceNumber.Value);
@@ -156,7 +156,7 @@ namespace Agora.Addons.Disqord
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var user = string.Empty;
-            var title = productListing.Product.Title.ToString();
+            var title = GetJumpLink(productListing);
             var owner = productListing.Anonymous
                       ? $"{Markdown.Italics("Anonymous")} ||{Mention.User(productListing.Owner.ReferenceNumber.Value)}||"
                       : Mention.User(productListing.Owner.ReferenceNumber.Value);
@@ -210,7 +210,8 @@ namespace Agora.Addons.Disqord
                 _ => Array.Empty<Ticket>()
             };
 
-            var title = productListing.Product.Title.ToString();
+            var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
+            var title = isForumPost ? GetJumpLink(productListing) : productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
             var claimant = winners.Length <= 1
@@ -251,7 +252,8 @@ namespace Agora.Addons.Disqord
 
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
-            var title = productListing.Product.Title.ToString();
+            var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
+            var title = isForumPost ? GetJumpLink(productListing) : productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
             var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
@@ -360,6 +362,15 @@ namespace Agora.Addons.Disqord
             settings.AuditLogChannelId = 0;
 
             await _settingsService.UpdateGuildSettingsAync(settings);
+        }
+
+        private static string GetJumpLink(Listing listing)
+        {
+            var channelReference = listing.ReferenceCode.Reference();
+            var channelId = channelReference == 0 ? listing.ShowroomId.Value : channelReference;
+            var link = Discord.MessageJumpLink(listing.Owner.EmporiumId.Value, channelId, listing.Product.ReferenceNumber.Value);
+
+            return $"[{listing.Product.Title}]({link})";
         }
     }
 }

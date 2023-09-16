@@ -1,5 +1,4 @@
-﻿using Agora.Addons.Disqord.Checks;
-using Agora.Addons.Disqord.Commands.Checks;
+﻿using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -8,8 +7,8 @@ using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
-using Emporia.Extensions.Discord.Features.Commands;
 using Emporia.Extensions.Discord;
+using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
 using Qommon;
 
@@ -17,6 +16,7 @@ namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireMerchant]
+    [CheckActiveListings]
     [SlashGroup("giveaway")]
     [RequireShowroom("Giveaway")]
     [Description("Add an item to be Giveawayed")]
@@ -50,7 +50,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
@@ -126,7 +126,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {

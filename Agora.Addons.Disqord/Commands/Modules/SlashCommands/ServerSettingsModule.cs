@@ -1,5 +1,4 @@
-﻿using Agora.Addons.Disqord.Checks;
-using Agora.Addons.Disqord.Commands.Checks;
+﻿using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Commands.Menus.View;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Addons.Disqord.Menus;

@@ -7,7 +7,7 @@ using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 
-namespace Agora.Addons.Disqord.Checks
+namespace Agora.Addons.Disqord.Commands.Checks
 {
     internal class RequireMerchantAttribute : DiscordGuildCheckAttribute
     {

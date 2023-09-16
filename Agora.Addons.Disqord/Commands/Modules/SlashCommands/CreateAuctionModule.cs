@@ -1,5 +1,4 @@
-﻿using Agora.Addons.Disqord.Checks;
-using Agora.Addons.Disqord.Commands.Checks;
+﻿using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -17,6 +16,7 @@ namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireMerchant]
+    [CheckActiveListings]
     [SlashGroup("auction")]
     [RequireShowroom("Auction")]
     [Description("Add an item to be auctioned")]
@@ -50,12 +50,12 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Sell immediately for this price."), Minimum(0)] double buyNowPrice = 0,
                 [Description("Do NOT sell unless bids exceed this price."), Minimum(0)] double reservePrice = 0,
                 [Description("Min amount bids can be increased by. Defaults to 1"), Minimum(0)] double minBidIncrease = 0,
-                [Description("Min amount bids can be increased by."), Minimum(0)] double maxBidIncrease = 0,
+                [Description("Max amount bids can be increased by."), Minimum(0)] double maxBidIncrease = 0,
                 [Description("Scheduled start of the auction (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -141,7 +141,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -227,7 +227,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)

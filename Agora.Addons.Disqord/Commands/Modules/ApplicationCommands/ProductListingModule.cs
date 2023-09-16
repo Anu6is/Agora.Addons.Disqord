@@ -1,4 +1,4 @@
-﻿using Agora.Addons.Disqord.Checks;
+﻿using Agora.Addons.Disqord.Commands.Checks;
 using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;

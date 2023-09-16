@@ -4,7 +4,7 @@ using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 
-namespace Agora.Addons.Disqord.Checks
+namespace Agora.Addons.Disqord.Commands.Checks
 {
     internal class RestrictTimeoutAttribute : DiscordParameterCheckAttribute
     {

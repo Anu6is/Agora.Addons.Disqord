@@ -82,6 +82,7 @@ namespace Agora.Addons.Disqord.Extensions
             var snipeExtension = settings.SnipeExtension == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
+            var listinglimit = settings.MaxListingsLimit == 0 ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
 
             var toggleList = settings.Features.AsList().Select(x => 
@@ -121,7 +122,10 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField("Default Duration", defaultDuration)
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
+                .AddInlineBlankField()
                 .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
+                .AddInlineField($"{listinglimit} User Listing Limit", settings.MaxListingsLimit == 0 ? Markdown.Italics("Unlimited") : $"{settings.MaxListingsLimit} Active Listings")
+                .AddInlineBlankField()
                 .AddField($"Toggles [{AgoraEmoji.GreenCheckMark}Enable | {AgoraEmoji.RedCrossMark}Disable]", string.Join(" | ", toggleList))
                 .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))

@@ -157,7 +157,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
             e.Button.Label = $"Default to {(_context.Settings.MinimumDurationDefault ? "Max" : "Min")}";
 
-            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Default Duration", new LocalEmoji("⏲️")));
+            MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Duration Settings", new LocalEmoji("⏲️")));
 
             ReportChanges();
         }

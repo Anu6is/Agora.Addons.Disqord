@@ -56,6 +56,7 @@ namespace Agora.Addons.Disqord.Extensions
                                                .WithIconUrl(iconUrl)
             }
             .WithProductDetails(listing)
+            .WithRoleRestrictions(listing)
             .WithDefaultColor();
         }
 
@@ -243,6 +244,15 @@ namespace Agora.Addons.Disqord.Extensions
                                                                 : Mention.User(listing.Owner.ReferenceNumber.Value)),
             _ => embed
         };
+
+        private static LocalEmbed WithRoleRestrictions(this LocalEmbed embed, Listing listing)
+        {
+            if (listing.AccessRoles.Length == 0) return embed;
+
+            embed.AddInlineField("Restricted To", string.Join(" | ", listing.AccessRoles.Select(id => Mention.Role(ulong.Parse(id)))));
+
+            return embed;
+        }
 
         public static List<LocalEmbed> WithImages(this Listing listing)
         {

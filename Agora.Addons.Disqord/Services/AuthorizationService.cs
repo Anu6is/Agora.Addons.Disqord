@@ -256,7 +256,14 @@ namespace Agora.Addons.Disqord
 
                     if (giveaway == null) return "Invalid Action: Listing is not longer available";
 
-                    if (giveaway is StandardGiveaway) return string.Empty;
+                    if (giveaway is StandardGiveaway) 
+                    {
+                        var hasAccess = await _userManager.ValidateBuyerAsync(currentUser, command);
+
+                        if (hasAccess.IsSuccessful) return string.Empty;
+
+                        return hasAccess.FailureReason;
+                    } 
 
                     var validClaim = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
@@ -285,6 +292,10 @@ namespace Agora.Addons.Disqord
 
                     if (trade.Product is TradeItem item && item.Offers.Any(x => x.UserId == command.CurrentUser.Id))
                         return "Invalid Action: You already made an offer on this item.";
+
+                    var canClaim = await _userManager.ValidateBuyerAsync(currentUser, command);
+
+                    if (!canClaim.IsSuccessful) return canClaim.FailureReason;
 
                     if (trade is not CommissionTrade) return string.Empty;
 

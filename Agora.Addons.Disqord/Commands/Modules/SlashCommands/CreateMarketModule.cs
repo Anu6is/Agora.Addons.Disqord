@@ -44,17 +44,18 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
-                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Length of time the itme is available. (example: 7d)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("When the item would be available (yyyy-mm-dd HH:mm)")] DateTime? scheduledStart = null,
                 [Description("The type of discount to apply.")] Discount discountType = Discount.None,
                 [Description("The amount of discount to apply."), Minimum(0)] double discountAmount = 0,
                 [Description("Allow buyers to submit a counter offer.")] bool allowOffers = false,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -105,7 +106,8 @@ namespace Agora.Addons.Disqord.Commands
                     DiscountValue = (decimal)discountAmount,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 var result = await Base.ExecuteAsync(new CreateStandardMarketCommand(showroom, item, listing));
@@ -125,17 +127,18 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Price at which the item is being sold."), Minimum(0)] double price,
                 [Description("The type of discount to apply."), Choice("Percent", 1), Choice("Amount", 2)] int discountType,
                 [Description("The value of discount to apply."), Minimum(0)] double discountValue,
-                [Description("Length of time the discount is available. (example: 15m or 15 minutes)")] TimeSpan timeout,
+                [Description("Length of time the discount is available. (example: 15m)")] TimeSpan timeout,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
-                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Length of time the itme is available. (example: 7d)"), RestrictDuration()] TimeSpan duration = default,
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
-                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Attach an image to be included with the listing"), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("When the item would be available (yyyy-mm-dd HH:mm)")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
-                [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
-                [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Subcategory to list the item under. Requires category"), Maximum(25)] string subcategory = null,
+                [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null, 
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
@@ -144,7 +147,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -184,7 +187,8 @@ namespace Agora.Addons.Disqord.Commands
                     DiscountValue = (decimal)discountValue,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 var result = await Base.ExecuteAsync(new CreateFlashMarketCommand(showroom, item, listing));
@@ -201,29 +205,30 @@ namespace Agora.Addons.Disqord.Commands
             [Description("Users can purchase all or a portion of the listed item stock.")]
             public async Task<IResult> CreateBulkMarket(
                 [Description("Quantity available. Defaults to 1.")] Stock quantity,
-                [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
-                [Description("Price at which the complete bundle is being sold."), Minimum(0)] double totalPrice,
-                [Description("Price of purchasing a single item from the total stock."), Minimum(0)] double pricePerItem,
-                [Description("Buying this number of items at once, applies a special price."), Minimum(2)] int amountInBundle = 0,
-                [Description("Price applied when purchaing a set number of items at once."), Minimum(0)] double pricePerBundle = 0,
+                [Description("Title of the item to be sold"), Maximum(75)] ProductTitle title,
+                [Description("Price at which the complete bundle is being sold"), Minimum(0)] double totalPrice,
+                [Description("Price of purchasing a single item from the total stock"), Minimum(0)] double pricePerItem,
+                [Description("Buying this number of items at once, applies a special price"), Minimum(2)] int amountInBundle = 0,
+                [Description("Price applied when purchaing a set number of items at once"), Minimum(0)] double pricePerBundle = 0,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
-                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
-                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Length of time the itme is available. (example: 7d)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing"), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("When the item would be available (yyyy-mm-dd HH:mm)")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
-                [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
-                [Description("True to hide the item owner.")] bool anonymous = false)
+                [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("True to hide the item owner")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
 
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -263,7 +268,8 @@ namespace Agora.Addons.Disqord.Commands
                     CostPerBundle = (decimal)pricePerBundle,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 await Base.ExecuteAsync(new CreateMassMarketCommand(showroom, item, listing));
@@ -278,28 +284,29 @@ namespace Agora.Addons.Disqord.Commands
             [Description("List multiple items for sale")]
             public async Task<IResult> CreateMultiMarket(
                 [Description("Quantity available. Defaults to 1.")] Stock quantity,
-                [Description("Title of the item to be sold."), Maximum(75)] ProductTitle title,
-                [Description("Price of purchasing a single item from the total stock."), Minimum(0)] double pricePerItem,
-                [Description("Buying this number of items at once, applies a special price."), Minimum(2)] int amountInBundle = 0,
-                [Description("Price applied when purchaing a set number of items at once."), Minimum(0)] double pricePerBundle = 0,
+                [Description("Title of the item to be sold"), Maximum(75)] ProductTitle title,
+                [Description("Price of purchasing a single item from the total stock"), Minimum(0)] double pricePerItem,
+                [Description("Buying this number of items at once, applies a special price"), Minimum(2)] int amountInBundle = 0,
+                [Description("Price applied when purchaing a set number of items at once"), Minimum(0)] double pricePerBundle = 0,
                 [Description("Currency to use. Defaults to server default")] string currency = null,
-                [Description("Length of time the itme is available. (example: 7d or 1 week)"), RestrictDuration()] TimeSpan duration = default,
-                [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
+                [Description("Length of time the itme is available. (example: 7d)"), RestrictDuration()] TimeSpan duration = default,
+                [Description("Attach an image to be included with the listing"), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
-                [Description("When the item would be available (yyyy-mm-dd HH:mm). Defaults to now.")] DateTime? scheduledStart = null,
+                [Description("When the item would be available (yyyy-mm-dd HH:mm)")] DateTime? scheduledStart = null,
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
-                [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
-                [Description("True to hide the item owner.")] bool anonymous = false)
+                [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("True to hide the item owner")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
 
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Market);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -339,7 +346,8 @@ namespace Agora.Addons.Disqord.Commands
                     CostPerBundle = (decimal)pricePerBundle,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 var result = await Base.ExecuteAsync(new CreateMultiMarketCommand(showroom, item, listing));

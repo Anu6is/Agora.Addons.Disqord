@@ -247,7 +247,7 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalEmbed WithRoleRestrictions(this LocalEmbed embed, Listing listing)
         {
-            if (listing.AccessRoles.Length == 0) return embed;
+            if (listing.AccessRoles is null || listing.AccessRoles.Length == 0) return embed;
 
             embed.AddInlineField("Restricted To", string.Join(" | ", listing.AccessRoles.Select(id => Mention.Role(ulong.Parse(id)))));
 

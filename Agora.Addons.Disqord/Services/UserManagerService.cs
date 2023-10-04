@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord
                 {
                     var accessRoles = productListing.Showroom.Listings.First().AccessRoles;
 
-                    if (accessRoles.Length > 0)
+                    if (accessRoles is null || accessRoles.Length > 0)
                         hasRole = member.RoleIds.Any(id => accessRoles.Contains(id.ToString()));
                 }
 

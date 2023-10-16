@@ -9,7 +9,6 @@ using Emporia.Domain.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 
 namespace Agora.Addons.Disqord.Menus.View
 {

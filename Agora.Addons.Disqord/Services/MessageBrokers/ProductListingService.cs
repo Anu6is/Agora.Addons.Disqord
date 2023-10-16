@@ -321,7 +321,7 @@ namespace Agora.Addons.Disqord
 
         public async ValueTask CloseBarteringChannelAsync(Listing productListing)
         {
-            var channelId = productListing.Product.ReferenceNumber.Value;
+            var channelId = productListing.Product.ReferenceNumber?.Value ?? 0;
             var showroom = _agora.GetChannel(EmporiumId.Value, ShowroomId.Value);
 
             if (showroom == null) return;

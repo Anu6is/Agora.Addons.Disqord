@@ -4,25 +4,46 @@ using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
 using Disqord.Rest;
+using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
+using Emporia.Extensions.Discord.Features.Commands;
 using Humanizer;
 using HumanTimeParser.Core.Parsing;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using Qommon;
 
 namespace Agora.Addons.Disqord.Commands
 {
     public class AuctionTemplateView : ViewBase
     {
+        private string _selectedCategory = string.Empty;
+        private string _selectedSubcategory = string.Empty;
+
+        private IServiceProvider Provider { get; set; }
+
+        private CachedEmporium Emporium { get; set; }
         private AuctionTemplate AuctionTemplate { get; set; }
         private EmporiumTimeParser TimeParser { get; set; }
+        private SelectionViewComponent CategorySelection { get; set; }
+        private SelectionViewComponent SubcategorySelection { get; set; }
 
-        public AuctionTemplateView(AuctionTemplate template, EmporiumTimeParser timeParser) : base(
+        public AuctionTemplateView(CachedEmporium emporium, AuctionTemplate template, IServiceProvider provider) : base(
             message => message.WithContent($"{(template.ReverseBidding ? "Reverse" : string.Empty)} {template.Type} Auction")
                               .AddEmbed(CreateEmbed(template).WithDefaultColor()))
         {
+            Provider = provider;
+            Emporium = emporium;
             AuctionTemplate = template;
-            TimeParser = timeParser;
+            TimeParser = provider.GetRequiredService<EmporiumTimeParser>();
+
+            CategorySelection = new SelectionViewComponent(SelectCategory) { MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Placeholder = "Select a default Category", Row = 1 };
+            SubcategorySelection = new SelectionViewComponent(SelectSubcategory) { MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Placeholder = "Select a default Subcategory", Row = 2 };
+
+            AddCategorySelection();
         }
 
         private static LocalEmbed CreateEmbed(AuctionTemplate template)
@@ -66,7 +87,117 @@ namespace Agora.Addons.Disqord.Commands
             return default;
         }
 
-        //TODO - category selects
+        private void AddCategorySelection()
+        {
+
+            if (Emporium.Categories.Count == 0)
+                CategorySelection.Options.Add(new LocalSelectionComponentOption("No Categories Exist", "0"));
+
+            var count = 0;
+            foreach (var category in Emporium.Categories)
+            {
+                count++;
+                var option = new LocalSelectionComponentOption(category.Title.ToString(), count.ToString());
+                CategorySelection.Options.Add(option);
+            }
+
+            CategorySelection.IsDisabled = Emporium.Categories.Count == 0;
+
+            AddComponent(CategorySelection);
+        }
+        
+        public ValueTask SelectCategory(SelectionEventArgs e)
+        {
+            if (e.SelectedOptions.Count == 1)
+            {
+                if (e.SelectedOptions[0].Value == "0") return default;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
+                    defaultOption.IsDefault = false;
+
+                e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
+
+                _selectedCategory = e.SelectedOptions[0].Label.Value;
+
+                var subcategories = Emporium.Categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Where(x => !x.Title.Equals(_selectedCategory)).Count();
+
+                if (subcategories > 0) AddSubcategorySelection();
+
+                AuctionTemplate.Category = _selectedCategory;
+
+                UpdateMessage();
+            }
+            else
+            {
+                _selectedCategory = string.Empty;
+                _selectedSubcategory = string.Empty;
+
+                AuctionTemplate.Category = _selectedCategory;
+                AuctionTemplate.Subcategory = _selectedSubcategory;
+
+                e.Selection.Options.First(x => x.IsDefault.GetValueOrDefault()).IsDefault = false;
+
+                RemoveComponent(SubcategorySelection);
+
+                UpdateMessage();
+            }
+
+            return default;
+        }
+
+        private void AddSubcategorySelection()
+        {
+            _selectedSubcategory = string.Empty;
+            SubcategorySelection.Options.Clear();
+            RemoveComponent(SubcategorySelection);
+            AuctionTemplate.Subcategory = _selectedSubcategory;
+
+            var subcategories = Emporium.Categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Where(x => !x.Title.Equals(_selectedCategory)).ToArray();
+
+            if (subcategories.Length == 0)
+                SubcategorySelection.Options.Add(new LocalSelectionComponentOption("No subcategories Exist", "0"));
+
+            var count = 0;
+            foreach (var subcategory in subcategories)
+            {
+                count++;
+                var option = new LocalSelectionComponentOption(subcategory.Title.ToString(), count.ToString());
+                SubcategorySelection.Options.Add(option);
+            }
+
+            SubcategorySelection.IsDisabled = subcategories.Length == 0;
+
+            AddComponent(SubcategorySelection);
+        }
+
+        public ValueTask SelectSubcategory(SelectionEventArgs e)
+        {
+            if (e.SelectedOptions.Count == 1)
+            {
+                if (e.SelectedOptions[0].Value == "0") return default;
+                if (e.Selection.Options.FirstOrDefault(x => x.IsDefault.HasValue && x.IsDefault.Value) is { } defaultOption)
+                    defaultOption.IsDefault = false;
+
+                e.Selection.Options.First(x => x.Value == e.SelectedOptions[0].Value).IsDefault = true;
+
+                _selectedSubcategory = e.SelectedOptions[0].Label.Value;
+
+                AuctionTemplate.Subcategory = _selectedSubcategory;
+
+                UpdateMessage();
+            }
+            else
+            {
+                _selectedSubcategory = string.Empty;
+
+                AuctionTemplate.Subcategory = _selectedSubcategory;
+
+                e.Selection.Options.First(x => x.IsDefault.GetValueOrDefault()).IsDefault = false;
+
+                UpdateMessage();
+            }
+
+            return default;
+        }
 
         [Button(Label = "Edit Item", Style = LocalButtonComponentStyle.Primary, Row = 3)]
         public async ValueTask EditItem(ButtonEventArgs e)
@@ -140,7 +271,7 @@ namespace Agora.Addons.Disqord.Commands
                     LocalComponent.Row(LocalComponent.TextInput("min", "Min Bid Increase", TextInputComponentStyle.Short).WithPlaceholder("example: 100").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("max", "Max Bid Increase", TextInputComponentStyle.Short).WithPlaceholder("example: 500").WithIsRequired(false)),
                     LocalComponent.Row(LocalComponent.TextInput("reserve", "Reserve Price", TextInputComponentStyle.Short).WithPlaceholder("example: 250").WithIsRequired(false)),
-                    LocalComponent.Row(LocalComponent.TextInput("unique", value, TextInputComponentStyle.Short).WithPlaceholder(value).WithIsRequired(false)));
+                    LocalComponent.Row(LocalComponent.TextInput("unique", value, TextInputComponentStyle.Short).WithIsRequired(false)));
             
             await e.Interaction.Response().SendModalAsync(modalResponse);
 
@@ -250,13 +381,26 @@ namespace Agora.Addons.Disqord.Commands
 
             AuctionTemplate.Name = name;
 
-            //TODO - actually save the data 
+            using var scope = Provider.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
 
-            var embed = new LocalEmbed().WithColor(Color.Teal).WithDescription($"Template saved as {Markdown.Bold(name)}");
-            
-            await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().AddEmbed(embed));
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            UpdateMessage();
+            var result = await mediator.Send(new CreateAuctionTemplateCommand(AuctionTemplate));
+
+            if (result.IsSuccessful)
+            {
+                var embed = new LocalEmbed().WithColor(Color.Teal).WithDescription($"Template saved as {Markdown.Bold(name)}");
+
+                await modal.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().AddEmbed(embed).WithComponents());
+            }
+            else
+            {
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
+
+                if (result is IExceptionResult exResult)
+                    await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
+            }
         }
 
 

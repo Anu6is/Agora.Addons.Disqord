@@ -210,6 +210,8 @@ namespace Agora.Addons.Disqord
                 _ => Array.Empty<Ticket>()
             };
 
+            winners ??= Array.Empty<Ticket>();
+
             var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
             var title = isForumPost ? GetJumpLink(productListing) : productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
@@ -368,7 +370,7 @@ namespace Agora.Addons.Disqord
         {
             var channelReference = listing.ReferenceCode.Reference();
             var channelId = channelReference == 0 ? listing.ShowroomId.Value : channelReference;
-            var link = Discord.MessageJumpLink(listing.Owner.EmporiumId.Value, channelId, listing.Product.ReferenceNumber.Value);
+            var link = Discord.MessageJumpLink(listing.Owner.EmporiumId.Value, channelId, listing.Product.ReferenceNumber?.Value ?? channelId);
 
             return $"[{listing.Product.Title}]({link})";
         }

@@ -61,6 +61,8 @@ namespace Agora.Addons.Disqord
                 _ => Array.Empty<Ticket>()
             };
 
+            winners ??= Array.Empty<Ticket>();
+
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
             var claimant = winners.Length <= 1 

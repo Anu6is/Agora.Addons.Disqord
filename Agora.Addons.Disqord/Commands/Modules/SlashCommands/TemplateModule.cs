@@ -1,11 +1,11 @@
 ﻿using Agora.Addons.Disqord.Commands.Checks;
-using Agora.Addons.Disqord.Parsers;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
+using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 using Qommon;
 
@@ -22,10 +22,6 @@ namespace Agora.Addons.Disqord.Commands
         public sealed class CreateTemplateModule : AgoraModuleBase
         {
             public enum AuctionType { Standard, Sealed, Live }
-
-            public EmporiumTimeParser TimeParser { get; set; }
-
-            public CreateTemplateModule(EmporiumTimeParser parser) => TimeParser = parser;
 
             [SlashCommand("auction")]
             public async Task<IResult> CreateAuctionTemplate(
@@ -50,6 +46,8 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var template = new AuctionTemplate()
                 {
+                    EmporiumId = EmporiumId,
+                    AuthorId = Context.AuthorId,
                     Type = type.ToString(),
                     Title = title,
                     StartingPrice = startingPrice,
@@ -68,14 +66,16 @@ namespace Agora.Addons.Disqord.Commands
                     Reschedule = reschedule,
                     Anonymous = anonymous         
                 };
-
+                
                 currency ??= Settings.DefaultCurrency.Code;
                 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 
                 template.Currency = emporium.Currencies.First(x => x.Matches(currency));
 
-                return View(new AuctionTemplateView(template, TimeParser));
+                var provider = Context.Services.CreateScope().ServiceProvider;
+
+                return View(new AuctionTemplateView(emporium, template, provider));
             }
 
             [AutoComplete("auction")]

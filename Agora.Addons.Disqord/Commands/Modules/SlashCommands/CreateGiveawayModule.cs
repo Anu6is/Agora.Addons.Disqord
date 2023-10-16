@@ -50,6 +50,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict entry to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -59,7 +60,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Giveaway);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -97,7 +98,8 @@ namespace Agora.Addons.Disqord.Commands
                 {
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 var result = await Base.ExecuteAsync(new CreateStandardGiveawayCommand(showroom, item, listing));
@@ -126,6 +128,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
+                [Description("Restrict entry to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -135,7 +138,7 @@ namespace Agora.Addons.Disqord.Commands
                 var requirements = (DefaultListingRequirements)await SettingsService.GetListingRequirementsAsync(Context.GuildId, ListingType.Giveaway);
                 var missing = requirements.Validate(image is null, description is null, category is null, subcategory is null, message is null, false);
 
-                if (missing.Count() != 0) return Response($"Please include: {string.Join(" & ", missing)}");
+                if (missing.Any()) return Response($"Please include: {string.Join(" & ", missing)}");
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
@@ -177,7 +180,8 @@ namespace Agora.Addons.Disqord.Commands
                     MaxTicketsPerUser = (uint)maxTicketsPerUser,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
-                    Anonymous = anonymous
+                    Anonymous = anonymous,
+                    Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
                 var result = await Base.ExecuteAsync(new CreateRaffleGiveawayCommand(showroom, item, listing));

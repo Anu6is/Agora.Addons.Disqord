@@ -20,7 +20,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             _author = author;
         }
 
-        public override bool CanCheck(IParameter parameter, object value) => value is IMember;
+        public override bool CanCheck(IParameter parameter, object value) => value is IMember || value is IRole;
 
         public override async ValueTask<IResult> CheckAsync(IDiscordCommandContext context, IParameter parameter, object member)
         {

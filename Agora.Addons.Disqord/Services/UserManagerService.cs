@@ -89,8 +89,16 @@ namespace Agora.Addons.Disqord
                 var guildSettings = await _guildSettingsService.GetGuildSettingsAsync(GuildId.GetValueOrDefault());
                 var buyerRole = guildSettings.BuyerRole;
                 var member = await GetMemberAsync(new Snowflake(user.ReferenceNumber.Value));
-
+                
                 var hasRole = buyerRole == 0ul || buyerRole == GuildId || member.RoleIds.Contains(buyerRole);
+
+                if (hasRole && command is IProductListingBinder productListing && productListing.Showroom.Listings.FirstOrDefault() != null)
+                {
+                    var accessRoles = productListing.Showroom.Listings.First().AccessRoles;
+
+                    if (accessRoles is not null && accessRoles.Length > 0)
+                        hasRole = member.RoleIds.Any(id => accessRoles.Contains(id.ToString()));
+                }
 
                 if (!hasRole) return Result.Failure("Unauthorized access: Buyer role required.");
             }

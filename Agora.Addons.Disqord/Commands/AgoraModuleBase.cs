@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord.Commands
 
             if (Context.Command is ApplicationCommand command)
             {
-                var commandName = $"{command.Module.Parent?.Name} {command.Module.Alias} {command.Alias}".TrimStart();
+                var commandName = $"{command.Module?.Parent?.Name} {command.Module?.Alias} {command.Alias}";
                 Logger.LogDebug("{Author} initiated {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
             }
 

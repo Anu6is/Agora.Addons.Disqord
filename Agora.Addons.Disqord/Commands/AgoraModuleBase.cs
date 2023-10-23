@@ -75,12 +75,6 @@ namespace Agora.Addons.Disqord.Commands
             else
                 ShowroomId = new(Channel.CategoryId.GetValueOrDefault(Context.ChannelId));
 
-            if (Context.Command is ApplicationCommand command)
-            {
-                var commandName = $"{command.Module?.Parent?.Name} {command.Module?.Alias} {command.Alias}";
-                Logger.LogDebug("{Author} initiated {Command} in {Guild}", Context.Author.Name, commandName, Context.GuildId);
-            }
-
             await base.OnBeforeExecuted();
 
             return;

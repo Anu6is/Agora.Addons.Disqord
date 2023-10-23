@@ -15,10 +15,11 @@ namespace Agora.Addons.Disqord.Commands
     [SlashGroup("template")]
     [Description("Create and manage listing templates")]
     [RequireBotPermissions(Permissions.SendMessages | Permissions.SendEmbeds)]
-    public sealed class TemplateModule : AgoraModuleBase
+    public sealed partial class TemplateModule : AgoraModuleBase
     {
         [RequireManager]
-        [SlashGroup("add")]
+        [SlashGroup("create")]
+        [Description("Create a new listing templates")]
         public sealed class CreateTemplateModule : AgoraModuleBase
         {
             public enum AuctionType { Standard, Sealed, Live }

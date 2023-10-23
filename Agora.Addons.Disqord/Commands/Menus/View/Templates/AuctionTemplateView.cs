@@ -4,13 +4,11 @@ using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
 using Disqord.Rest;
-using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
 using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
-using Humanizer;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,7 +31,7 @@ namespace Agora.Addons.Disqord.Commands
 
         public AuctionTemplateView(CachedEmporium emporium, AuctionTemplate template, IServiceProvider provider) : base(
             message => message.WithContent($"{(template.ReverseBidding ? "Reverse" : string.Empty)} {template.Type} Auction")
-                              .AddEmbed(CreateEmbed(template).WithDefaultColor()))
+                              .AddEmbed(template.CreateEmbed().WithDefaultColor()))
         {
             Provider = provider;
             Emporium = emporium;
@@ -44,36 +42,6 @@ namespace Agora.Addons.Disqord.Commands
             SubcategorySelection = new SelectionViewComponent(SelectSubcategory) { MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Placeholder = "Select a default Subcategory", Row = 2 };
 
             AddCategorySelection();
-        }
-
-        private static LocalEmbed CreateEmbed(AuctionTemplate template)
-        {
-            var field = template.Type switch
-            {
-                "Standard" => new LocalEmbedField().WithName("Buy Now Price").WithValue(Money.Create((decimal)template.BuyNowPrice, template.Currency)).WithIsInline(),
-                "Sealed" => new LocalEmbedField().WithName("Max Participants").WithValue(template.MaxParticipants == 0 ? "Unlimited" : template.MaxParticipants).WithIsInline(),
-                "Live" => new LocalEmbedField().WithName("Timeout").WithValue(template.Timeout.Humanize(precision:2, minUnit:Humanizer.Localisation.TimeUnit.Second)).WithIsInline(), 
-                _ => null
-            };
-
-            return new LocalEmbed()
-                .WithTitle($"Title: {template.Title ?? ""}")
-                .WithDescription(template.Description ?? Markdown.CodeBlock(" "))
-                .AddInlineField("Quantity", template.Quantity == 0 ? 1 : template.Quantity)
-                .AddInlineField("Starting Price", Money.Create((decimal)template.StartingPrice, template.Currency))
-                .AddInlineField("Reserved Price", Money.Create((decimal)template.ReservePrice, template.Currency))
-                .AddInlineField("Duration", template.Duration.Humanize(precision:2, minUnit:Humanizer.Localisation.TimeUnit.Second))
-                .AddInlineField("Reschedule", template.Reschedule.ToString())
-                .AddInlineField(field)
-                .AddInlineField("Min Bid Increase", template.MinBidIncrease)
-                .AddInlineField("Max Bid Increase", template.MaxBidIncrease)
-                .AddInlineBlankField()
-                .AddInlineField("Category", template.Category ?? Markdown.CodeBlock(" "))
-                .AddInlineField("Subcategory", template.Subcategory ?? Markdown.CodeBlock(" "))
-                .AddInlineBlankField()
-                .AddField($"Owner {(template.Anonymous ? "[hidden]" : "[visible]")}", template.Owner == 0 ? Markdown.CodeBlock(" ") : Mention.User(template.Owner))
-                .WithImageUrl(template.Image)
-                .WithFooter(template.Message);
         }
 
         [Selection(MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Row = 0, Placeholder = "Change the default owner", Type = SelectionComponentType.User)]
@@ -363,7 +331,7 @@ namespace Agora.Addons.Disqord.Commands
                 .WithComponents(LocalComponent.Row(LocalComponent.TextInput("name", "Template Name", TextInputComponentStyle.Short)
                                          .WithPlaceholder(AuctionTemplate.Quantity.ToString())
                                          .WithMaximumInputLength(100)
-                                         .WithIsRequired(false)));
+                                         .WithIsRequired(true)));
 
             await e.Interaction.Response().SendModalAsync(modalResponse);
 
@@ -392,11 +360,13 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var embed = new LocalEmbed().WithColor(Color.Teal).WithDescription($"Template saved as {Markdown.Bold(name)}");
 
-                await modal.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().AddEmbed(embed).WithComponents());
+                await modal.Response().ModifyMessageAsync(new LocalInteractionMessageResponse().WithContent(string.Empty).AddEmbed(embed).WithComponents());
             }
             else
             {
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
+                var embed = new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason);
+
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed));
 
                 if (result is IExceptionResult exResult)
                     await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
@@ -417,7 +387,7 @@ namespace Agora.Addons.Disqord.Commands
         private void UpdateMessage()
         {
             MessageTemplate = message => message.WithContent($"{(AuctionTemplate.ReverseBidding ? "Reverse" : string.Empty)} {AuctionTemplate.Type} Auction")
-                                                .AddEmbed(CreateEmbed(AuctionTemplate).WithAuthor(AuctionTemplate.Name).WithDefaultColor());
+                                                .AddEmbed(AuctionTemplate.CreateEmbed().WithAuthor(AuctionTemplate.Name).WithDefaultColor());
 
             ReportChanges();
         }

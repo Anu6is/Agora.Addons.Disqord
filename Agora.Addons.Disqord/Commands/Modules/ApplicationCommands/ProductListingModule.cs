@@ -225,7 +225,7 @@ namespace Agora.Addons.Disqord.Commands
         private async Task<Listing> GetActiveListing(IUserMessage message)
         {
             var embed = message.Embeds[0];
-            var type = embed.Title.Split(':')[0];
+            var type = embed.GetListingType();
             var reference = ReferenceNumber.Create(message.Id);
 
             var query = type switch

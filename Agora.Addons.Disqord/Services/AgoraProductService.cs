@@ -1,4 +1,5 @@
-﻿using Agora.Shared.Attributes;
+﻿using Agora.Addons.Disqord.Extensions;
+using Agora.Shared.Attributes;
 using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
@@ -27,12 +28,12 @@ namespace Agora.Addons.Disqord
             if (message == null || message.Embeds.Count == 0) return null;
 
             var embed = message.Embeds[0];
-            var owner = embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner"))?.Value;
+            var owner = embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner") || x.Name.Equals("Requester"))?.Value;
 
             if (owner == null) return null;
             if (!Mention.TryParseUser(owner, out var userId) && !owner.Equals("***Anonymous***")) return null;
 
-            return new CachedEmporiumProduct() { OwnerId = userId, ProductId = productId, ListingType = embed.Title.Split(':').First() };
+            return new CachedEmporiumProduct() { OwnerId = userId, ProductId = productId, ListingType = embed.GetListingType() };
         }
     }
 }

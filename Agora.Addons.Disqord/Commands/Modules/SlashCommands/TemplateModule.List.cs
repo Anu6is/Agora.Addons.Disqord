@@ -23,9 +23,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!templates.Data.Any()) return OkResponse(isEphimeral: true, embeds: new[] { new LocalEmbed().WithDescription("No templates have been created for this server.") });
 
+                var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var provider = Context.Services.CreateScope().ServiceProvider;
 
-                return View(new AuctionTemplateListView(templates.Data, provider));
+                return View(new AuctionTemplateListView(emporium, templates.Data, provider));
             }
         }
     }

@@ -9,6 +9,15 @@ namespace Agora.Addons.Disqord.Extensions
 {
     public static class AuctionTemplateExtensions
     {
+        public static LocalEmbed CreateEmbed(this ITemplate template) 
+        {
+            return template switch
+            {
+                AuctionTemplate auction => auction.CreateEmbed(),
+                _ => new LocalEmbed(),
+            };
+        }
+
         public static LocalEmbed CreateEmbed(this AuctionTemplate template)
         {
             var field = template.Type switch
@@ -19,10 +28,12 @@ namespace Agora.Addons.Disqord.Extensions
                 _ => null
             };
 
+            var reverse = template.ReverseBidding ? "[reverse]" : string.Empty;
+
             return new LocalEmbed()
-                .WithAuthor($"{template.Type} Auction")
+                .WithAuthor($"{template.Type} Auction {reverse}| {template.Name}")
                 .WithTitle($"Title: {template.Title ?? ""}")
-                .WithDescription(template.Description ?? Markdown.CodeBlock(" "))
+                .WithDescription($"{Markdown.Bold("Description:")}{Environment.NewLine}{template.Description ?? Markdown.CodeBlock(" ")}")
                 .AddInlineField("Quantity", template.Quantity == 0 ? 1 : template.Quantity)
                 .AddInlineField("Starting Price", Money.Create((decimal)template.StartingPrice, template.Currency))
                 .AddInlineField("Reserved Price", Money.Create((decimal)template.ReservePrice, template.Currency))
@@ -45,7 +56,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             return new AuctionItemModel(ProductTitle.Create(template.Title), template.Currency.Code, (decimal)template.StartingPrice, Stock.Create(template.Quantity))
             {
-                ImageUrl = template.Image is not null ? new[] { template.Image } : null,
+                ImageUrl = template.Image.IsNotNull() ? new[] { template.Image } : null,
                 Category = template.Category.IsNotNull() ? CategoryTitle.Create(template.Category) : null,
                 Subcategory = template.Subcategory.IsNotNull() ? SubcategoryTitle.Create(template.Subcategory) : null,
                 Description = template.Description.IsNotNull() ? ProductDescription.Create(template.Description) : null,

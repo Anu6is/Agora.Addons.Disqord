@@ -1,5 +1,4 @@
 ﻿using Disqord;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Agora.Addons.Disqord.Extensions
 {

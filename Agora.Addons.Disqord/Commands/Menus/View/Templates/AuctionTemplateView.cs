@@ -58,9 +58,9 @@ namespace Agora.Addons.Disqord.Commands
             var image = rows[3].Components.OfType<ITextInputComponent>().First().Value;
             var quantity = rows[4].Components.OfType<ITextInputComponent>().First().Value;
 
-            CurrentTemplate.Title = title ?? CurrentTemplate.Title;
-            CurrentTemplate.Description = desc ?? CurrentTemplate.Description;
-            CurrentTemplate.Image = image ?? CurrentTemplate.Image;
+            CurrentTemplate.Title = title.IsNotNull() ? title : CurrentTemplate.Title;
+            CurrentTemplate.Description = desc.IsNotNull() ? desc : CurrentTemplate.Description;
+            CurrentTemplate.Image = image.IsNotNull() ? image : CurrentTemplate.Image;
 
             if (price.IsNotNull() && double.TryParse(price, out var startingPrice)) CurrentTemplate.StartingPrice = startingPrice;
             if (quantity.IsNotNull() && int.TryParse(quantity, out var stock)) CurrentTemplate.Quantity = stock;
@@ -171,7 +171,7 @@ namespace Agora.Addons.Disqord.Commands
             if (reschedule.IsNotNull() && Enum.TryParse<RescheduleOption>(reschedule, true, out var rescheduleResult)) CurrentTemplate.Reschedule = rescheduleResult;
             if (anonymous.IsNotNull() && bool.TryParse(anonymous, out var anonymousResult)) CurrentTemplate.Anonymous = anonymousResult;
 
-            CurrentTemplate.Message = note ?? CurrentTemplate.Message;
+            CurrentTemplate.Message = note.IsNotNull() ? note : CurrentTemplate.Message;
 
             await modal.Response()
                        .SendMessageAsync(

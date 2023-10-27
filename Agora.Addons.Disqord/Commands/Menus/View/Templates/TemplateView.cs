@@ -208,15 +208,15 @@ namespace Agora.Addons.Disqord.Commands
             var name = modal.Components.OfType<IRowComponent>().ToArray()[0]
                             .Components.OfType<ITextInputComponent>().First().Value;
 
-            if (CurrentTemplate.Name.IsNull() && name.IsNull())
+            CurrentTemplate.Name = name.IsNotNull() ? name : CurrentTemplate.Name;
+
+            if (CurrentTemplate.Name.IsNull())
             {
                 var embed = new LocalEmbed().WithDescription("Template Name Required").WithDefaultColor();
                 await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().AddEmbed(embed));
 
                 return;
             }
-
-            CurrentTemplate.Name = name.IsNotNull() ? name : CurrentTemplate.Name;
 
             using var scope = Provider.CreateScope();
             scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);

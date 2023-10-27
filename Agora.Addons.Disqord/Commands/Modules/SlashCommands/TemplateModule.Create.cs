@@ -45,6 +45,11 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
+                await Deferral(true);
+
+                if (!Settings.AllowedListings.Any(listing => listing.Equals($"{type} Auction", StringComparison.OrdinalIgnoreCase)))
+                    return ErrorResponse(embeds: new LocalEmbed().WithDescription($"{type} Auctions are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command."));
+
                 var template = new AuctionTemplate()
                 {
                     EmporiumId = EmporiumId,

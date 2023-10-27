@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Emporia.Application.Common;
 using Emporia.Application.Specifications;
 using Emporia.Domain.Common;
@@ -7,7 +8,6 @@ using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
-using static Disqord.Discord.Limits.Message.Embed;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
@@ -15,6 +15,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
+            if (context is IDiscordApplicationCommandContext cmdContext && cmdContext.Interaction.Type == InteractionType.ApplicationCommandAutoComplete) return Results.Success;
+
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
 
             if (settings == null) return Results.Failure("Setup Required: Please execute the </server setup:1013361602499723275> command.");

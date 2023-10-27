@@ -19,7 +19,7 @@ namespace Agora.Addons.Disqord.Commands
     {
         [RequireManager]
         [SlashGroup("add")]
-        [Description("View existing listing templates")]
+        [Description("Add an auction listing from a template")]
         public sealed class PostTemplateModule : AgoraModuleBase
         {
             private bool _scheduleOverride;
@@ -38,6 +38,8 @@ namespace Agora.Addons.Disqord.Commands
             }
 
             [SlashCommand("auction")]
+            [RequireShowroom("Auction")]
+            [Description("Add an auction listing based on the specified template")]
             public async Task<IResult> PostAuctionTemplates(
                 [Description("The template to add")] string template,
                 [Description("Title of the item to be auctioned."), Maximum(75)] string title = null,
@@ -58,6 +60,9 @@ namespace Agora.Addons.Disqord.Commands
                 var auctionTemplate = AuctionTemplates.FirstOrDefault(x => x.Name.Equals(template, StringComparison.OrdinalIgnoreCase));
 
                 if (auctionTemplate is null) return ErrorResponse(isEphimeral:true, embeds: new LocalEmbed().WithDescription("Invalid Selection: Template not found."));
+
+                if (!Settings.AllowedListings.Any(listing => listing.Equals($"{auctionTemplate.Type} Auction", StringComparison.OrdinalIgnoreCase)))
+                    return ErrorResponse(embeds: new LocalEmbed().WithDescription($"{auctionTemplate.Type} Auctions are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command."));
 
                 auctionTemplate.Title = title ?? auctionTemplate.Title;
                 auctionTemplate.StartingPrice = startingPrice == 0 ? auctionTemplate.StartingPrice : startingPrice;

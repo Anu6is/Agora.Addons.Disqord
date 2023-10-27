@@ -17,13 +17,17 @@ namespace Agora.Addons.Disqord.Commands.Checks
 
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
-            var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
+            if (context is IDiscordApplicationCommandContext cmdContext && cmdContext.Interaction.Type == InteractionType.ApplicationCommandAutoComplete) return Results.Success;
 
+            var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
+            
             if (settings == null) return Results.Failure("Setup Required: No showrooms have been configured for this server.");
 
-            var listingType = $"{(context.Command as ApplicationCommand).Alias} {_roomType}";
+            var alias = (context.Command as ApplicationCommand).Alias;
+            var listingType = $"{alias} {_roomType}";
+            var allow = alias.Equals(_roomType, StringComparison.OrdinalIgnoreCase) ;
 
-            if (!settings.AllowedListings.Any(listing => listing.Equals(listingType, StringComparison.OrdinalIgnoreCase)))
+            if (!allow && !settings.AllowedListings.Any(listing => listing.Equals(listingType, StringComparison.OrdinalIgnoreCase)))
                 return Results.Failure($"{listingType.Pascalize()} Listings are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command.");
 
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);

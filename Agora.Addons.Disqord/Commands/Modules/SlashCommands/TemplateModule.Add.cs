@@ -64,6 +64,8 @@ namespace Agora.Addons.Disqord.Commands
                 if (!Settings.AllowedListings.Any(listing => listing.Equals($"{auctionTemplate.Type} Auction", StringComparison.OrdinalIgnoreCase)))
                     return ErrorResponse(embeds: new LocalEmbed().WithDescription($"{auctionTemplate.Type} Auctions are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command."));
 
+                auctionTemplate.Owner = auctionTemplate.Owner == 0 ? Context.AuthorId : auctionTemplate.Owner;
+
                 auctionTemplate.Title = title ?? auctionTemplate.Title;
                 auctionTemplate.StartingPrice = startingPrice == 0 ? auctionTemplate.StartingPrice : startingPrice;
                 auctionTemplate.Duration = duration == default ? auctionTemplate.Duration : duration;
@@ -71,7 +73,7 @@ namespace Agora.Addons.Disqord.Commands
                 auctionTemplate.Quantity = quantity == 0 ? auctionTemplate.Quantity : quantity;
                 auctionTemplate.Description = description ?? auctionTemplate.Description;   
                 auctionTemplate.Message = message ?? auctionTemplate.Message;
-                auctionTemplate.Owner = owner == null ? Context.AuthorId : owner.Id;
+                auctionTemplate.Owner = owner == null ? auctionTemplate.Owner : owner.Id;
 
                 auctionTemplate.Currency ??= Settings.DefaultCurrency;
 

@@ -25,6 +25,7 @@ namespace Agora.Addons.Disqord.Commands
             public enum AuctionType { Standard, Sealed, Live }
 
             [SlashCommand("auction")]
+            [Description("Create a new auction template")]
             public async Task<IResult> CreateAuctionTemplate(
                 [Description("Type of auction")]AuctionType type,
                 [Description("Title of the item"), Maximum(75)] string title = null,

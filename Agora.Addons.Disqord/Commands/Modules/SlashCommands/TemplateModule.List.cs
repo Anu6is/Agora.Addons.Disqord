@@ -17,6 +17,7 @@ namespace Agora.Addons.Disqord.Commands
             public enum AuctionType { Standard, Sealed, Live }
 
             [SlashCommand("auction")]
+            [Description("View and modify existing listing templates")]
             public async Task<IResult> ListAuctionTemplates()
             {
                 var templates = await Base.ExecuteAsync(new GetAuctionTemplateListQuery(Context.GuildId));

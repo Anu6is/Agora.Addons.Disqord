@@ -1,4 +1,6 @@
-﻿using Disqord.Bot.Commands;
+﻿using Disqord;
+using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
@@ -9,6 +11,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
+            if (context is IDiscordApplicationCommandContext cmdContext && cmdContext.Interaction.Type == InteractionType.ApplicationCommandAutoComplete) return Results.Success;
+
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);
 
             if (emporium == null) return Results.Success;

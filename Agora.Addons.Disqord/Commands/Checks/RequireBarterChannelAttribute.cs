@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Bot.Commands;
+using Disqord.Bot.Commands.Application;
 using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Extensions.Discord;
@@ -12,6 +13,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {
+            if (context is IDiscordApplicationCommandContext cmdContext && cmdContext.Interaction.Type == InteractionType.ApplicationCommandAutoComplete) return Results.Success;
+
             CachedEmporiumProduct product = null;
 
             var cache = context.Services.GetRequiredService<IEmporiaCacheService>();

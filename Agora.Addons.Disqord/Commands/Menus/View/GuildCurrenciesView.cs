@@ -13,7 +13,6 @@ using Emporia.Extensions.Discord.Features.Commands;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using static Disqord.Discord.Limits;
 using static Disqord.Discord.Limits.Component;
 
 namespace Agora.Addons.Disqord.Menus.View

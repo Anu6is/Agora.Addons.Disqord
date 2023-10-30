@@ -103,6 +103,8 @@ namespace Agora.Addons.Disqord.Commands
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var listing = auctionTemplate.MapToListingModel(scheduledStart, scheduledEnd, new UserId(user.UserId));
 
+                if (requiredRole is not null) listing.Roles = new[] { requiredRole.Id.ToString() };
+
                 Emporia.Domain.Services.IResult<Listing> result = listing switch
                 {
                     StandardAuctionModel => await Base.ExecuteAsync(new CreateStandardAuctionCommand(showroom, item, (StandardAuctionModel)listing)),

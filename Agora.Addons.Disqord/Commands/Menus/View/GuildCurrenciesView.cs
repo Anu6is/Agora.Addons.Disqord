@@ -10,7 +10,6 @@ using Emporia.Domain.Common.Enums;
 using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
-using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using static Disqord.Discord.Limits.Component;
@@ -126,20 +125,17 @@ namespace Agora.Addons.Disqord.Menus.View
 
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            try
-            {
-                await mediator.Send(new UpdateDecimalsCommand(new EmporiumId(_context.Guild.Id), _code, decimals));
+            var result = await mediator.Send(new UpdateDecimalsCommand(new EmporiumId(_context.Guild.Id), _code, decimals));
 
+            if (result.IsSuccessful)
+            {
                 var currency = _currencies.First(x => x.Code == _code).WithDecimals(decimals);
 
                 if (_code == _context.Settings.DefaultCurrency.Code) await UpdateDefaultCurrency(currency, e);
             }
-            catch (Exception ex) when (ex is ValidationException validationException)
+            else
             {
-                var message = string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"));
-
-                await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
-                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(message).WithIsEphemeral());
+                await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent(result.FailureReason).WithIsEphemeral());
 
                 return;
             }

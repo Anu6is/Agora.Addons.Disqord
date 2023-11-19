@@ -224,6 +224,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Quantity available. Defaults to 1.")] Stock quantity = null,
                 [Description("Attach an image to be included with the listing."), RequireContent("image")] IAttachment image = null,
                 [Description("Additional information about the item."), Maximum(500)] ProductDescription description = null,
+                [Description("Sell immediately for this price."), Minimum(0)] double buyNowPrice = 0,
                 [Description("Do NOT sell unless bids exceed this price."), Minimum(0)] double reservePrice = 0,
                 [Description("Min amount bids can be increased by. Defaults to 1"), Minimum(0)] double minBidIncrease = 1,
                 [Description("Max amount bids can be increased by."), Minimum(0)] double maxBidIncrease = 0,
@@ -284,6 +285,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var listing = new LiveAuctionModel(scheduledStart.Value, scheduledEnd, timeout, new UserId(userDetails.UserId))
                 {
+                    BuyNowPrice = (decimal)buyNowPrice,
                     RescheduleOption = reschedule,
                     HiddenMessage = message,
                     Anonymous = anonymous,

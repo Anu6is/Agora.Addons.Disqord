@@ -87,6 +87,7 @@ namespace Agora.Addons.Disqord.Extensions
                 },
                 "Live" => new LiveAuctionModel(scheduledStart, scheduledEnd, template.Timeout, userId) 
                 { 
+                    BuyNowPrice = (decimal)template.BuyNowPrice,
                     Timeout = template.Timeout,
                     Anonymous = template.Anonymous,
                     HiddenMessage = message

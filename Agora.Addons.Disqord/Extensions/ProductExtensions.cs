@@ -270,7 +270,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             StandardAuction auction => auction.BuyNowPrice == null ? null : new LocalEmbedAuthor().WithName($"Instant Purchase Price: {auction.BuyNowPrice.Value.ToString($"N{auction.BuyNowPrice.Currency.DecimalDigits}")}"),
             VickreyAuction auction => auction.MaxParticipants == 0 ? null : new LocalEmbedAuthor().WithName($"Max Participants: {auction.MaxParticipants}"),
-            LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Add(TimeSpan.FromSeconds(1)).Humanize()}"),
+            LiveAuction auction => auction.Timeout == TimeSpan.Zero ? null : new LocalEmbedAuthor().WithName($"Bidding Timeout: {auction.Timeout.Add(TimeSpan.FromSeconds(1)).Humanize()} {(auction.BuyNowPrice == null ? "" : $"| Instant Purchase Price: {auction.BuyNowPrice.Value.ToString($"N{auction.BuyNowPrice.Currency.DecimalDigits}")}")}"),
             StandardMarket market => market.DiscountValue == 0 ? null : new LocalEmbedAuthor().WithName($"Discount: {market.FormatDiscount()}"),
             FlashMarket market => !market.IsActive() ? null : new LocalEmbedAuthor().WithName($"Limited Time Discount: {market.FormatDiscount()}"),
             MassMarket market => new LocalEmbedAuthor().WithName($"Cost per Item: {market.CostPerItem.Value.ToString($"N{market.CostPerItem.Currency.DecimalDigits}")}"),

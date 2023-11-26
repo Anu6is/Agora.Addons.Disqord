@@ -344,6 +344,8 @@ namespace Agora.Addons.Disqord
 
                     if (settings.InlineResults) return;
 
+                    await Task.Delay(3000);
+
                     await post.ModifyAsync(x =>
                     {
                         x.IsArchived = true;

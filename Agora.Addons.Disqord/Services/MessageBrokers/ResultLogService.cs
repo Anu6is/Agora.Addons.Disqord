@@ -287,6 +287,8 @@ namespace Agora.Addons.Disqord
         {
             if (_agora.GetChannel(EmporiumId.Value, ShowroomId.Value) is not CachedThreadChannel post) return;
 
+            await Task.Delay(3000);
+
             await post.ModifyAsync(x =>
             {
                 x.IsArchived = true;

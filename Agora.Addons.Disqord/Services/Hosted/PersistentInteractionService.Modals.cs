@@ -199,6 +199,8 @@ namespace Agora.Addons.Disqord
 
             if (!decimal.TryParse(input, out var amount)) return Result<IBaseRequest>.Failure("Bid amount must be a number!");
 
+            if (amount <= 0) return Result<IBaseRequest>.Failure("Bid amount must be greater than 0");
+
             return Result.Success(new CreateBidCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), amount));
         }
 

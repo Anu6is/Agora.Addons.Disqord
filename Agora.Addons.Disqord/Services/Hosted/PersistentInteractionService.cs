@@ -82,7 +82,9 @@ namespace Agora.Addons.Disqord
 
                 if (!result.IsSuccessful) 
                 {
-                    await interaction.SendMessageAsync(
+                    IUserInteraction userInteraction = modalInteraction is null ? interaction : modalInteraction;
+
+                    await userInteraction.SendMessageAsync(
                             new LocalInteractionMessageResponse()
                                 .WithIsEphemeral()
                                 .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));

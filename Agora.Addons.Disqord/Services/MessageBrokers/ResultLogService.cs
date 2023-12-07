@@ -287,12 +287,12 @@ namespace Agora.Addons.Disqord
         {
             if (_agora.GetChannel(EmporiumId.Value, ShowroomId.Value) is not CachedThreadChannel post) return;
 
-            await Task.Delay(3000);
+            await Task.Delay(1000);
 
             await post.ModifyAsync(x =>
             {
-                x.IsArchived = true;
                 x.IsLocked = true;
+                x.AutomaticArchiveDuration = TimeSpan.FromHours(24);
             });
         }
     }

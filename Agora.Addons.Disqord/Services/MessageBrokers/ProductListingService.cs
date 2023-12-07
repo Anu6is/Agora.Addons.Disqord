@@ -228,38 +228,29 @@ namespace Agora.Addons.Disqord
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var updateTag = status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
 
-            if (channel is IThreadChannel forumChannel && updateTag)
+            if (channel is IThreadChannel && updateTag)
             {
-                var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
-
-                content = $"Expiration: {expiration}\n";
-
-                content += productListing switch
-                {
-                    { Type: ListingType.Market } => $"Price: {productListing.ValueTag}",
-                    VickreyAuction { Product: AuctionItem item } => $"Bids: {item.Offers.Count}",
-                    { Product: AuctionItem item } => $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}",
-                    CommissionTrade trade => $"Commission: {trade.ValueTag}",
-                    RaffleGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0 
-                        ? $"Ticket Price: {item.TicketPrice}" 
-                        : $"{item.Offers?.Count}/{item.MaxParticipants} Tickets | Price: {item.TicketPrice}",
-                    StandardGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0 
-                        ? string.Empty 
-                        : $"{item.Offers?.Count}/{item.MaxParticipants} Participants",
-                    _ => string.Empty
-                };
+                ParseMessageContent(productListing, out content);
             }
 
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
+            var buttons = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
+            
+            await UpdateMessageAsync(channelId, productListing, content, productEmbeds, buttons);
+        }
 
-            if (_interactionAccessor.Context == null 
+        private async Task UpdateMessageAsync(ulong channelId, Listing productListing, string content, List<LocalEmbed> productEmbeds, params LocalRowComponent[] buttons)
+        {
+            buttons ??= Array.Empty<LocalRowComponent>(); 
+
+            if (_interactionAccessor.Context == null
                 || (_interactionAccessor.Context.Interaction is IComponentInteraction component && component.Message.Id != productListing.Product.ReferenceNumber.Value))
             {
                 await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
                 {
                     x.Content = content;
                     x.Embeds = productEmbeds;
-                    x.Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
+                    x.Components = buttons;
                 });
             }
             else
@@ -268,9 +259,31 @@ namespace Agora.Addons.Disqord
                 {
                     Content = content,
                     Embeds = productEmbeds,
-                    Components = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton)
+                    Components = buttons
                 });
             }
+        }
+
+        private static void ParseMessageContent(Listing productListing, out string content)
+        {
+            var expiration = Markdown.Timestamp(productListing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+
+            content = $"Expiration: {expiration}\n";
+
+            content += productListing switch
+            {
+                { Type: ListingType.Market } => $"Price: {productListing.ValueTag}",
+                VickreyAuction { Product: AuctionItem item } => $"Bids: {item.Offers.Count}",
+                { Product: AuctionItem item } => $"Current Bid: {(item.Offers.Count == 0 ? "None" : productListing.ValueTag)}",
+                CommissionTrade trade => $"Commission: {trade.ValueTag}",
+                RaffleGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0
+                    ? $"Ticket Price: {item.TicketPrice}"
+                    : $"{item.Offers?.Count}/{item.MaxParticipants} Tickets | Price: {item.TicketPrice}",
+                StandardGiveaway { Product: GiveawayItem item } => item.MaxParticipants == 0
+                    ? string.Empty
+                    : $"{item.Offers?.Count}/{item.MaxParticipants} Participants",
+                _ => string.Empty
+            };
         }
 
         public async ValueTask<ReferenceNumber> OpenBarteringChannelAsync(Listing listing)
@@ -342,14 +355,21 @@ namespace Agora.Addons.Disqord
 
                     await TagClosedPostAsync(productListing, forum, post);
 
+                    var categorization = await GetCategoryAsync(productListing);
+                    var productEmbeds = new List<LocalEmbed>() { productListing.ToEmbed().WithCategory(categorization) };
+
+                    ParseMessageContent(productListing, out var content);
+
+                    await UpdateMessageAsync(channelId, productListing, content, productEmbeds);
+
                     if (settings.InlineResults) return;
 
-                    await Task.Delay(3000);
+                    await Task.Delay(1000);
 
                     await post.ModifyAsync(x =>
                     {
-                        x.IsArchived = true;
                         x.IsLocked = true;
+                        x.AutomaticArchiveDuration = TimeSpan.FromHours(24);
                     });
                 }
                 else

@@ -386,6 +386,8 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static DateTimeOffset ExpiresAt(this Listing listing)
         {
+            if (listing.Status == ListingStatus.Expired || listing.Status == ListingStatus.Sold) return DateTimeOffset.UtcNow;
+
             if (listing.CurrentOffer == null || listing is not LiveAuction live) return listing.ExpirationDate;
 
             return DateTimeOffset.UtcNow.Add(live.Timeout);

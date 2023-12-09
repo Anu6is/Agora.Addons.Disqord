@@ -86,7 +86,7 @@ namespace Agora.Addons.Disqord
                 return Result.Success(new ExtendListingCommand(emporiumId, showroomId, ReferenceNumber.Create(ulong.Parse(keys[1])), keys[0].Replace("extend", ""))
                 {
                     Limit = settings.MaximumDuration,
-                    ExpirationDate = successfulResult.Value
+                    ExpirationDate = new DateTimeOffset(successfulResult.Value, emporium.TimeOffset).UtcDateTime,
                 });
             }
             else if (extendBy.IsNotNull())

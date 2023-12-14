@@ -19,6 +19,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Snipe Trigger", "Remaining time before a bid will trigger an extension.", (ctx, opts) => new SnipeTriggerView(ctx, opts)),
                       new ("Snipe Extension", "Duration to extend by if a bid is made within the trigger range.", (ctx, opts) => new SnipeExtensionView(ctx, opts)),
                       new ("Bidding Recall Limit", "The amount of time allowed before a bid can be recalled.", (ctx, opts) => new BiddingRecallView(ctx, opts)),
+                      new ("Minimum Bid Limit","The minimum amount a user can bid", (ctx, opts) => new MinimumBidView(ctx, opts)),
                       new ("User Listing Limit", "The max amount of active listings per user.", (ctx, opts) => new ListingLimitView(ctx, opts)),
                       new ("Shill Bidding", "Allow item owners to bid on their item listings.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ShillBidding, "Shill Bidding", ctx, opts)),
                       new ("Confirm Transactions", "Confirm Market and Trade transactions before they are closed", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ConfirmTransactions, "Transaction Confirmation", ctx, opts)),

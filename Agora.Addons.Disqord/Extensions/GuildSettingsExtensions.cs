@@ -82,6 +82,7 @@ namespace Agora.Addons.Disqord.Extensions
             var snipeExtension = settings.SnipeExtension == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var snipeRange = settings.SnipeRange == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var bidlimit = settings.BiddingRecallLimit == TimeSpan.Zero ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
+            var minBid = settings.MinBidIncrease.Amount == 0 ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var listinglimit = settings.MaxListingsLimit == 0 ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
 
@@ -124,8 +125,8 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineBlankField()
                 .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
+                .AddInlineField($"{minBid} Minimum Bid Limit", settings.MinBidIncrease.Amount == 0 ? $"{settings.DefaultCurrency.MinAmount}" : $"{settings.MinBidIncrease}")
                 .AddInlineField($"{listinglimit} User Listing Limit", settings.MaxListingsLimit == 0 ? Markdown.Italics("Unlimited") : $"{settings.MaxListingsLimit} Active Listings")
-                .AddInlineBlankField()
                 .AddField($"Toggles [{AgoraEmoji.GreenCheckMark}Enable | {AgoraEmoji.RedCrossMark}Disable]", string.Join(" | ", toggleList))
                 .AddInlineField("Manager Role", settings.AdminRole == 0 || settings.AdminRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.AdminRole)))
                 .AddInlineField("Broker Role", settings.BrokerRole == 0 || settings.BrokerRole == settings.GuildId ? Markdown.Italics("Undefined") : Mention.Role(new Snowflake(settings.BrokerRole)))
@@ -136,7 +137,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddField("Allowed Listings", settings.AllowedListings.Count != 0 ? string.Join(" | ", settings.AllowedListings.Select(setting => Markdown.Bold(setting))) : Markdown.Italics("Undefined"));
 
             if (highlightField != null)
-                embed.Fields.Value.FirstOrDefault(x => x.Name == highlightField)?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");
+                embed.Fields.Value.FirstOrDefault(x => x.Name.Value.Contains(highlightField))?.WithName($"{highlighEmoji?.ToString() ?? "📝"}{highlightField}");
 
             return embed;
         }

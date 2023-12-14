@@ -369,6 +369,7 @@ namespace Agora.Addons.Disqord
                     await post.ModifyAsync(x =>
                     {
                         x.IsLocked = true;
+                        x.IsArchived = !settings.InlineResults;
                         x.AutomaticArchiveDuration = TimeSpan.FromHours(24);
                     });
                 }

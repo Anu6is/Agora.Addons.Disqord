@@ -70,9 +70,9 @@ namespace Agora.Addons.Disqord.Commands
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var currentDateTime = emporium.LocalTime.DateTime.AddSeconds(3);
-                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero 
-                    ? Settings.MinimumDurationDefault 
-                        ? Settings.MinimumDuration 
+                var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
+                    ? Settings.MinimumDurationDefault
+                        ? Settings.MinimumDuration
                         : Settings.MaximumDuration
                     : Settings.DefaultDuration;
 
@@ -81,8 +81,7 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
-                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
+                var defaultMin = CalculateMinIncrease(startingPrice, currency, emporium);
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -90,6 +89,7 @@ namespace Agora.Addons.Disqord.Commands
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+                var bidIncrease = (decimal)minBidIncrease;
 
                 var item = new AuctionItemModel(title, currency, (decimal)startingPrice, quantity)
                 {
@@ -98,7 +98,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
+                    MinBidIncrease = bidIncrease < defaultMin ? defaultMin : bidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease,
                     Reversed = reverseBidding,
                 };
@@ -169,8 +169,7 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
-                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
+                var defaultMin = CalculateMinIncrease(startingPrice, currency, emporium);
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -178,6 +177,7 @@ namespace Agora.Addons.Disqord.Commands
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+                var bidIncrease = (decimal)minBidIncrease;
 
                 var item = new AuctionItemModel(title, currency, (decimal)startingPrice, quantity)
                 {
@@ -186,7 +186,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
+                    MinBidIncrease = bidIncrease < defaultMin ? defaultMin : bidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease,
                     Reversed = reverseBidding
                 };
@@ -258,8 +258,7 @@ namespace Agora.Addons.Disqord.Commands
                 currency ??= Settings.DefaultCurrency.Code;
                 duration = duration == default ? defaultDuration : duration;
 
-                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
-                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
+                var defaultMin = CalculateMinIncrease(startingPrice, currency, emporium);
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
@@ -267,6 +266,7 @@ namespace Agora.Addons.Disqord.Commands
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
                 var emporiumSubcategory = subcategory == null ? null : emporiumCategory?.SubCategories.FirstOrDefault(s => s.Title.Equals(subcategory));
+                var bidIncrease = (decimal)minBidIncrease;
 
                 var item = new AuctionItemModel(title, currency, (decimal)startingPrice, quantity)
                 {
@@ -275,7 +275,7 @@ namespace Agora.Addons.Disqord.Commands
                     Subcategory = emporiumSubcategory?.Title,
                     Description = description,
                     ReservePrice = (decimal)reservePrice,
-                    MinBidIncrease = minBidIncrease == 0 ? defaultMin : (decimal)minBidIncrease,
+                    MinBidIncrease = bidIncrease < defaultMin ? defaultMin : bidIncrease,
                     MaxBidIncrease = (decimal)maxBidIncrease,
                     Reversed = reverseBidding
                 };
@@ -362,6 +362,29 @@ namespace Agora.Addons.Disqord.Commands
                 }
 
                 return;
+            }
+
+            private decimal CalculateMinIncrease(double startingPrice, string currency, CachedEmporium emporium)
+            {
+                var selectedCurrency = emporium.Currencies.FirstOrDefault(x => x.Matches(currency));
+                var defaultMin = selectedCurrency == null ? Settings.DefaultCurrency.MinAmount : selectedCurrency.MinAmount;
+
+                if (Settings.MinBidIncrease.Amount > 0)
+                {
+                    if (Settings.MinBidIncrease.DeltaType == DeltaType.Percent)
+                    {
+                        var fraction = Settings.MinBidIncrease.Amount / 100;
+                        var minCalc = fraction * (decimal)startingPrice;
+
+                        defaultMin = Math.Max(defaultMin, minCalc);
+                    }
+                    else
+                    {
+                        defaultMin = Math.Max(defaultMin, Settings.MinBidIncrease.Amount);
+                    }
+                }
+
+                return defaultMin;
             }
         }
     }

@@ -37,14 +37,12 @@ namespace Agora.Addons.Disqord.Extensions
                 ? basePerms
                 : channel switch
                 {
-                    ITextChannel => basePerms | Permissions.ReadMessageHistory |
+                    ITextChannel => basePerms | Permissions.ManageMessages | Permissions.ReadMessageHistory |
                                     Permissions.CreatePublicThreads | Permissions.SendMessagesInThreads | Permissions.ManageThreads,
                     ICategoryChannel => basePerms | Permissions.ManageChannels | Permissions.ManageMessages,
                     IForumChannel => basePerms | Permissions.SendMessagesInThreads | Permissions.ManageChannels,
                     _ => basePerms
                 };
-
-            if (channel is ITextChannel textChannel && textChannel.IsNews) permissions |= Permissions.ManageMessages;
 
             if (!channelPerms.HasFlag(permissions))
                 return $"{channel.Mention}{AgoraEmoji.RedCrossMark} | Missing channel permissions: **{permissions & ~channelPerms}**";

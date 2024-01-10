@@ -15,7 +15,6 @@ using Emporia.Extensions.Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qommon;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Agora.Addons.Disqord
 {

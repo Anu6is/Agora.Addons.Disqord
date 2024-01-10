@@ -31,7 +31,9 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 1)
-                    button.Label = $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable")  : (_invert ? "Disable" : "Enable"))} {featureText}";
+                    button.Label = _flag == SettingsFlags.SealedPayout
+                        ? _settings.Features.HasFlag(_flag) ? "Second Highest" : "Highest Bid"
+                        : $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable")  : (_invert ? "Disable" : "Enable"))} {featureText}";
             }
         }
 
@@ -39,7 +41,11 @@ namespace Agora.Addons.Disqord.Menus.View
         public ValueTask ToggleFeatureButton(ButtonEventArgs e)
         {
             _settings.Flags = _settings.Features.ToggleFlag(_flag);
-            e.Button.Label = $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable"))} {_featureText}";
+            
+            e.Button.Label = _flag == SettingsFlags.SealedPayout 
+                ? _settings.Features.HasFlag(_flag) ? "Second Highest" : "Highest Bid"
+                : $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable"))} {_featureText}";
+
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed(_featureText));
             ReportChanges();
 

@@ -90,6 +90,9 @@ namespace Agora.Addons.Disqord.Extensions
             {
                 var setting = x.flag.Humanize();
                 var emoji = x.isSet ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+
+                if (x.flag.Equals("SealedPayout"))
+                    setting += x.isSet ? " (1st)" : " (2nd)";
                 
                 return $"{emoji} {setting}";
             } );
@@ -171,7 +174,7 @@ namespace Agora.Addons.Disqord.Extensions
         {
             var rooms = showrooms.Where(x => x.ListingType == listingType.ToString());
 
-            if (rooms.Count() != 0)
+            if (rooms.Any())
             {
                 var details = string.Join(Environment.NewLine, rooms.Select(s =>
                 {

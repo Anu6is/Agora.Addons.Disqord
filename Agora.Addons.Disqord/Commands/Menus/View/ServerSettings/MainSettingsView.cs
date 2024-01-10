@@ -22,6 +22,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Minimum Bid Limit","The minimum amount a user can bid", (ctx, opts) => new MinimumBidView(ctx, opts)),
                       new ("User Listing Limit", "The max amount of active listings per user.", (ctx, opts) => new ListingLimitView(ctx, opts)),
                       new ("Shill Bidding", "Allow item owners to bid on their item listings.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ShillBidding, "Shill Bidding", ctx, opts)),
+                      new ("Sealed Payout", "Winner pays highest or second highest bid", (ctx, opts) => new ToggleFeatureView(SettingsFlags.SealedPayout, "Sealed Payout", ctx, opts)), 
                       new ("Confirm Transactions", "Confirm Market and Trade transactions before they are closed", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ConfirmTransactions, "Transaction Confirmation", ctx, opts)),
                       new ("Recall Listings", "Allow users to withdraw a listing after an offer was made.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.RecallListings, "Recall Listings", ctx, opts)),
                       new ("Attach Logs", "Attach all offers made to the results posting.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.AttachLogs, "Attach Logs", ctx, opts)),

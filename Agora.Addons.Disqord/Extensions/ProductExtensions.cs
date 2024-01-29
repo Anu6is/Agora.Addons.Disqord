@@ -162,10 +162,7 @@ namespace Agora.Addons.Disqord.Extensions
                     LocalComponent.Button("custombid", "Custom Bid")
                                   .WithStyle(LocalButtonComponentStyle.Success)
                                   .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
-                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
-                                  .WithStyle(LocalButtonComponentStyle.Primary)
-                                  .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
-                                  .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol))
+                    new LocalButtonComponent().AsMaxButton(listing, withEmoji: true)
                     )
                 : LocalComponent.Row(
                     LocalComponent.Button("undobid", "Undo Bid")
@@ -176,11 +173,9 @@ namespace Agora.Addons.Disqord.Extensions
                                   .WithIsDisabled(listing is VickreyAuction || hideMinButton),
                     LocalComponent.Button("custombid", "Custom Bid")
                                   .WithStyle(LocalButtonComponentStyle.Success),
-                    LocalComponent.Button("maxbid", $"Max Bid [{auctionItem.MaxIncrement()}]")
-                                  .WithStyle(LocalButtonComponentStyle.Primary)
-                                  .WithIsDisabled(!auctionItem.BidIncrement.MaxValue.HasValue || listing is VickreyAuction)
+                    new LocalButtonComponent().AsMaxButton(listing, withEmoji: false)
                     ),
-            { Product: GiveawayItem giveawayItem} =>
+            { Product: GiveawayItem giveawayItem } =>
                 LocalComponent.Row(
                     LocalComponent.Button("optout", "Cancel Ticket")
                                   .WithStyle(LocalButtonComponentStyle.Danger)
@@ -188,7 +183,7 @@ namespace Agora.Addons.Disqord.Extensions
                     LocalComponent.Button("join", "Get Ticket")
                                   .WithStyle(LocalButtonComponentStyle.Success)
                                   .WithIsDisabled(giveawayItem.MaxParticipants > 0 && giveawayItem.MaxParticipants == giveawayItem.Offers.Count)),
-            StandardMarket { AllowOffers: true } => 
+            StandardMarket { AllowOffers: true } =>
                 LocalComponent.Row(
                     LocalComponent.Button($"revertMarket", "Undo Offer")
                                   .WithStyle(LocalButtonComponentStyle.Danger)
@@ -203,6 +198,26 @@ namespace Agora.Addons.Disqord.Extensions
                                 : null,
             _ => null
         };
+
+        private static LocalButtonComponent AsMaxButton(this LocalButtonComponent component, Listing listing, bool withEmoji = false)
+        {
+            if (listing.Product is not AuctionItem auctionItem) return null;
+
+            var isVickrey = listing is VickreyAuction;
+            var hasMaxLimit = auctionItem.BidIncrement.MaxValue.HasValue;
+            var allowInstantPurchase = listing is StandardAuction { BuyNowPrice: not null } || listing is LiveAuction { BuyNowPrice: not null };
+
+            if (!isVickrey && !hasMaxLimit && allowInstantPurchase) 
+                component.WithCustomId("instant").WithLabel("Buy Now")
+                         .WithStyle(LocalButtonComponentStyle.Success);
+            else
+                component.WithCustomId("maxbid").WithLabel($"Max Bid [{auctionItem.MaxIncrement()}]")
+                         .WithStyle(LocalButtonComponentStyle.Primary).WithIsDisabled(isVickrey || !hasMaxLimit);
+
+            if (withEmoji) component.WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol));
+
+            return component;
+        }
 
         private static LocalEmbed WithProductDetails(this LocalEmbed embed, Listing listing) => listing.Product switch
         {

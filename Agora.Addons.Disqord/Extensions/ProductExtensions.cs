@@ -4,6 +4,7 @@ using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Humanizer;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Agora.Addons.Disqord.Extensions
@@ -208,7 +209,7 @@ namespace Agora.Addons.Disqord.Extensions
             var allowInstantPurchase = listing is StandardAuction { BuyNowPrice: not null } || listing is LiveAuction { BuyNowPrice: not null };
 
             if (!isVickrey && !hasMaxLimit && allowInstantPurchase) 
-                component.WithCustomId("instant").WithLabel("Buy Now")
+                component.WithCustomId("instant").WithLabel($"Buy Now [{listing.BuyNowPrice()}]")
                          .WithStyle(LocalButtonComponentStyle.Success);
             else
                 component.WithCustomId("maxbid").WithLabel($"Max Bid [{auctionItem.MaxIncrement()}]")
@@ -304,7 +305,18 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static string MinIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MinValue)}";
         private static string MaxIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault())}";
+        private static string BuyNowPrice(this Listing listing) => listing is LiveAuction live 
+            ? live.FormatInstantPurchatePrice(live.BuyNowPrice.Value)
+            : listing is StandardAuction standard 
+                ?  standard.FormatInstantPurchatePrice(standard.BuyNowPrice.Value)
+                : throw new InvalidOperationException();
 
+        private static string FormatInstantPurchatePrice(this Listing listing, decimal value)
+        {
+            if (listing.Product is AuctionItem auction) return auction.FormatIncrement(value);
+
+            return string.Empty;
+        }
         private static string FormatIncrement(this AuctionItem auction, decimal value) => value switch
         {
             0 => "Unlimited",

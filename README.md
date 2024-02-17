@@ -1,7 +1,7 @@
 <h1 align="center">Auction Bot</h1>
 <p align="center">Powering seamless auction/sales/trades/giveaways in your Discord server.</p>
 <div align="center">
-  [![Discord](https://img.shields.io/discord/416256456505950215.svg?style=flat-square&label=Discord&logo=discord&color=738ADB)](https://discord.gg/WmCpC8G)
+  [![Discord](https://img.shields.io/discord/392774790945046538)](https://discord.gg/WmCpC8G)
 </div>
 
 ### What is [Auction Bot](https://auction-bot.github.io/docs/)?

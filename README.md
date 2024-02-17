@@ -10,7 +10,9 @@
 ### What is [Auction Bot](https://auction-bot.github.io/docs/)?
 Auction Bot is your all-in-one solution for hosting auctions, giveaways and more within Discord.
 
-<img alt="Logo" src="https://github.com/Anu6is/Agora.Addons.Disqord/assets/4596077/1941bda7-516e-4a79-8063-b768680f182c" style="width: 30%"/>
+<div align="center">
+  <img alt="Logo" src="https://github.com/Anu6is/Agora.Addons.Disqord/assets/4596077/1941bda7-516e-4a79-8063-b768680f182c" style="width: 30%"/>
+</div>
 
 ## Customizable
 Designed to allow Discord servers to host different types of listings while giving complete control over the process. 

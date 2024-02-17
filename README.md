@@ -1,8 +1,11 @@
 <h1 align="center">Auction Bot</h1>
 <p align="center">Powering seamless auction/sales/trades/giveaways in your Discord server.</p>
 <div align="center">
-  [![Discord](https://img.shields.io/discord/392774790945046538)](https://discord.gg/WmCpC8G)
+  <a href="https://discord.gg/WmCpC8G">
+    <img src="https://discordapp.com/api/guilds/392774790945046538/widget.png?style=banner2" alt="Discord Banner 2"/>
+  </a>
 </div>
+<h1> </h1>
 
 ### What is [Auction Bot](https://auction-bot.github.io/docs/)?
 Auction Bot is your all-in-one solution for hosting auctions, giveaways and more within Discord.

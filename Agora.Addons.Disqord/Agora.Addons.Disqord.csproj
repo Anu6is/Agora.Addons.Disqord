@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -11,13 +11,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha5.56" />
+	<PackageReference Include="Agora.Shared" Version="1.0.0" />
+    <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha5.66" />
     <PackageReference Include="HumanTimeParser.English" Version="3.0.0-dev-2713817134" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Agora\Agora.API\Agora.API.csproj" />
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+
 
 </Project>

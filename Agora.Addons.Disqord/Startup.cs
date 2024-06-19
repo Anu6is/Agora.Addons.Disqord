@@ -1,5 +1,6 @@
-﻿using Agora.API;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Agora.Addons.Disqord
@@ -17,14 +18,21 @@ namespace Agora.Addons.Disqord
                    .ConfigureAppConfiguration((context, config) => context.HostingEnvironment.EnvironmentName = EnvName)
                    .ConfigureDisqordBotHost(args)
                    .Build();
-        
-        public static WebApplication CreateWebHost(string[] args)
-            => WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = EnvName })
-                   .ConfigureAgoraAPI()
-                   .ConfigureDisqordBotHost(args)
-                   .Build()
-                   .ConfigureApiApplication();
 
+        public static WebApplication CreateWebHost(string[] args, Action<WebHostBuilderContext, WebApplicationBuilder> configureWebApplicationBuilder = null)
+        {
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = EnvName });
 
+            Action<WebHostBuilderContext, WebApplicationBuilder> builderConfiguration = configureWebApplicationBuilder;
+
+            builder.WebHost.ConfigureServices(delegate (WebHostBuilderContext context, IServiceCollection services)
+            {
+                builderConfiguration?.Invoke(context, builder);
+            });
+
+            builder.ConfigureDisqordBotHost(args);
+
+            return builder.Build();
+        }
     }
 }

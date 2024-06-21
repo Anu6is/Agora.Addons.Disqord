@@ -134,7 +134,13 @@ namespace Agora.Addons.Disqord.Extensions
 
             var secondRowButtons = ParticipantButtons(listing, hideMinButton);
 
-            if (!listing.IsActive() || secondRowButtons == null)
+            firstRowButtons.Components = firstRowButtons.Components.Value.Where(x => (x as LocalButtonComponentBase).IsDisabled != true).ToList();
+            
+            if (secondRowButtons is not null)
+                secondRowButtons.Components = secondRowButtons.Components.Value.Where(x => (x as LocalButtonComponentBase).IsDisabled != true).ToList();
+
+
+            if (!listing.IsActive() || secondRowButtons == null || !secondRowButtons.Components.Value.Any())
                 return new LocalRowComponent[] { firstRowButtons };
             else
                 return new LocalRowComponent[] { firstRowButtons, secondRowButtons };

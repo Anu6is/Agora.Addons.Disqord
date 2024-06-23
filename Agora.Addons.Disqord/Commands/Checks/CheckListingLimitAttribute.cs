@@ -9,7 +9,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class CheckListingLimitAttribute : DiscordParameterCheckAttribute
+    public class CheckListingLimitAttribute : DiscordParameterCheckAttribute
     {
         public override bool CanCheck(IParameter parameter, object value) => value is IMember or null;
 

@@ -5,7 +5,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireGuildPermissionsAttribute : DiscordParameterCheckAttribute
+    public class RequireGuildPermissionsAttribute : DiscordParameterCheckAttribute
     {
         private readonly Permissions _permissions;
 

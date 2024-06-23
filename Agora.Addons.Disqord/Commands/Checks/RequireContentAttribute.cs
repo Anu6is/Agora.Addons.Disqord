@@ -5,7 +5,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireContentAttribute : DiscordParameterCheckAttribute
+    public class RequireContentAttribute : DiscordParameterCheckAttribute
     {
         private readonly string _contentType;
 

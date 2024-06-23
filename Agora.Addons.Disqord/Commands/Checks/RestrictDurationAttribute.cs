@@ -6,7 +6,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RestrictDurationAttribute : DiscordParameterCheckAttribute
+    public class RestrictDurationAttribute : DiscordParameterCheckAttribute
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordCommandContext context, IParameter parameter, object argument)
         {

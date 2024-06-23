@@ -6,7 +6,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireBalanceAttribute : DiscordParameterCheckAttribute
+    public class RequireBalanceAttribute : DiscordParameterCheckAttribute
     {
         public override bool CanCheck(IParameter parameter, object value) => value is double;
 

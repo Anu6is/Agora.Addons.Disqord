@@ -9,7 +9,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireBarterChannelAttribute : DiscordGuildCheckAttribute
+    public class RequireBarterChannelAttribute : DiscordGuildCheckAttribute
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {

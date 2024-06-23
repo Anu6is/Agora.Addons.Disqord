@@ -9,7 +9,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireRoleAttribute : DiscordParameterCheckAttribute
+    public class RequireRoleAttribute : DiscordParameterCheckAttribute
     {
         private readonly AuthorizationRole _role;
         private readonly bool _author;

@@ -7,7 +7,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireEconomyAttribute : DiscordGuildCheckAttribute
+    public class RequireEconomyAttribute : DiscordGuildCheckAttribute
     {
         private readonly string _economyType;
 

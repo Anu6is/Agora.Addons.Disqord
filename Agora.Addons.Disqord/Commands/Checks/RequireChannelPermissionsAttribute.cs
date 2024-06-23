@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    internal class RequireChannelPermissionsAttribute : DiscordParameterCheckAttribute
+    public class RequireChannelPermissionsAttribute : DiscordParameterCheckAttribute
     {
         public Permissions Permissions { get; }
 

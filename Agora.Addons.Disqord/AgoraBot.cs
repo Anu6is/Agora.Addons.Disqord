@@ -98,7 +98,7 @@ namespace Agora.Addons.Disqord
             if (result is ExceptionResult executionFailedResult)
                 return executionFailedResult.Exception switch
                 {
-                    ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                    ValidationException validationException => $"{validationException.Message}\n{string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"))}",
                     UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
                     _ => executionFailedResult.Exception.Message.Replace("parameter", "")
                 };

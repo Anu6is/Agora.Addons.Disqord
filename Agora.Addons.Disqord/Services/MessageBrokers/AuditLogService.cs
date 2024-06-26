@@ -297,7 +297,7 @@ namespace Agora.Addons.Disqord
             return Result.Failure(message);
         }
 
-        private async Task<ulong> GetFeedbackChannelAsync(ulong guildId, ulong channelId)
+        public async Task<ulong> GetFeedbackChannelAsync(ulong guildId, ulong channelId)
         {
             var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
 
@@ -343,7 +343,7 @@ namespace Agora.Addons.Disqord
             return 0;
         }
 
-        private async Task<IResult<Snowflake>> TrySendMessageAsync(Snowflake channelId, LocalMessage message)
+        public async Task<IResult<Snowflake>> TrySendMessageAsync(Snowflake channelId, LocalMessage message)
         {
             try
             {

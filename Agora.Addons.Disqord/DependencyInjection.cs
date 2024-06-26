@@ -58,7 +58,7 @@ namespace Agora.Addons.Disqord
 
         public static IHostBuilder ConfigureDisqordCommands(this IHostBuilder builder)
         {
-            return builder.ConfigureServices((context, services) => services.AddDisqordCommands().AddAgoraServices());
+            return builder.ConfigureServices((context, services) => services.AddDisqordCommands().AddAgoraServices(context.Configuration));
         }
 
         public static IServiceCollection AddDisqordCommands(this IServiceCollection services)
@@ -70,7 +70,7 @@ namespace Agora.Addons.Disqord
             return services;
         }
 
-        public static IServiceCollection AddAgoraServices(this IServiceCollection services)
+        public static IServiceCollection AddAgoraServices(this IServiceCollection services, IConfiguration configuration)
         {
             var types = Assembly.GetExecutingAssembly().GetTypes().Where(type => type.IsAssignableTo(typeof(AgoraService)) && !type.IsAbstract).ToImmutableArray();
 
@@ -78,6 +78,11 @@ namespace Agora.Addons.Disqord
                 services.AddAgoraService(serviceType);
 
             services.AddMediatR(x => x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()).Lifetime = ServiceLifetime.Scoped);
+
+            var addons = configuration.GetSection("Addons").GetChildren().Select(x => x.Value + ".dll").ToArray();
+            var addonAssemblies = addons.Select(name => Assembly.LoadFrom(name)).ToArray();
+
+            services.AddMediatR(x => x.RegisterServicesFromAssemblies(addonAssemblies).Lifetime = ServiceLifetime.Scoped);
 
             return services;
         }

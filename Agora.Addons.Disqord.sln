@@ -12,6 +12,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{A0543D38-31BB-4516-B084-B85BD464667C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{AD591E0F-0B68-4255-9AB2-5634551686B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Extension.TransactionFees", "Extension.TransactionFees\Extension.TransactionFees.csproj", "{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +30,16 @@ Global
 		{A0543D38-31BB-4516-B084-B85BD464667C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0543D38-31BB-4516-B084-B85BD464667C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0543D38-31BB-4516-B084-B85BD464667C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5} = {AD591E0F-0B68-4255-9AB2-5634551686B9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {86E89BA4-3C3A-4CAE-B9BB-ECC9FEE14C22}

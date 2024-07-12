@@ -69,9 +69,14 @@ namespace Extension.TransactionFees.Application
             {
                 var fee = Money.Create(premiumListing.EntryFee.Value, listing.Product.Value().Currency);
 
+                var emporiumUser = user.ToEmporiumUser();
                 var economy = _factory.Create(guildSettings.EconomyType);
+                var userBalance = await economy.GetBalanceAsync(emporiumUser, fee.Currency);
 
-                await economy.DecreaseBalanceAsync(user.ToEmporiumUser(), fee, "Auction Registration Fee Deducted");
+                if (userBalance.Data < fee)
+                    return Response(responseMessage.WithContent("Insufficient Balance: Unable to cover the entry fee"));
+
+                await economy.DecreaseBalanceAsync(emporiumUser, fee, "Auction Registration Fee Deducted");
                 await economy.IncreaseBalanceAsync(listing.Owner, fee, "Auction Registration Fee Received");
             }
 

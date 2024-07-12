@@ -9,6 +9,7 @@ using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Events;
+using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
 using Emporia.Persistence.DataAccess;
 using Extension.TransactionFees.Domain;
@@ -48,6 +49,10 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
 
         var economy = services.GetRequiredService<EconomyFactoryService>().Create(guildSettings.EconomyType);
 
+        var result = await CheckUserBalanceAsync(economy, listing, feeSettings);
+
+        if (!result.IsSuccessful) throw new ValidationException(result.FailureReason);
+
         var cache = services.GetRequiredService<IEmporiaCacheService>();
         var serverOwner = await cache.GetUserAsync(emporiumId.Value, bot.GetGuild(emporiumId.Value)!.OwnerId);
 
@@ -64,6 +69,20 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
 
             await ProcessFee(feeSettings.BrokerFee, "Broker", listing, economy, broker.ToEmporiumUser());
         }
+    }
+
+    private static async Task<IResult> CheckUserBalanceAsync(IEconomy economy, Listing listing, TransactionFeeSettings settings)
+    {
+        if (settings.ServerFee is { IsPercentage: true } && settings.BrokerFee is { IsPercentage: true }) return Result.Success();
+
+        var serverFee = settings.ServerFee?.IsPercentage is false ? settings.ServerFee.Value : 0;
+        var brokerFee = settings.BrokerFee?.IsPercentage is false ? settings?.BrokerFee.Value : 0;
+        var userBalance = await economy.GetBalanceAsync(listing.Owner, listing.Product.Value().Currency);
+
+        if (userBalance.Data.Value < serverFee + brokerFee)
+            return Result.Failure($"Insufficient Balance: Unable to cover the necessary fees");
+
+        return Result.Success();
     }
 
     private static async Task<Snowflake> GetBrokerAsync(IDataAccessor data, Listing listing)
@@ -90,11 +109,6 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
 
     private async Task TransferTransactionFee(Listing listing, IEconomy economy, Money fee, string feeType, EmporiumUser collector)
     {
-        var userBalance = await economy.GetBalanceAsync(listing.Owner, fee.Currency);
-
-        if (userBalance.Data < fee)
-            throw new ValidationException($"Insufficient Balance: Unable to cover the {feeType} Fee");
-
         await economy.DecreaseBalanceAsync(listing.Owner, fee, $"{feeType} Fee Deducted");
 
         await LogTransactionAsync(listing, $"{feeType} fee **{fee}** deducted from {Mention.User(listing.Owner.ReferenceNumber.Value)}");

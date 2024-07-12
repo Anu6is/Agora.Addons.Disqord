@@ -1108,7 +1108,7 @@ namespace Launcher.Migrations
                     b.HasOne("Emporia.Domain.Entities.Listing", null)
                         .WithOne()
                         .HasForeignKey("Extension.TransactionFees.Domain.ListingBroker", "Id")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

@@ -29,7 +29,7 @@ public sealed class TransactionFeesView : ViewBase
         _settings = settings;
         _scopeFactory = scopeFactory;
 
-        AddComponent(new ButtonViewComponent(x => default) { Label = "Close" });
+        AddComponent(new ButtonViewComponent(x => default) { Label = "Close", Style = LocalButtonComponentStyle.Secondary });
 
         foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
         {

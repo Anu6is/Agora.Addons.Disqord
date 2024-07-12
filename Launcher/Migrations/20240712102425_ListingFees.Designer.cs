@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Launcher.Migrations
 {
     [DbContext(typeof(EmporiaDbContext))]
-    [Migration("20240711184504_ListingFees")]
+    [Migration("20240712102425_ListingFees")]
     partial class ListingFees
     {
         /// <inheritdoc />
@@ -1111,7 +1111,7 @@ namespace Launcher.Migrations
                     b.HasOne("Emporia.Domain.Entities.Listing", null)
                         .WithOne()
                         .HasForeignKey("Extension.TransactionFees.Domain.ListingBroker", "Id")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

@@ -21,27 +21,21 @@ namespace Extension.TransactionFees.Application;
 internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
                                      ICommandContextAccessor commandContextAccessor,
                                      IServiceScopeFactory scopeFactory) : INotificationHandler<ListingAddedEvent>,
-                                                                          INotificationHandler<ListingRemovedNotification>
+                                                                          INotificationHandler<ListingRemovedEvent>
 {
     public Task Handle(ListingAddedEvent @event, CancellationToken cancellationToken)
         => HandleTransactionFees(@event.EmporiumId, @event.Listing, postPaid: false, cancellationToken);
 
-    public Task Handle(ListingRemovedNotification notification, CancellationToken cancellationToken)
+    public Task Handle(ListingRemovedEvent notification, CancellationToken cancellationToken)
         => HandleTransactionFees(notification.EmporiumId, notification.ProductListing, postPaid: true, cancellationToken);
 
     private async Task HandleTransactionFees(EmporiumId emporiumId, Listing listing, bool postPaid, CancellationToken cancellationToken)
     {
+        if (listing.Status == ListingStatus.Expired || listing.Status == ListingStatus.Withdrawn) return;
+
         using var scope = scopeFactory.CreateScope();
         var services = scope.ServiceProvider;
-
         var data = services.GetRequiredService<IDataAccessor>();
-
-        if (listing.Status == ListingStatus.Expired || listing.Status == ListingStatus.Withdrawn)
-        {
-            await DeleteBrokerRecordAsync(listing, data, cancellationToken);
-            return;
-        }
-
         var feeSettings = await data.Transaction<GenericRepository<TransactionFeeSettings>>().GetByIdAsync(emporiumId, cancellationToken);
 
         if (feeSettings is null) return;
@@ -69,8 +63,6 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
             var broker = await cache.GetUserAsync(emporiumId.Value, userId);
 
             await ProcessFee(feeSettings.BrokerFee, "Broker", listing, economy, broker.ToEmporiumUser());
-
-            await DeleteBrokerRecordAsync(listing, data, cancellationToken);
         }
     }
 
@@ -79,14 +71,6 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
         var listingBroker = await data.Transaction<GenericRepository<ListingBroker>>().GetByIdAsync(listing.Id);
 
         return listingBroker?.BrokerId ?? listing.Owner.ReferenceNumber.Value;
-    }
-
-    private static async Task DeleteBrokerRecordAsync(Listing listing, IDataAccessor data, CancellationToken cancellationToken)
-    {
-        var listingBroker = await data.Transaction<GenericRepository<ListingBroker>>().GetByIdAsync(listing.Id, cancellationToken);
-
-        if (listingBroker is not null)
-            await data.Transaction<GenericRepository<ListingBroker>>().DeleteAsync(listingBroker, cancellationToken);
     }
 
     private async Task ProcessFee(TransactionFee? fee, string feeType, Listing listing, IEconomy economy, EmporiumUser collector)

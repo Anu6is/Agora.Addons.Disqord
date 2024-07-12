@@ -17,6 +17,6 @@ public sealed class ListingBrokerConfiguration : EntityTypeConfiguration<Listing
                .WithOne()
                .HasForeignKey<ListingBroker>(listing => listing.Id)
                .IsRequired()
-               .OnDelete(DeleteBehavior.ClientNoAction);
+               .OnDelete(DeleteBehavior.Cascade);
     }
 }

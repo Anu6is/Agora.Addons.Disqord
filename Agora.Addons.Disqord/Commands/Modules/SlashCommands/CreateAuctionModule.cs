@@ -430,6 +430,8 @@ namespace Agora.Addons.Disqord.Commands
 
             private async Task<IResult> ValidatePremiumRequirementsAsync(double entryFee, int requiredEntries, TimeSpan? startDelay)
             {
+                if (entryFee == 0) return null;
+
                 var parameters = new PluginParameters() { { "EmporiumId", EmporiumId } };
 
                 var result = await PluginManagerService.ExecutePlugin("EntryFeeValidator", parameters);

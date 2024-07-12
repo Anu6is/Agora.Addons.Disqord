@@ -18,11 +18,11 @@ public sealed class TransactionFeesView : ViewBase
     public TransactionFeesView(TransactionFeeSettings settings, IServiceScopeFactory scopeFactory) : base(message => message.AddEmbed(new LocalEmbed()
             .WithTitle("Server Fee Configurations")
             .WithDescription("**Note:**\n- Fixed fees are subtracted when the listing is created.\n- Percentage fees are subtracted when the listing is sold.\n- Trades are exempt from fees")
-            .AddField($"{GetEmoji(settings.ServerFee?.Value > 0 )} Listing Fees: {settings.ServerFee?.ToString() ?? "None"}", 
+            .AddField($"{GetEmoji(settings.ServerFee?.Value > 0)} Listing Fees: {settings.ServerFee?.ToString() ?? "None"}",
                       "When set, item owners pay a fee for creating a listing")
-            .AddField($"{GetEmoji(settings.BrokerFee?.Value > 0)} Broker Fees: {settings.BrokerFee?.ToString() ?? "None"}", 
+            .AddField($"{GetEmoji(settings.BrokerFee?.Value > 0)} Broker Fees: {settings.BrokerFee?.ToString() ?? "None"}",
                       "When set, item owners pay a fee if a Broker is used")
-            .AddField($"{GetEmoji(settings.AllowEntryFee)} Entry Fees: {(settings.AllowEntryFee ? "Enabled" : "Disabled")}", 
+            .AddField($"{GetEmoji(settings.AllowEntryFee)} Entry Fees: {(settings.AllowEntryFee ? "Enabled" : "Disabled")}",
                       "Determines if owners can require a entry fee to participate in a listing")
             .WithDefaultColor()))
     {
@@ -69,7 +69,7 @@ public sealed class TransactionFeesView : ViewBase
 
         var fee = await GetFeeSubmissionAsync(modal);
 
-        if (fee is not null) return;
+        if (fee is null) return;
 
         _settings.BrokerFee = fee;
 
@@ -86,7 +86,7 @@ public sealed class TransactionFeesView : ViewBase
         _settings.AllowEntryFee = !_settings.AllowEntryFee;
 
         await SaveSettingsAsync();
-        
+
         e.Button.Label = _settings?.AllowEntryFee is true ? "Disable Entry Fees" : "Enable Entry Fees";
 
         RefreshView();

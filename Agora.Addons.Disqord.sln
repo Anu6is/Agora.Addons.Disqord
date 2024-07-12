@@ -14,7 +14,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launch
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{AD591E0F-0B68-4255-9AB2-5634551686B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Extension.TransactionFees", "Extension.TransactionFees\Extension.TransactionFees.csproj", "{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Extension.TransactionFees", "Extension.TransactionFees\Extension.TransactionFees.csproj", "{92F1BEF5-C9F7-444B-A866-AA44D1D24AC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

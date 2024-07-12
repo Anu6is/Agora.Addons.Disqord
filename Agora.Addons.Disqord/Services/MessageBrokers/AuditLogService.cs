@@ -257,14 +257,16 @@ namespace Agora.Addons.Disqord
             var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
             var title = isForumPost ? GetJumpLink(productListing) : productListing.Product.Title.ToString();
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
+            var expiration = productListing.ExpirationDate.AddSeconds(1);
+            var clock = SystemClock.Now.ToOffset(expiration.Offset).AddSeconds(3);
+            var duration = clock < expiration ? TimeSpan.Zero : expiration - productListing.ScheduledPeriod.ScheduledStart;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             var description = new StringBuilder()
                 .Append(Markdown.Bold($"{quantity}{title}"))
                 .Append(" hosted by ").Append(Mention.User(owner))
                 .Append(" has ").Append(Markdown.Underline("expired"))
-                .Append(" after ").Append(duration.Humanize());
+                .Append(" after ").Append(duration == TimeSpan.Zero ? "cancellation" : duration.Humanize(minUnit: Humanizer.Localisation.TimeUnit.Second));
 
             var embed = new LocalEmbed().WithDescription(description.ToString())
                                         .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")

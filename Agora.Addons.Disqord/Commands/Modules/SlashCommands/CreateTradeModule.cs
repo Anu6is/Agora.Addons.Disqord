@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -104,6 +105,8 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 return Response("Standard Trade successfully created!");
@@ -176,6 +179,8 @@ namespace Agora.Addons.Disqord.Commands
                 var result = await Base.ExecuteAsync(new CreateStandardTradeCommand(showroom, item, listing));
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -251,6 +256,8 @@ namespace Agora.Addons.Disqord.Commands
                 var result = await Base.ExecuteAsync(new CreateCommissionTradeCommand(showroom, item, listing));
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                if (buyer is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 

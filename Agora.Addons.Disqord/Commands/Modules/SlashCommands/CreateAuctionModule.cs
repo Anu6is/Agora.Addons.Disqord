@@ -1,12 +1,17 @@
 ﻿using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Common;
+using Agora.Addons.Disqord.Extensions;
+using Agora.Addons.Disqord.Services;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
+using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
+using Emporia.Domain.Entities;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
@@ -56,6 +61,8 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
+                [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
@@ -85,6 +92,12 @@ namespace Agora.Addons.Disqord.Commands
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var startDelay = scheduledStart.Value - currentDateTime;
+
+                var response = await ValidatePremiumRequirementsAsync(entryFee, requiredEntries, startDelay);
+
+                if (response is not null) return response;
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
@@ -119,6 +132,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
+                if (entryFee > 0) await CreatePremiumAuctionAsync(result.Data, (decimal)entryFee, requiredEntries);
+
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 return Response("Standard Auction successfully created!");
@@ -144,6 +161,8 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
+                [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
@@ -173,6 +192,12 @@ namespace Agora.Addons.Disqord.Commands
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var startDelay = scheduledStart.Value - currentDateTime;
+
+                var response = await ValidatePremiumRequirementsAsync(entryFee, requiredEntries, startDelay);
+
+                if (response is not null) return response;
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
@@ -207,6 +232,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
+                if (entryFee > 0) await CreatePremiumAuctionAsync(result.Data, (decimal)entryFee, requiredEntries);
+
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 return Response("Sealed-bid Auction successfully created!");
@@ -233,6 +262,8 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
+                [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
@@ -262,6 +293,12 @@ namespace Agora.Addons.Disqord.Commands
                 var scheduledEnd = _scheduleOverride ? currentDateTime.OverrideEndDate(_schedule) : scheduledStart.Value.Add(duration);
 
                 if (_scheduleOverride) scheduledStart = scheduledEnd.OverrideStartDate(currentDateTime, _schedule, duration);
+
+                var startDelay = scheduledStart.Value - currentDateTime;
+
+                var response = await ValidatePremiumRequirementsAsync(entryFee, requiredEntries, startDelay);
+
+                if (response is not null) return response;
 
                 var showroom = new ShowroomModel(EmporiumId, ShowroomId, ListingType.Auction);
                 var emporiumCategory = category == null ? null : emporium.Categories.FirstOrDefault(x => x.Title.Equals(category));
@@ -295,6 +332,10 @@ namespace Agora.Addons.Disqord.Commands
                 var result = await Base.ExecuteAsync(new CreateLiveAuctionCommand(showroom, item, listing));
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
+                if (entryFee > 0) await CreatePremiumAuctionAsync(result.Data, (decimal)entryFee, requiredEntries);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -385,6 +426,38 @@ namespace Agora.Addons.Disqord.Commands
                 }
 
                 return defaultMin;
+            }
+
+            private async Task<IResult> ValidatePremiumRequirementsAsync(double entryFee, int requiredEntries, TimeSpan? startDelay)
+            {
+                var parameters = new PluginParameters() { { "EmporiumId", EmporiumId } };
+
+                var result = await PluginManagerService.ExecutePlugin("EntryFeeValidator", parameters);
+
+                if (!result.IsSuccessful) return Response(result.FailureReason);
+
+                if (requiredEntries > 0 && entryFee == 0)
+                    return Response("An entry fee must be set if a minimum number of entries is required!");
+
+                if (requiredEntries > 0 && startDelay < TimeSpan.FromSeconds(55))
+                    return Response("The scheduled start time should allow enough time for participants to join.");
+
+                if (entryFee > 0 && !Bot.GetCurrentMember(Guild.Id).CalculateGuildPermissions().HasFlag(Permissions.ManageRoles))
+                    return Response("The bot requires `Manage Roles` permissions to create Premium Listings.");
+
+                return null;
+            }
+
+            private async Task CreatePremiumAuctionAsync(Listing listing, decimal entryFee, int requiredEntries)
+            {
+                var parameters = new PluginParameters()
+                {
+                    { "Listing", listing },
+                    { "EntryFee", entryFee },
+                    { "RequiredEntries", requiredEntries }
+                };
+
+                await PluginManagerService.ExecutePlugin("PremiumListingManager", parameters);
             }
         }
     }

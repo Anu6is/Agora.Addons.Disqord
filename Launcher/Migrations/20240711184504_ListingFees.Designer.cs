@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Launcher.Migrations
 {
     [DbContext(typeof(EmporiaDbContext))]
-    [Migration("20240623214320_TransactionFees")]
-    partial class TransactionFees
+    [Migration("20240711184504_ListingFees")]
+    partial class ListingFees
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -499,6 +499,19 @@ namespace Launcher.Migrations
                     b.ToTable("ListingRequirements", (string)null);
                 });
 
+            modelBuilder.Entity("Extension.TransactionFees.Domain.ListingBroker", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<ulong>("BrokerId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ListingBroker", (string)null);
+                });
+
             modelBuilder.Entity("Extension.TransactionFees.Domain.PremiumListing", b =>
                 {
                     b.Property<Guid>("Id")
@@ -508,13 +521,14 @@ namespace Launcher.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EntryList")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<ulong>("EntryRoleId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<TimeSpan>("ExtendBy")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong>("RequiredEntries")
+                    b.Property<int>("RequiredEntries")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -1090,6 +1104,15 @@ namespace Launcher.Migrations
                         .WithOne()
                         .HasForeignKey("Emporia.Extensions.Discord.DefaultListingRequirements", "EmporiumId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Extension.TransactionFees.Domain.ListingBroker", b =>
+                {
+                    b.HasOne("Emporia.Domain.Entities.Listing", null)
+                        .WithOne()
+                        .HasForeignKey("Extension.TransactionFees.Domain.ListingBroker", "Id")
+                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Extension.TransactionFees.Domain.PremiumListing", b =>

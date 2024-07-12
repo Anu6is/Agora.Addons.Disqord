@@ -1,25 +1,41 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Launcher.Migrations
 {
     /// <inheritdoc />
-    public partial class TransactionFees : Migration
+    public partial class ListingFees : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "ListingBroker",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    BrokerId = table.Column<ulong>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ListingBroker", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ListingBroker_ProductListing_Id",
+                        column: x => x.Id,
+                        principalTable: "ProductListing",
+                        principalColumn: "Id");
+                });
+
             migrationBuilder.CreateTable(
                 name: "PremiumListings",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     EntryRoleId = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    RequiredEntries = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    EntryFee = table.Column<string>(type: "TEXT", nullable: false),
-                    ExtendBy = table.Column<TimeSpan>(type: "TEXT", nullable: false)
+                    RequiredEntries = table.Column<int>(type: "INTEGER", nullable: false),
+                    EntryList = table.Column<string>(type: "TEXT", nullable: false),
+                    EntryFee = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -56,6 +72,9 @@ namespace Launcher.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ListingBroker");
+
             migrationBuilder.DropTable(
                 name: "PremiumListings");
 

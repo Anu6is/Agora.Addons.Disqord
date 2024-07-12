@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Disqord.Commands.Checks;
+using Agora.Addons.Disqord.Extensions;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands;
@@ -114,6 +115,8 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 return Response("Standard Market successfully created!");
@@ -195,6 +198,8 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
+
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
                 return Response("Flash Market successfully created!");
@@ -272,7 +277,11 @@ namespace Agora.Addons.Disqord.Commands
                     Roles = requiredRole is null ? Array.Empty<string>() : new[] { requiredRole.Id.ToString() }
                 };
 
-                await Base.ExecuteAsync(new CreateMassMarketCommand(showroom, item, listing));
+                var result = await Base.ExecuteAsync(new CreateMassMarketCommand(showroom, item, listing));
+
+                if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 
@@ -353,6 +362,8 @@ namespace Agora.Addons.Disqord.Commands
                 var result = await Base.ExecuteAsync(new CreateMultiMarketCommand(showroom, item, listing));
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
+
+                if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
 

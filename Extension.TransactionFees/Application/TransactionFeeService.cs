@@ -18,17 +18,16 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Extension.TransactionFees.Application;
 
-internal class TransactionFeeManager(DiscordBot bot, AuditLogService auditLog,
+internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
                                      ICommandContextAccessor commandContextAccessor,
-                                     IInteractionContextAccessor interactionAccessor,
                                      IServiceScopeFactory scopeFactory) : INotificationHandler<ListingAddedEvent>,
-                                                                          INotificationHandler<ListingSoldNotification>
+                                                                          INotificationHandler<ListingRemovedNotification>
 {
     public Task Handle(ListingAddedEvent @event, CancellationToken cancellationToken)
-        => HandleTransactionFees(@event.EmporiumId, @event.Listing, postPaid:false, cancellationToken);
+        => HandleTransactionFees(@event.EmporiumId, @event.Listing, postPaid: false, cancellationToken);
 
-    public Task Handle(ListingSoldNotification notification, CancellationToken cancellationToken)
-        => HandleTransactionFees(notification.EmporiumId, notification.Listing, postPaid:true, cancellationToken);
+    public Task Handle(ListingRemovedNotification notification, CancellationToken cancellationToken)
+        => HandleTransactionFees(notification.EmporiumId, notification.ProductListing, postPaid: true, cancellationToken);
 
     private async Task HandleTransactionFees(EmporiumId emporiumId, Listing listing, bool postPaid, CancellationToken cancellationToken)
     {
@@ -36,6 +35,13 @@ internal class TransactionFeeManager(DiscordBot bot, AuditLogService auditLog,
         var services = scope.ServiceProvider;
 
         var data = services.GetRequiredService<IDataAccessor>();
+
+        if (listing.Status == ListingStatus.Expired || listing.Status == ListingStatus.Withdrawn)
+        {
+            await DeleteBrokerRecordAsync(listing, data, cancellationToken);
+            return;
+        }
+
         var feeSettings = await data.Transaction<GenericRepository<TransactionFeeSettings>>().GetByIdAsync(emporiumId, cancellationToken);
 
         if (feeSettings is null) return;
@@ -56,14 +62,31 @@ internal class TransactionFeeManager(DiscordBot bot, AuditLogService auditLog,
             await ProcessFee(feeSettings.ServerFee, "Listing", listing, economy, serverOwner.ToEmporiumUser());
         }
 
-        var authorId = commandContextAccessor.Context?.AuthorId ?? interactionAccessor.Context.Author.Id;
+        var userId = isPercentage ? await GetBrokerAsync(data, listing) : commandContextAccessor.Context?.AuthorId ?? listing.Owner.ReferenceNumber.Value;
 
-        if (feeSettings.BrokerFee?.IsPercentage == isPercentage && authorId.RawValue != listing.Owner.ReferenceNumber.Value)
+        if (feeSettings.BrokerFee?.IsPercentage == isPercentage && userId.RawValue != listing.Owner.ReferenceNumber.Value)
         {
-            var broker = await cache.GetUserAsync(emporiumId.Value, authorId);
+            var broker = await cache.GetUserAsync(emporiumId.Value, userId);
 
             await ProcessFee(feeSettings.BrokerFee, "Broker", listing, economy, broker.ToEmporiumUser());
+
+            await DeleteBrokerRecordAsync(listing, data, cancellationToken);
         }
+    }
+
+    private static async Task<Snowflake> GetBrokerAsync(IDataAccessor data, Listing listing)
+    {
+        var listingBroker = await data.Transaction<GenericRepository<ListingBroker>>().GetByIdAsync(listing.Id);
+
+        return listingBroker?.BrokerId ?? listing.Owner.ReferenceNumber.Value;
+    }
+
+    private static async Task DeleteBrokerRecordAsync(Listing listing, IDataAccessor data, CancellationToken cancellationToken)
+    {
+        var listingBroker = await data.Transaction<GenericRepository<ListingBroker>>().GetByIdAsync(listing.Id, cancellationToken);
+
+        if (listingBroker is not null)
+            await data.Transaction<GenericRepository<ListingBroker>>().DeleteAsync(listingBroker, cancellationToken);
     }
 
     private async Task ProcessFee(TransactionFee? fee, string feeType, Listing listing, IEconomy economy, EmporiumUser collector)
@@ -71,8 +94,11 @@ internal class TransactionFeeManager(DiscordBot bot, AuditLogService auditLog,
         if (fee is { Value: > 0 })
         {
             var listingPrice = listing.Product.Value();
+
+            if (listingPrice is null) return;
+
             var calculatedFee = Math.Round(fee.Calculate(listingPrice.Value), listingPrice.Currency.DecimalDigits);
-            var feeAmount = Money.Create(calculatedFee, listingPrice.Currency);
+            var feeAmount = Money.Create(calculatedFee == 0 ? 1 : calculatedFee, listingPrice.Currency);
 
             await TransferTransactionFee(listing, economy, feeAmount, feeType, collector);
         }
@@ -96,10 +122,9 @@ internal class TransactionFeeManager(DiscordBot bot, AuditLogService auditLog,
 
     private async Task LogTransactionAsync(Listing listing, string message)
     {
-        var guildId = commandContextAccessor.Context?.GuildId ?? interactionAccessor.Context.GuildId;
-        var channelId = commandContextAccessor.Context?.ChannelId ?? interactionAccessor.Context.ChannelId;
+        var channelId = listing.ShowroomId?.Value ?? commandContextAccessor.Context?.ChannelId.RawValue;
 
-        var logChannel = await auditLog.GetFeedbackChannelAsync(guildId!.Value, channelId);
+        var logChannel = await auditLog.GetFeedbackChannelAsync(listing.Owner.EmporiumId.Value, channelId!.Value);
         var embed = new LocalEmbed().WithDescription(message).WithFooter($"{listing}").WithColor(Color.Goldenrod);
 
         if (logChannel == 0) return;

@@ -1,5 +1,7 @@
 using Agora.Addons.Disqord.Commands;
+using Agora.Addons.Disqord.Interfaces;
 using Agora.Addons.Disqord.Parsers;
+using Agora.Addons.Disqord.Services;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -83,6 +85,20 @@ namespace Agora.Addons.Disqord
             var addonAssemblies = addons.Select(name => Assembly.LoadFrom(name)).ToArray();
 
             services.AddMediatR(x => x.RegisterServicesFromAssemblies(addonAssemblies).Lifetime = ServiceLifetime.Scoped);
+            
+            services.AddScoped<PluginManagerService>();
+
+            var pluginTypes = addonAssemblies.SelectMany(x => x.GetTypes()).ToArray();
+
+            PluginManagerService.LoadPlugins(pluginTypes);
+
+            foreach (Type pluginType in pluginTypes)
+            {
+                if (typeof(IPluginExtension).IsAssignableFrom(pluginType) && !pluginType.IsInterface && !pluginType.IsAbstract)
+                {
+                    services.AddTransient(pluginType);
+                }
+            }
 
             return services;
         }

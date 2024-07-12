@@ -430,7 +430,7 @@ namespace Agora.Addons.Disqord.Extensions
         public static Money Value(this Product product) => product switch
         {
             MarketItem market => market.Price,
-            AuctionItem auction => auction.StartingPrice,
+            AuctionItem auction => auction.CurrentPrice,
             GiveawayItem giveaway => Money.Create(giveaway.TicketPrice.Value * giveaway.Offers.Count, giveaway.TicketPrice.Currency),
             _ => null
         };

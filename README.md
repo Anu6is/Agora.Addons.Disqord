@@ -63,6 +63,7 @@ Continuing from where you left off above
 </details>
 
 ### Building the Source Code
+<details>
 The first thing you'd need to do is [Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) this repository.
 Once you have the code downloaded 
 - Set the **Launcher** project as the startup project
@@ -70,9 +71,12 @@ Once you have the code downloaded
    * Paste your bot **token** where you see **SUPER_SECRET_DISCORD_APPLICATION_TOKEN**
 - Execute/Run the project
 
-Your bot should not appear Online in your server. All existing **Auction Bot** features should be available to your new bot.
+Your bot should now appear Online in your server. All existing **Auction Bot** features should be available to your new bot.  
+</details>
 
 ### Making Changes
+<details>
 If you are editing existing features you can simply make your changes, recompile the code and restart the application.  
 
-If you are adding a new features, you can follow the `Extension.TransactionFees` project. If your project includes database chagnes, add your assembly name in the **Assemblies** list in the `appsettings.json` file. If you added new commands in your project, include the assembly name in the **Addons** list. Once you've tested your changes, feel free to submit a PR including details on how users are expected to interact with the changes and any configuration/settings updates that would be required.
+If you are adding a new features, you can follow the `Extension.TransactionFees` project. If your project includes database chagnes, add your assembly name in the **Assemblies** list in the `appsettings.json` file. If you added new commands in your project, include the assembly name in the **Addons** list. Once you've tested your changes, feel free to submit a PR including details on how users are expected to interact with the changes and any configuration/settings updates that would be required.  
+</details>

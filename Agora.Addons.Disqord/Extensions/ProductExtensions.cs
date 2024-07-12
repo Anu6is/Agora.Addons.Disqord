@@ -4,7 +4,6 @@ using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Humanizer;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Agora.Addons.Disqord.Extensions
@@ -427,5 +426,13 @@ namespace Agora.Addons.Disqord.Extensions
 
             return DateTimeOffset.UtcNow.Add(live.Timeout);
         }
+
+        public static Money Value(this Product product) => product switch
+        {
+            MarketItem market => market.Price,
+            AuctionItem auction => auction.StartingPrice,
+            GiveawayItem giveaway => Money.Create(giveaway.TicketPrice.Value * giveaway.Offers.Count, giveaway.TicketPrice.Currency),
+            _ => null
+        };
     }
 }

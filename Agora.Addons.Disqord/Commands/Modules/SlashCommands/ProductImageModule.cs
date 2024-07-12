@@ -5,7 +5,7 @@ using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Qmmands;
 using IServiceResult = Emporia.Domain.Services.IResult;
-using Services = Emporia.Domain.Services;
+using Domain = Emporia.Domain.Services;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -34,8 +34,8 @@ namespace Agora.Addons.Disqord.Commands
             if (image2 != null) images.Add(image2.Url);
             if (image3 != null) images.Add(image3.Url);
             if (image4 != null) images.Add(image4.Url);
-
-            var listing = result as Services.Result<string>;
+            
+            var listing = result as Domain.Result<string>;
 
             return await UpdateImagesAsync(listing.Data, images);
         }
@@ -61,7 +61,7 @@ namespace Agora.Addons.Disqord.Commands
             if (image3 != null) images.Add(image3);
             if (image4 != null) images.Add(image4);
 
-            var listing = result as Services.Result<string>;
+            var listing = result as Domain.Result<string>;
 
             return await UpdateImagesAsync(listing.Data, images);
         }
@@ -72,19 +72,19 @@ namespace Agora.Addons.Disqord.Commands
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
             var rooms = emporium.Showrooms.Where(x => x.Id.Value == ShowroomId.Value).Select(x => x.ListingType).ToArray();
 
-            if (rooms.Length == 0) return Services.Result.Failure("Room not found in </server rooms:1013361602499723275> list");
+            if (rooms.Length == 0) return Domain.Result.Failure("Room not found in </server rooms:1013361602499723275> list");
 
             if (rooms.Length == 1) listing = rooms[0];
             else
             {
                 var product = Cache.GetCachedProduct(EmporiumId.Value, Channel is IThreadChannel thread ? thread.Id : Context.ChannelId);
 
-                if (product == null) return Services.Result.Failure("Unable to retrieve product details.");
+                if (product == null) return Domain.Result.Failure("Unable to retrieve product details.");
 
                 listing = product.ListingType;
             }
 
-            return Services.Result.Success(listing);
+            return Domain.Result.Success(listing);
         }
 
         private async Task<IResult> UpdateImagesAsync(string listing, List<string> images)
@@ -113,7 +113,7 @@ namespace Agora.Addons.Disqord.Commands
                     {
                         ImageUrls = images.ToArray()
                     }),
-                _ => Services.Result.Failure("Unable to update listing.")
+                _ => Domain.Result.Failure("Unable to update listing.")
             }; 
 
             if (result.IsSuccessful)

@@ -1,4 +1,5 @@
 ﻿using Agora.Addons.Disqord.Extensions;
+using Agora.Addons.Disqord.Services;
 using Agora.Shared;
 using Disqord;
 using Disqord.Bot.Commands.Application;
@@ -30,6 +31,7 @@ namespace Agora.Addons.Disqord.Commands
         public IEmporiaCacheService Cache { get; private set; }
         public IDiscordGuildSettings Settings { get; private set; }
         public IGuildSettingsService SettingsService { get; private set; }
+        public PluginManagerService PluginManagerService { get; private set; }
 
         public ShowroomId ShowroomId { get; private set; }
         public EmporiumId EmporiumId => new(Context.GuildId);
@@ -57,6 +59,7 @@ namespace Agora.Addons.Disqord.Commands
             Mediator = Context.Services.GetRequiredService<IMediator>();
             Cache = Context.Services.GetRequiredService<IEmporiaCacheService>();
             SettingsService = Context.Services.GetRequiredService<IGuildSettingsService>();
+            PluginManagerService = Context.Services.GetRequiredService<PluginManagerService>();
 
             Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"{Context.Bot.ApiClient.GetShardId(Context.GuildId)}");
             Transaction.User = new User() { Id = Context.AuthorId.ToString(), Username = Context.Author.Tag };

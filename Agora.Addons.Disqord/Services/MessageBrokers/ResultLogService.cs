@@ -165,12 +165,14 @@ namespace Agora.Addons.Disqord
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var owner = productListing.Owner.ReferenceNumber.Value;
-            var duration = productListing.ExpirationDate.AddSeconds(1) - productListing.ScheduledPeriod.ScheduledStart;
+            var expiration = productListing.ExpirationDate.AddSeconds(1);
+            var clock = SystemClock.Now.ToOffset(expiration.Offset).AddSeconds(3);
+            var duration =  clock < expiration ? TimeSpan.Zero : expiration - productListing.ScheduledPeriod.ScheduledStart;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             var embed = new LocalEmbed().WithTitle($"{productListing} Expired")
                                         .WithDescription($"{Markdown.Bold($"{quantity}{productListing.Product.Title}")} @ {Markdown.Bold(productListing.ValueTag)}")
-                                        .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Duration", duration.Humanize())
+                                        .AddInlineField("Owner", Mention.User(owner)).AddInlineField("Duration", duration == TimeSpan.Zero ? "Cancelled" : duration.Humanize(minUnit: Humanizer.Localisation.TimeUnit.Second))
                                         .WithColor(Color.SlateGray);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, new LocalMessage().WithContent(Mention.User(owner)).AddEmbed(embed));

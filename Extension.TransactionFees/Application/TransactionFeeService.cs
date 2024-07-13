@@ -32,6 +32,8 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
 
     private async Task HandleTransactionFees(EmporiumId emporiumId, Listing listing, bool postPaid, CancellationToken cancellationToken)
     {
+        if (listing is StandardGiveaway) return;
+        if (listing.Product is TradeItem) return;
         if (listing.Status == ListingStatus.Expired || listing.Status == ListingStatus.Withdrawn) return;
 
         using var scope = scopeFactory.CreateScope();

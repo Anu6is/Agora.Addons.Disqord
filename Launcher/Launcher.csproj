@@ -20,10 +20,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Agora.Addons.Disqord\Agora.Addons.Disqord.csproj" />
+    <ProjectReference Include="..\Extension.CustomAnnouncements\Extension.CustomAnnouncements.csproj" />
     <ProjectReference Include="..\Extension.TransactionFees\Extension.TransactionFees.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

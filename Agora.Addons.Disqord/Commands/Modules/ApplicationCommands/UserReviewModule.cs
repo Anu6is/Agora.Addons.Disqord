@@ -40,31 +40,40 @@ namespace Agora.Addons.Disqord.Commands
 
             if (message.Author.Id != Context.Bot.CurrentUser.Id) return Response(invalidMessage);
 
-            var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
+            if (message.Embeds is not { Count: 1 }) return Response(invalidMessage);
 
-            if (participants is null) return Response(invalidMessage);
-            if (participants.Count() != 2) return Response(invalidMessage);
-            if (message.Embeds.Count != 1) return Response(invalidMessage);
+            var embed = message.Embeds[0];
+            var ownerField = embed.Fields.FirstOrDefault(field => field.Name.Equals("Owner"));
+            var buyerField = embed.Fields.FirstOrDefault(field => field.Name.Equals("Claimed By"));
 
+            if (ownerField is null || buyerField is null) return Response(invalidMessage);
+
+            var participants = Mention.ParseUsers($"{ownerField.Value} {buyerField.Value}");
             var owner = participants.First();
-            var buyer = participants.Last();
+            var claimaints = participants.Skip(1);
 
             if (owner.Equals(Context.AuthorId))
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent("You cannot review yourself!"));
 
-            if (Context.AuthorId != buyer)
+            if (claimaints.Count() > 1)
                 return Response(new LocalInteractionMessageResponse()
-                        .WithIsEphemeral().WithContent($"Only {Mention.User(buyer)} can review this transaction!"));
+                        .WithIsEphemeral().WithContent("Only items with a single claimant can be reviewed as only 1 review can be submitted!"));
 
-            if (message.Embeds[0].Footer != null && message.Embeds[0].Footer.Text.Equals("✅"))
+            var winner = claimaints.First();
+
+            if (winner != Context.AuthorId)
+                return Response(new LocalInteractionMessageResponse()
+                        .WithIsEphemeral().WithContent($"Only {Mention.User(winner)} can review this transaction!"));
+
+            if (embed.Footer != null && embed.Footer.Text.Equals("✅"))
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent("This transaction has already been reviewed!"));
 
             return Response(new LocalInteractionMessageResponse()
                     .WithIsEphemeral()
                     .AddEmbed(new LocalEmbed().WithDefaultColor().WithDescription($"How do you rate the service from {Mention.User(owner)}"))
-                    .AddComponent(LocalComponent.Row(LocalComponent.Selection($"rate-owner:{owner}:{buyer}:{message.Id}", RatingSelectionOptions()))));
+                    .AddComponent(LocalComponent.Row(LocalComponent.Selection($"rate-owner:{owner}:{Context.AuthorId}:{message.Id}", RatingSelectionOptions()))));
         }
 
         [MessageCommand("Remove Review")]
@@ -79,16 +88,19 @@ namespace Agora.Addons.Disqord.Commands
 
             if (message.Author.Id != Context.Bot.CurrentUser.Id) return Response(invalidMessage);
 
-            var participants = Mention.ParseUsers(message.Content.Replace("|", ""));
-            
-            if (participants is null) return Response(invalidMessage);
-            if (participants.Count() != 2) return Response(invalidMessage);
-            if (message.Embeds.Count != 1) return Response(invalidMessage);
+            if (message.Embeds is not { Count: 1 }) return Response(invalidMessage);
 
+            var embed = message.Embeds[0];
+            var ownerField = embed.Fields.FirstOrDefault(field => field.Name.Equals("Owner"));
+            var buyerField = embed.Fields.FirstOrDefault(field => field.Name.Equals("Claimed By"));
+
+            if (ownerField is null || buyerField is null) return Response(invalidMessage);
+
+            var participants = Mention.ParseUsers($"{ownerField.Value} {buyerField.Value}");
             var owner = participants.First();
             var buyer = participants.Last();
 
-            if (message.Embeds[0].Footer == null || !message.Embeds[0].Footer.Text.Equals("✅"))
+            if (embed.Footer == null || !embed.Footer.Text.Equals("✅"))
                 return Response(new LocalInteractionMessageResponse()
                         .WithIsEphemeral().WithContent("This transaction has not been reviewed!"));
 
@@ -100,9 +112,9 @@ namespace Agora.Addons.Disqord.Commands
 
             if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
-            var embed = LocalEmbed.CreateFrom(message.Embeds[0]).WithFooter("review this transaction | right-click -> apps -> review");
+            var updatedEmbed = LocalEmbed.CreateFrom(embed).WithFooter("review this transaction | right-click -> apps -> review");
 
-            await message.ModifyAsync(x => x.Embeds = new[] { embed });
+            await message.ModifyAsync(x => x.Embeds = new[] { updatedEmbed });
 
             return Response(new LocalInteractionMessageResponse()
                     .WithIsEphemeral().WithContent("Review removed"));

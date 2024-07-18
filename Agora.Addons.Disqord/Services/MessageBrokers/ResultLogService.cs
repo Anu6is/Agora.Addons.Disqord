@@ -1,4 +1,6 @@
-﻿using Agora.Addons.Disqord.Extensions;
+﻿using Agora.Addons.Disqord.Common;
+using Agora.Addons.Disqord.Extensions;
+using Agora.Addons.Disqord.Services;
 using Agora.Shared.Attributes;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
@@ -22,6 +24,8 @@ namespace Agora.Addons.Disqord
     public sealed class ResultLogService : AgoraService, IResultLogService
     {
         private readonly DiscordBotBase _agora;
+        private readonly PluginManagerService _pluginService;
+
         private readonly ILogger _logger;
         private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
@@ -31,6 +35,7 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public ResultLogService(DiscordBotBase bot,
+                                PluginManagerService pluginService,
                                 IGuildSettingsService settingsService,
                                 ICommandContextAccessor commandAccessor,
                                 IInteractionContextAccessor interactionAccessor,
@@ -38,6 +43,7 @@ namespace Agora.Addons.Disqord
         {
             _agora = bot;
             _logger = logger;
+            _pluginService = pluginService;
             _commandAccessor = commandAccessor;
             _settingsService = settingsService;
             _interactionAccessor = interactionAccessor;
@@ -96,7 +102,10 @@ namespace Agora.Addons.Disqord
 
             var isForumPost = _agora.GetChannel(EmporiumId.Value, productListing.ShowroomId.Value) is CachedForumChannel;
             var link = isForumPost ? $"\n{Discord.MessageJumpLink(EmporiumId.Value, productListing.Product.ReferenceNumber.Value, productListing.ReferenceCode.Reference())}" : string.Empty;
-            var localMessage = new LocalMessage().WithContent($"{participants}{link}").AddEmbed(embed);
+            var parameters = new PluginParameters() { { "Listing", productListing } };
+            var pluginResult = await _pluginService.ExecutePlugin("CustomAnnouncement", parameters) as Result<string>;
+            var content = pluginResult.IsSuccessful ? pluginResult.Data : $"{participants}{link}";
+            var localMessage = new LocalMessage().WithContent(content).AddEmbed(embed);
 
             result = await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
 

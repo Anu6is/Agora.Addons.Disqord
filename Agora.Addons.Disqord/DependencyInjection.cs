@@ -2,6 +2,7 @@ using Agora.Addons.Disqord.Commands;
 using Agora.Addons.Disqord.Interfaces;
 using Agora.Addons.Disqord.Parsers;
 using Agora.Addons.Disqord.Services;
+using Agora.Shared.Attributes;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
 using Disqord;
@@ -32,7 +33,12 @@ namespace Agora.Addons.Disqord
         public static IHostBuilder ConfigureDisqordBotHost(this IHostBuilder builder, string[] args)
         {
             builder.UseSystemd()
-                   .ConfigureAppConfiguration(builder => builder.AddCommandLine(args).AddJsonFile("./tips.json", optional: true, reloadOnChange: true))
+                   .ConfigureAppConfiguration((context, builder) =>
+                   {
+                       builder.AddCommandLine(args)
+                              .AddJsonFile($"./appsettings.{context.HostingEnvironment.EnvironmentName}.json", true)
+                              .AddJsonFile("./tips.json", optional: true, reloadOnChange: true);
+                   })
                    .ConfigureLogging((context, builder) => builder.AddSentry(context, UnhandledExceptionService.BeforeSend).ReplaceDefaultLogger().WithSerilog(context))
                    .ConfigureEmporiaServices()
                    .ConfigureDisqordCommands()
@@ -98,9 +104,48 @@ namespace Agora.Addons.Disqord
                 {
                     services.AddTransient(pluginType);
                 }
+
+                if (pluginType.IsAssignableTo(typeof(AgoraService)) && !pluginType.IsAbstract)
+                {
+                    services.AddPluginService(pluginType);
+                }
             }
 
             return services;
+        }
+
+        public static void AddPluginService(this IServiceCollection services, Type type)
+        {
+            ImmutableArray<Type> immutableArray = type.GetServiceInterfaces().ToImmutableArray();
+            AgoraServiceAttribute.ServiceLifetime scope = type.GetCustomAttribute<AgoraServiceAttribute>()?.Scope ?? AgoraServiceAttribute.ServiceLifetime.Singleton;
+            
+            services.SetLifetime(scope, type);
+            
+            ImmutableArray<Type>.Enumerator enumerator = immutableArray.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Type current = enumerator.Current;
+                services.SetLifetime(scope, current, type);
+            }
+        }
+
+        private static IEnumerable<Type> GetServiceInterfaces(this Type type)
+        {
+            if (type.BaseType == null)
+                return type.GetInterfaces();
+
+            return type.GetInterfaces().Except(type.BaseType.GetInterfaces());
+        }
+
+        private static IServiceCollection SetLifetime(this IServiceCollection services, AgoraServiceAttribute.ServiceLifetime scope, Type serviceType, Type implementationType = null)
+        {
+            return scope switch
+            {
+                AgoraServiceAttribute.ServiceLifetime.Singleton => implementationType is null ? services.AddSingleton(serviceType) : services.AddSingleton(serviceType, implementationType),
+                AgoraServiceAttribute.ServiceLifetime.Transient => implementationType is null ? services.AddTransient(serviceType) : services.AddTransient(serviceType, implementationType),
+                AgoraServiceAttribute.ServiceLifetime.Scoped => implementationType is null ? services.AddScoped(serviceType) : services.AddScoped(serviceType, implementationType),
+                _ => services,
+            };
         }
     }
 }

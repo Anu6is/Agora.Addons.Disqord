@@ -11,7 +11,6 @@ using Qmmands;
 namespace Extension.TransactionFees.Application;
 
 [SlashGroup("server")]
-[Description("Configure various server fees")]
 [RequireAuthorPermissions(Permissions.ManageGuild)]
 public sealed class TransactionFeesModule(IServiceScopeFactory serviceScope) : AgoraModuleBase
 {

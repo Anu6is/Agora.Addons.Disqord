@@ -32,7 +32,12 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
-            var prefix = listing.Product is AuctionItem auctionItem && auctionItem.IsReversed ? "Reverse " : string.Empty;
+            var prefix = listing.Status >= ListingStatus.Expired 
+                ? "Completed " 
+                : listing.Product is AuctionItem auctionItem && auctionItem.IsReversed 
+                    ? "Reverse " 
+                    : string.Empty;
+
             var suffix = listing is CommissionTrade ? " Request" : string.Empty;
             var type = listing is RaffleGiveaway 
                 ? "Raffle" 

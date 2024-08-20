@@ -80,7 +80,7 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
         var serverFee = settings.ServerFee?.IsPercentage is false ? settings.ServerFee.Value : 0;
         var brokerFee = settings.BrokerFee?.IsPercentage is false ? settings?.BrokerFee.Value : 0;
         var userBalance = await economy.GetBalanceAsync(listing.Owner, listing.Product.Value().Currency);
-
+       
         if (userBalance.Data.Value < serverFee + brokerFee)
             return Result.Failure($"Insufficient Balance: Unable to cover the necessary fees");
 

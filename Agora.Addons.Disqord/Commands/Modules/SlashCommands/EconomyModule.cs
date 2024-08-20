@@ -52,7 +52,10 @@ namespace Agora.Addons.Disqord.Commands
             if (!userBalance.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(userBalance.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"Balance: {userBalance.Data}")).WithIsEphemeral());
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription($"Balance: {userBalance.Data}"))
+                    .WithIsEphemeral());
         }
 
 
@@ -83,7 +86,10 @@ namespace Agora.Addons.Disqord.Commands
             if (!transactionResult.IsSuccessful)
                 ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(transactionResult.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}")));
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}"))
+                    .WithIsEphemeral());
         }
 
         [RequireManager]
@@ -101,8 +107,64 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} added {donation} to {user.Mention}")));
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription($"{Context.Author.Mention} added {donation} to {user.Mention}"))
+                    .WithIsEphemeral());
+        }
 
+        [SlashGroup("Bulk")]
+        public sealed class EconomyBulkModule : AgoraModuleBase
+        {
+            private readonly IEconomy _economy;
+            private readonly IDataAccessor _dataAccessor;
+
+            public EconomyBulkModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
+            {
+                _economy = economyFactory.Create(nameof(EconomyType.AuctionBot));
+                _dataAccessor = dataAccessor;
+            }
+
+            [RequireManager]
+            [SlashCommand("add-money")]
+            [Description("Add money to a user's balance")]
+            public async Task<IResult> AddMoney(
+                [Description("The amount of money to add"), Minimum(0)] double amount,
+                [Description("Mention users to add money to")] string users)
+            {
+                var mentionedUsers = Mention.ParseUsers(users);
+
+                if (mentionedUsers is null || !mentionedUsers.Any())
+                    return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription("Please provide a list of users"));
+
+                var donation = Money.Create((decimal)amount, Settings.DefaultCurrency);
+                var successes = new List<string>();
+                var failures = new List<string>();
+
+                foreach (var user in mentionedUsers)
+                {
+                    var receiver = await Cache.GetUserAsync(Context.GuildId, user);
+                    var result = await _economy.IncreaseBalanceAsync(receiver.ToEmporiumUser(), donation);
+
+                    if (result.IsSuccessful)
+                        successes.Add(Mention.User(user));
+                    else
+                        failures.Add($"{Mention.User(user)}: {result.FailureReason}");
+                }
+
+                var embeds = new List<LocalEmbed>();
+
+                if (successes.Any())
+                    embeds.Add(new LocalEmbed().WithColor(Color.Teal)
+                                               .WithTitle($"Successfully add {donation} to")
+                                               .WithDescription(string.Join(", ", successes)));
+                else
+                    embeds.Add(new LocalEmbed().WithColor(Color.Red)
+                                               .WithTitle($"Failed to add {donation} to")
+                                               .WithDescription(string.Join(", ", failures)));
+
+                return Response(new LocalInteractionMessageResponse().WithEmbeds(embeds).WithIsEphemeral());
+            }
         }
 
         [RequireManager]
@@ -120,8 +182,10 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} removed {withdrawl} from {user.Mention}")));
-
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription($"{Context.Author.Mention} removed {withdrawl} from {user.Mention}"))
+                    .WithIsEphemeral());
         }
 
         [RequireManager]
@@ -136,8 +200,10 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription($"{Context.Author.Mention} reset {user.Mention}")));
-
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription($"{Context.Author.Mention} reset {user.Mention}"))
+                    .WithIsEphemeral());
         }
 
         [RequireManager]
@@ -149,8 +215,10 @@ namespace Agora.Addons.Disqord.Commands
 
             await _dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().DeleteRangeAsync(users);
 
-            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription("Economy reset")).WithIsEphemeral());
-
+            return Response(new LocalInteractionMessageResponse()
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
+                                              .WithDescription("Economy reset"))
+                    .WithIsEphemeral());
         }
     }
 }

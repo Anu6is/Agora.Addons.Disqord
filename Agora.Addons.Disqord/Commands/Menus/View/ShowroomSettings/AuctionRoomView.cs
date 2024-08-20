@@ -116,6 +116,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 var message = ex switch
                 {
                     ValidationException validationException => string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}")),
+                    ArgumentOutOfRangeException => ex.Message,
                     ArgumentNullException => ex.Message,
                     FormatException => ex.Message,
                     _ => "An error occured while processing this action. If this persists, please contact support."

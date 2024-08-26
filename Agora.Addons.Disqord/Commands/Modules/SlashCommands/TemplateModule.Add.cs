@@ -77,7 +77,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 auctionTemplate.Currency ??= Settings.DefaultCurrency;
 
-                if (auctionTemplate.MaxBidIncrease == 0) auctionTemplate.MaxBidIncrease = (double)auctionTemplate.Currency.MinAmount;
+                if (auctionTemplate.MinBidIncrease == 0) auctionTemplate.MinBidIncrease = (double)auctionTemplate.Currency.MinAmount;
 
                 var defaultDuration = Settings.DefaultDuration == TimeSpan.Zero
                     ? Settings.MinimumDurationDefault
@@ -85,7 +85,7 @@ namespace Agora.Addons.Disqord.Commands
                         : Settings.MaximumDuration
                     : Settings.DefaultDuration;
 
-                auctionTemplate.Duration = duration == default ? defaultDuration : duration;
+                if (auctionTemplate.Duration == default) auctionTemplate.Duration = defaultDuration;
 
                 if (!auctionTemplate.Validate(out var error)) return ErrorResponse(isEphimeral:true, embeds: new LocalEmbed().WithDescription(error));
 

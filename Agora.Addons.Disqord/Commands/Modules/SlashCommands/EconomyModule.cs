@@ -88,8 +88,7 @@ namespace Agora.Addons.Disqord.Commands
 
             return Response(new LocalInteractionMessageResponse()
                     .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
-                                              .WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}"))
-                    .WithIsEphemeral());
+                                              .WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}")));
         }
 
         [RequireManager]
@@ -161,7 +160,7 @@ namespace Agora.Addons.Disqord.Commands
                 else
                     embeds.Add(new LocalEmbed().WithColor(Color.Red)
                                                .WithTitle($"Failed to add {donation} to")
-                                               .WithDescription(string.Join(", ", failures)));
+                                               .WithDescription(string.Join(Environment.NewLine, failures)));
 
                 return Response(new LocalInteractionMessageResponse().WithEmbeds(embeds).WithIsEphemeral());
             }

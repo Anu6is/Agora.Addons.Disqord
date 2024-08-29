@@ -23,13 +23,14 @@ namespace Agora.Addons.Disqord.Menus.View
         [SelectionOption("10 seconds", Value = "10")]
         [SelectionOption("15 seconds", Value = "15")]
         [SelectionOption("30 seconds", Value = "30")]
+        [SelectionOption("Always", Value = "-0.001")]
         public async ValueTask SelectDuration(SelectionEventArgs e)
         {
             var limit = TimeSpan.Zero;
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
 
             if (e.SelectedOptions.Count > 0)
-                limit = TimeSpan.FromSeconds(int.Parse(e.SelectedOptions[0].Value.ToString()));
+                limit = TimeSpan.FromSeconds(double.Parse(e.SelectedOptions[0].Value.ToString()));
 
             if (limit == settings.BiddingRecallLimit) return;
 

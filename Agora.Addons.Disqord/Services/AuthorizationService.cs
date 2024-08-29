@@ -142,6 +142,8 @@ namespace Agora.Addons.Disqord
                     if (currentOffer == null)
                         return "Invalid Operation: No available bids exist.";
 
+                    if (settings.BiddingRecallLimit == Timeout.InfiniteTimeSpan) return string.Empty;
+
                     if (settings.BiddingRecallLimit == TimeSpan.Zero)
                         return $"Unauthorized Action: Only users with {managerRole} can undo bids";
 

@@ -127,7 +127,7 @@ namespace Agora.Addons.Disqord.Extensions
                 .AddInlineField($"{snipeRange} Snipe Trigger", settings.SnipeRange.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{snipeExtension} Snipe Extension", settings.SnipeExtension.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineBlankField()
-                .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
+                .AddInlineField($"{bidlimit} Bidding Recall Limit", settings.BiddingRecallLimit == Timeout.InfiniteTimeSpan ? Markdown.Italics("Infinite") : settings.BiddingRecallLimit.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second))
                 .AddInlineField($"{minBid} Minimum Bid Limit", settings.MinBidIncrease.Amount == 0 ? $"{settings.DefaultCurrency.MinAmount}" : $"{settings.MinBidIncrease}")
                 .AddInlineField($"{listinglimit} User Listing Limit", settings.MaxListingsLimit == 0 ? Markdown.Italics("Unlimited") : $"{settings.MaxListingsLimit} Active Listings")
                 .AddField($"Toggles [{AgoraEmoji.GreenCheckMark}Enable | {AgoraEmoji.RedCrossMark}Disable]", string.Join(" | ", toggleList))

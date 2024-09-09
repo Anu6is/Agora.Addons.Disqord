@@ -4,6 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
+	<RestoreConfigFile>nuget.config</RestoreConfigFile>
   </PropertyGroup>
 
   <ItemGroup>

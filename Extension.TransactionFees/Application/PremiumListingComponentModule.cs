@@ -65,7 +65,7 @@ namespace Extension.TransactionFees.Application
             var guildSettings = await _settingsService.GetGuildSettingsAsync(Context.GuildId!.Value);
             var user = await _cache.GetUserAsync(Context.GuildId!.Value, Context.AuthorId);
 
-            if (guildSettings.EconomyType != EconomyType.Disabled.ToString() && member.Id != listing.Owner.ReferenceNumber.Value)
+            if (guildSettings.EconomyType != "Disabled" && member.Id != listing.Owner.ReferenceNumber.Value)
             {
                 var fee = Money.Create(premiumListing.EntryFee.Value, listing.Product.Value().Currency);
 

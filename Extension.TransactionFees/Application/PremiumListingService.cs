@@ -36,7 +36,7 @@ internal class PremiumListingService(DiscordBot bot, EconomyFactoryService econo
 
         var guildSettings = await settingsService.GetGuildSettingsAsync(guildId);
 
-        if (guildSettings.EconomyType == EconomyType.Disabled.ToString()) return;
+        if (guildSettings.EconomyType == "Disabled") return;
 
         var feesCollected = 0m;
         var fee = Money.Create(premiumListing.EntryFee.Value, listing.Product.Value().Currency);

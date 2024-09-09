@@ -61,7 +61,7 @@ namespace Agora.Addons.Disqord.Commands
                 var settingsResult = await Base.ExecuteAsync(new CreateGuildSettingsCommand(Context.GuildId, currencyResult.Data, resultLogId)
                 {
                     AuditLogChannelId = auditLog?.Id ?? 0ul,
-                    Economy = EconomyType.Disabled.ToString(),
+                    Economy = "Disabled",
                     TimeOffset = emporiumResult.Data.TimeOffset
                 });
 

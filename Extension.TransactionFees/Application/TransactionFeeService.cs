@@ -47,7 +47,7 @@ internal class TransactionFeeService(DiscordBot bot, AuditLogService auditLog,
         var settingsService = services.GetRequiredService<IGuildSettingsService>();
         var guildSettings = await settingsService.GetGuildSettingsAsync(emporiumId.Value);
 
-        if (guildSettings.EconomyType.Equals(EconomyType.Disabled.ToString())) return;
+        if (guildSettings.EconomyType.Equals("Disabled")) return;
 
         var economy = services.GetRequiredService<EconomyFactoryService>().Create(guildSettings.EconomyType);
 

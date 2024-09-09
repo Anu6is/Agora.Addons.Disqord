@@ -1,6 +1,7 @@
 ﻿using Agora.Addons.Disqord.Common;
 using Agora.Addons.Disqord.Interfaces;
 using Emporia.Domain.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,10 +19,20 @@ namespace Agora.Addons.Disqord.Services
             _scopeFactory = scopeFactory;
         }
 
-        public static void LoadPlugins(Type[] pluginTypes)
+        public static void LoadPlugins(Type[] pluginTypes, IServiceCollection services, IConfiguration configuration)
         {
             foreach (var pluginType in pluginTypes)
-                _plugins.TryAdd(pluginType.Name, pluginType);
+            {
+                if (_plugins.TryAdd(pluginType.Name, pluginType) && typeof(IInjectablePluginExtension).IsAssignableFrom(pluginType))
+                {
+                    var instance = Activator.CreateInstance(pluginType);
+                    var method = pluginType.GetMethod("Configure");
+
+                    object[] parameters = { services, configuration };
+
+                    method?.Invoke(instance, parameters);
+                }
+            }
         }
 
         public async ValueTask<IResult> ExecutePlugin(string pluginType, PluginParameters parameters)

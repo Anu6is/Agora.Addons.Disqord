@@ -179,7 +179,7 @@ namespace Agora.Addons.Disqord
                 case CreateCommissionTradeCommand command:
                     var validCommission = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
+                        if (settings.EconomyType == "Disabled") return Result.Success();
 
                         var cmd = command as CreateCommissionTradeCommand;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
@@ -205,7 +205,7 @@ namespace Agora.Addons.Disqord
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
+                        if (settings.EconomyType == "Disabled") return Result.Success();
 
                         var cmd = command as CreateBidCommand;
                         var item = listing.Product as AuctionItem;
@@ -237,7 +237,7 @@ namespace Agora.Addons.Disqord
 
                     var validPurchase = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
+                        if (settings.EconomyType == "Disabled") return Result.Success();
 
                         var cmd = command as CreatePaymentCommand;                        
 
@@ -269,7 +269,7 @@ namespace Agora.Addons.Disqord
 
                     var validClaim = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
+                        if (settings.EconomyType == "Disabled") return Result.Success();
 
                         var cmd = command as CreateTicketCommand;
                         var item = cmd.Showroom.Listings.First().Product as GiveawayItem;
@@ -303,7 +303,7 @@ namespace Agora.Addons.Disqord
 
                     var validRequest = await _userManager.ValidateBuyerAsync(trade.Owner, command, async (owner, command) =>
                     {
-                        if (settings.EconomyType == EconomyType.Disabled.ToString()) return Result.Success();
+                        if (settings.EconomyType == "Disabled") return Result.Success();
 
                         var cmd = command as CreateDealCommand;
                         var request = cmd.Showroom.Listings.First() as CommissionTrade;

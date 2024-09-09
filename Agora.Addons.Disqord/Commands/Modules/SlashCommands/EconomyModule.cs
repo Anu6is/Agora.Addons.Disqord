@@ -15,7 +15,7 @@ using Qmmands;
 namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
-    [RequireEconomy(nameof(EconomyType.AuctionBot))]
+    [RequireEconomy("AuctionBot")]
     public sealed class EconomyModule : AgoraModuleBase
     {
         private readonly IEconomy _economy;
@@ -23,7 +23,7 @@ namespace Agora.Addons.Disqord.Commands
 
         public EconomyModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
         {
-            _economy = economyFactory.Create(nameof(EconomyType.AuctionBot));
+            _economy = economyFactory.Create("AuctionBot");
             _dataAccessor = dataAccessor;
         }
 
@@ -120,7 +120,7 @@ namespace Agora.Addons.Disqord.Commands
 
             public EconomyBulkModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
             {
-                _economy = economyFactory.Create(nameof(EconomyType.AuctionBot));
+                _economy = economyFactory.Create("AuctionBot");
                 _dataAccessor = dataAccessor;
             }
 

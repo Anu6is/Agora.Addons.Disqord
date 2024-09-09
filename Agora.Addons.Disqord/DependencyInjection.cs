@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord
 
             var pluginTypes = addonAssemblies.SelectMany(x => x.GetTypes()).ToArray();
 
-            PluginManagerService.LoadPlugins(pluginTypes);
+            PluginManagerService.LoadPlugins(pluginTypes, services, configuration);
 
             foreach (Type pluginType in pluginTypes)
             {

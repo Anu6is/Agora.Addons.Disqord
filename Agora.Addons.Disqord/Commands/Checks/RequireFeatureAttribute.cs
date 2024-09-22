@@ -30,7 +30,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (settings.Features.HasFlag(_flag) != _invert)
                 return Results.Success;
 
-            return Results.Failure($"{_flag} must be enabled");
+            return Results.Failure($"{_flag} must be enabled via the </server settings:1013361602499723275> command.");
         }
     }
 }

@@ -16,6 +16,8 @@ namespace Agora.Addons.Disqord.Menus.View
         private readonly GuildSettingsContext _context;
         private readonly IDiscordGuildSettings _settings;
 
+        public static string[] InvertedSettings { get; } = { SettingsFlags.Donations.ToString() };
+
         public ToggleFeatureView(SettingsFlags flag, 
                                  string featureText,
                                  GuildSettingsContext context,

@@ -9,6 +9,7 @@ using Disqord;
 using Disqord.Bot.Commands.Application;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
+using Emporia.Extensions.Discord;
 using Emporia.Persistence.DataAccess;
 using Qmmands;
 
@@ -60,6 +61,7 @@ namespace Agora.Addons.Disqord.Commands
 
 
         [SlashCommand("give")]
+        [RequireFeature(SettingsFlags.Donations, invert: true)]
         [Description("Give a portion of your money to another member")]
         public async Task<IResult> Donate(
             [Description("The amount of money to give"), RequireBalance(), Minimum(0)] double amount,

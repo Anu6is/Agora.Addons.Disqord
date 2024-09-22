@@ -1,10 +1,12 @@
-﻿using Disqord;
+﻿using Agora.Addons.Disqord.Menus.View;
+using Disqord;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Humanizer.Localisation;
+using System.Linq;
 
 namespace Agora.Addons.Disqord.Extensions
 {
@@ -89,7 +91,9 @@ namespace Agora.Addons.Disqord.Extensions
             var toggleList = settings.Features.AsList().Select(x => 
             {
                 var setting = x.flag.Humanize();
-                var emoji = x.isSet ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+                var emoji = x.isSet ^ ToggleFeatureView.InvertedSettings.Contains(x.flag)
+                                ? AgoraEmoji.GreenCheckMark
+                                : AgoraEmoji.RedCrossMark;
 
                 if (x.flag.Equals("SealedPayout"))
                     setting += x.isSet ? " (1st)" : " (2nd)";

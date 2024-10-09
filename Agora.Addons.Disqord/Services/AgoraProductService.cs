@@ -27,13 +27,20 @@ namespace Agora.Addons.Disqord
 
             if (message == null || message.Embeds.Count == 0) return null;
 
-            var embed = message.Embeds[0];
-            var owner = embed.Fields.FirstOrDefault(x => x.Name.Equals("Item Owner") || x.Name.Equals("Requester"))?.Value;
+            var result = message.Embeds
+                                .Select((embed, index) => new
+                                {
+                                    Index = index,
+                                    Owner = embed.Fields
+                                        .FirstOrDefault(field => field.Name.Equals("Item Owner") || field.Name.Equals("Requester"))
+                                        ?.Value
+                                })
+                                .FirstOrDefault(x => x.Owner != null);
 
-            if (owner == null) return null;
-            if (!Mention.TryParseUser(owner, out var userId) && !owner.Equals("***Anonymous***")) return null;
+            if (result?.Owner is null) return null;
+            if (!Mention.TryParseUser(result.Owner, out var userId) && !result.Owner.Equals("***Anonymous***")) return null;
 
-            return new CachedEmporiumProduct() { OwnerId = userId, ProductId = productId, ListingType = embed.GetListingType() };
+            return new CachedEmporiumProduct() { OwnerId = userId, ProductId = productId, ListingType = message.Embeds[result.Index].GetListingType() };
         }
     }
 }

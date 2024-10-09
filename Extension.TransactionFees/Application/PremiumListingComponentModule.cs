@@ -90,7 +90,8 @@ namespace Extension.TransactionFees.Application
 
             var info = PremiumListingManager.Display(premiumListing);
             var message = (Context.Interaction as IComponentInteraction)!.Message;
-            var buttons = message.Components[0].Components.Select(LocalComponent.CreateFrom);
+            var buttons = message.Components.SelectMany(component => component.Components)
+                                            .Select(LocalComponent.CreateFrom);
             var response = new LocalInteractionMessageResponse()
                                 .WithContent(message.Content)
                                 .WithEmbeds(info, LocalEmbed.CreateFrom(message.Embeds[1]))

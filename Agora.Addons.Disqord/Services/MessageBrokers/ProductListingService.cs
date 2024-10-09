@@ -240,27 +240,67 @@ namespace Agora.Addons.Disqord
 
         private async Task UpdateMessageAsync(ulong channelId, Listing productListing, string content, List<LocalEmbed> productEmbeds, params LocalRowComponent[] buttons)
         {
-            buttons ??= Array.Empty<LocalRowComponent>(); 
+            buttons ??= Array.Empty<LocalRowComponent>();
+            var interaction = _interactionAccessor.Context?.Interaction as IComponentInteraction;
+            var isProductRef = interaction?.Message.Id == productListing.Product.ReferenceNumber.Value;
 
-            if (_interactionAccessor.Context == null
-                || (_interactionAccessor.Context.Interaction is IComponentInteraction component && component.Message.Id != productListing.Product.ReferenceNumber.Value))
+            if (!isProductRef)
             {
-                await _agora.ModifyMessageAsync(channelId, productListing.Product.ReferenceNumber.Value, x =>
-                {
-                    x.Content = content;
-                    x.Embeds = productEmbeds;
-                    x.Components = buttons;
-                });
+                var message = await _agora.FetchMessageAsync(channelId, productListing.Product.ReferenceNumber.Value) as IUserMessage;
+                await UpdateExistingMessage(message, productListing, content, productEmbeds, buttons);
             }
             else
             {
-                await _interactionAccessor.Context.Interaction.ModifyMessageAsync(new LocalInteractionMessageResponse()
-                {
-                    Content = content,
-                    Embeds = productEmbeds,
-                    Components = buttons
-                });
+                await UpdateInteractionMessage(interaction, productListing, content, productEmbeds, buttons);
             }
+        }
+
+        private async Task UpdateExistingMessage(IUserMessage message, Listing productListing, string content, List<LocalEmbed> productEmbeds, LocalRowComponent[] buttons)
+        {
+            if (ShouldAddEntryFeeButton(message))
+            {
+                AddEntryFeeButton(message, productListing, productEmbeds, buttons);
+            }
+
+            await _agora.ModifyMessageAsync(message.ChannelId, message.Id, x =>
+            {
+                x.Content = content;
+                x.Embeds = productEmbeds;
+                x.Components = buttons;
+            });
+        }
+
+        private async Task UpdateInteractionMessage(IComponentInteraction interaction, Listing productListing, string content, List<LocalEmbed> productEmbeds, LocalRowComponent[] buttons)
+        {
+            if (ShouldAddEntryFeeButton(interaction.Message))
+            {
+                AddEntryFeeButton(interaction.Message, productListing, productEmbeds, buttons);
+            }
+            
+            await interaction.ModifyMessageAsync(new LocalInteractionMessageResponse
+            {
+                Content = content,
+                Embeds = productEmbeds,
+                Components = buttons
+            });
+        }
+
+        private static bool ShouldAddEntryFeeButton(IMessage message)
+        {
+            return message is IUserMessage userMessage
+                && userMessage.Embeds.Count == 2
+                && userMessage.Embeds[0].Title.StartsWith("Required Entry");
+        }
+
+        private void AddEntryFeeButton(IUserMessage message, Listing productListing, List<LocalEmbed> productEmbeds, LocalRowComponent[] buttons)
+        {
+            var registerButton = new LocalButtonComponent()
+                .WithCustomId($"#PayAuctionFee:{productListing.Id.Value}")
+                .WithLabel("Pay Entry Fee")
+                .WithStyle(LocalButtonComponentStyle.Success);
+
+            productEmbeds.Insert(0, LocalEmbed.CreateFrom(message.Embeds[0]));
+            buttons.Last().AddComponent(registerButton);
         }
 
         private static void ParseMessageContent(Listing productListing, out string content)

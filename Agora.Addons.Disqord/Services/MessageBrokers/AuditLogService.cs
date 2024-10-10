@@ -134,7 +134,7 @@ namespace Agora.Addons.Disqord
             var embeds = new List<LocalEmbed>()
             {
                 new LocalEmbed().WithDescription(description.ToString())
-                            .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
+                            .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()} •• {offer.SubmittedOn.Ticks}")
                             .WithColor(Color.LawnGreen)
             };
 
@@ -178,7 +178,7 @@ namespace Agora.Addons.Disqord
             var embeds = new List<LocalEmbed>()
             {
                 new LocalEmbed().WithDescription(description.ToString())
-                                .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()}")
+                                .WithFooter($"{productListing} | {productListing.ReferenceCode.Code()} •• {offer.SubmittedOn.Ticks}")
                                 .WithColor(Color.OrangeRed)
             };
 

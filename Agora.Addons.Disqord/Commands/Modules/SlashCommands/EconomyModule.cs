@@ -20,11 +20,13 @@ namespace Agora.Addons.Disqord.Commands
     public sealed class EconomyModule : AgoraModuleBase
     {
         private readonly IEconomy _economy;
+        private readonly AuditLogService _auditLog;
         private readonly IDataAccessor _dataAccessor;
 
-        public EconomyModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
+        public EconomyModule(EconomyFactoryService economyFactory, AuditLogService auditLog, IDataAccessor dataAccessor)
         {
             _economy = economyFactory.Create("AuctionBot");
+            _auditLog = auditLog;
             _dataAccessor = dataAccessor;
         }
 
@@ -88,9 +90,11 @@ namespace Agora.Addons.Disqord.Commands
             if (!transactionResult.IsSuccessful)
                 ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(transactionResult.FailureReason));
 
-            return Response(new LocalInteractionMessageResponse()
-                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
-                                              .WithDescription($"{Context.Author.Mention} gave {user.Mention} {donation}")));
+            var message = $"{Context.Author.Mention} gave {user.Mention} **{donation}**";
+
+            await LogActionAsync(message);
+
+            return Response(new LocalInteractionMessageResponse().AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription(message)));
         }
 
         [RequireManager]
@@ -108,9 +112,12 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
+            var message = $"{Context.Author.Mention} added **{donation}** to {user.Mention}";
+
+            await LogActionAsync(message);
+
             return Response(new LocalInteractionMessageResponse()
-                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
-                                              .WithDescription($"{Context.Author.Mention} added {donation} to {user.Mention}"))
+                    .AddEmbed(new LocalEmbed().WithColor(Color.Teal).WithDescription(message))
                     .WithIsEphemeral());
         }
 
@@ -118,12 +125,12 @@ namespace Agora.Addons.Disqord.Commands
         public sealed class EconomyBulkModule : AgoraModuleBase
         {
             private readonly IEconomy _economy;
-            private readonly IDataAccessor _dataAccessor;
+            private readonly AuditLogService _auditLog;
 
-            public EconomyBulkModule(EconomyFactoryService economyFactory, IDataAccessor dataAccessor)
+            public EconomyBulkModule(EconomyFactoryService economyFactory, AuditLogService dataAccessor)
             {
                 _economy = economyFactory.Create("AuctionBot");
-                _dataAccessor = dataAccessor;
+                _auditLog = dataAccessor;
             }
 
             [RequireManager]
@@ -156,15 +163,32 @@ namespace Agora.Addons.Disqord.Commands
                 var embeds = new List<LocalEmbed>();
 
                 if (successes.Any())
+                {
                     embeds.Add(new LocalEmbed().WithColor(Color.Teal)
                                                .WithTitle($"Successfully add {donation} to")
                                                .WithDescription(string.Join(", ", successes)));
+
+                    await LogActionAsync($"{Context.Author.Mention} added **{donation}** to {string.Join(", " ,successes)}");
+                }
                 else
+                {
                     embeds.Add(new LocalEmbed().WithColor(Color.Red)
                                                .WithTitle($"Failed to add {donation} to")
                                                .WithDescription(string.Join(Environment.NewLine, failures)));
+                }
 
                 return Response(new LocalInteractionMessageResponse().WithEmbeds(embeds).WithIsEphemeral());
+            }
+
+            private async Task LogActionAsync(string message)
+            {
+                var logChannel = Settings.AuditLogChannelId;
+
+                if (logChannel == 0) return;
+
+                var embed = new LocalEmbed().WithAuthor(Context.Author).WithDescription(message).WithColor(Color.MediumPurple);
+
+                await _auditLog.TrySendMessageAsync(logChannel, new LocalMessage().AddEmbed(embed));
             }
         }
 
@@ -183,9 +207,13 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
+            var message = $"{Context.Author.Mention} removed **{withdrawl}** from {user.Mention}";
+
+            await LogActionAsync(message);
+
             return Response(new LocalInteractionMessageResponse()
                     .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
-                                              .WithDescription($"{Context.Author.Mention} removed {withdrawl} from {user.Mention}"))
+                                              .WithDescription(message))
                     .WithIsEphemeral());
         }
 
@@ -201,9 +229,13 @@ namespace Agora.Addons.Disqord.Commands
             if (!result.IsSuccessful)
                 return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(result.FailureReason));
 
+            var message = $"{Context.Author.Mention} **reset** {user.Mention}";
+
+            await LogActionAsync(message);
+
             return Response(new LocalInteractionMessageResponse()
                     .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
-                                              .WithDescription($"{Context.Author.Mention} reset {user.Mention}"))
+                                              .WithDescription(message))
                     .WithIsEphemeral());
         }
 
@@ -220,6 +252,17 @@ namespace Agora.Addons.Disqord.Commands
                     .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
                                               .WithDescription("Economy reset"))
                     .WithIsEphemeral());
+        }
+
+        private async Task LogActionAsync(string message)
+        {
+            var logChannel = Settings.AuditLogChannelId;
+
+            if (logChannel == 0) return;
+
+            var embed = new LocalEmbed().WithAuthor(Context.Author).WithDescription(message).WithColor(Color.MediumPurple);
+
+            await _auditLog.TrySendMessageAsync(logChannel, new LocalMessage().AddEmbed(embed));
         }
     }
 }

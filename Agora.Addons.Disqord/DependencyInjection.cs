@@ -11,6 +11,7 @@ using Disqord.Gateway;
 using Emporia;
 using Emporia.Application.Common;
 using Emporia.Extensions.Discord;
+using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,6 +86,7 @@ namespace Agora.Addons.Disqord
             foreach (Type serviceType in types)
                 services.AddAgoraService(serviceType);
 
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly(), ServiceLifetime.Scoped);
             services.AddMediatR(x => x.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()).Lifetime = ServiceLifetime.Scoped);
 
             var addons = configuration.GetSection("Addons").GetChildren().Select(x => x.Value + ".dll").ToArray();

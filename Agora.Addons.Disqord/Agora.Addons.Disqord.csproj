@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Agora.Shared" Version="2.2.0" />
     <PackageReference Include="Disqord.Bot" Version="1.0.0-alpha5.76" />
     <PackageReference Include="HumanTimeParser.English" Version="3.0.0-dev-2713817134" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
@@ -20,10 +21,6 @@
 
   <ItemGroup>
 	<FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Agora\Agora.Shared\Agora.Shared.csproj" />
   </ItemGroup>
 
 

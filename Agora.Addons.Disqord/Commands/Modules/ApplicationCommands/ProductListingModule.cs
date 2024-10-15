@@ -198,7 +198,7 @@ namespace Agora.Addons.Disqord.Commands
                 if (!admin.IsSuccessful && listing.Owner.ReferenceNumber.Value != Context.AuthorId)
                     return ErrorResponse(embeds: responseEmbed.WithDescription("Unauthorized Access: Only the OWNER can view the activity log!"));
 
-                var offers = (listing.Product as AuctionItem)?.Offers.Select(x => new OfferLog(x.UserReference.Value, x.Amount.Value.ToString(), x.SubmittedOn)) 
+                var offers = (listing.Product as AuctionItem)?.Offers.Select(x => new OfferLog(x.UserReference.Value, x.Amount.Value.ToString(), x.SubmittedOn))
                           ?? (listing.Product as GiveawayItem)?.Offers.Select(x => new OfferLog(x.UserReference.Value, x.Submission.Value, x.SubmittedOn));
 
                 logs = offers.ToList();
@@ -217,8 +217,8 @@ namespace Agora.Addons.Disqord.Commands
                 logs = await ParseLogContentAsync(logContent);
             }
 
-            return logs.Count == 0 
-                ? OkResponse(embeds: responseEmbed.WithDescription("No available logs exist")) 
+            return logs.Count == 0
+                ? OkResponse(embeds: responseEmbed.WithDescription("No available logs exist"))
                 : SuccessResponse(embeds: ParseLogs(message.Embeds[0].Title, logs));
         }
 
@@ -230,7 +230,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var query = type switch
             {
-                { } when type.Contains("Auction", StringComparison.OrdinalIgnoreCase) => new GetListingDetailsQuery(EmporiumId, ShowroomId, "Auction") { ReferenceNumber = reference},
+                { } when type.Contains("Auction", StringComparison.OrdinalIgnoreCase) => new GetListingDetailsQuery(EmporiumId, ShowroomId, "Auction") { ReferenceNumber = reference },
                 { } when type.Contains("Giveaway", StringComparison.OrdinalIgnoreCase) => new GetListingDetailsQuery(EmporiumId, ShowroomId, "Giveaway") { ReferenceNumber = reference },
                 _ => null
             };

@@ -4,8 +4,8 @@ using Disqord.Bot.Commands.Application;
 using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Qmmands;
-using IServiceResult = Emporia.Domain.Services.IResult;
 using Domain = Emporia.Domain.Services;
+using IServiceResult = Emporia.Domain.Services.IResult;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -34,7 +34,7 @@ namespace Agora.Addons.Disqord.Commands
             if (image2 != null) images.Add(image2.Url);
             if (image3 != null) images.Add(image3.Url);
             if (image4 != null) images.Add(image4.Url);
-            
+
             var listing = result as Domain.Result<string>;
 
             return await UpdateImagesAsync(listing.Data, images);
@@ -114,7 +114,7 @@ namespace Agora.Addons.Disqord.Commands
                         ImageUrls = images.ToArray()
                     }),
                 _ => Domain.Result.Failure("Unable to update listing.")
-            }; 
+            };
 
             if (result.IsSuccessful)
                 return Response(new LocalInteractionMessageResponse().WithContent($"Successfully uploaded {images.Count} image(s)").WithIsEphemeral());

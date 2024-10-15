@@ -31,7 +31,7 @@ namespace Agora.Addons.Disqord.Commands.Checks
             else
             {
                 user = await context.Services.GetRequiredService<ICurrentUserService>().GetCurrentUserAsync();
-                
+
                 var result = await context.Services.GetRequiredService<IUserManager>().IsBroker(user);
 
                 if (!result.IsSuccessful) return Results.Success;

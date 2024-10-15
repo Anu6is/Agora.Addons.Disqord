@@ -7,7 +7,7 @@
             if (TryGetValue(key, out object value))
             {
                 if (value is T typedValue) return typedValue;
-                
+
                 try
                 {
                     return (T)Convert.ChangeType(value, typeof(T));

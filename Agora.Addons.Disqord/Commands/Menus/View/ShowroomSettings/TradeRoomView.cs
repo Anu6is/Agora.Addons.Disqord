@@ -165,7 +165,7 @@ namespace Agora.Addons.Disqord.Menus.View
                         var updateResult = await mediator.Send(new UpdateGuildSettingsCommand(settings));
 
                         if (!updateResult.IsSuccessful) return updateResult;
-                    }                        
+                    }
 
                     _showrooms.Add(roomResult.Data);
 

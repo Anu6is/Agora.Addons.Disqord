@@ -106,7 +106,7 @@ public sealed class ManageAnnouncementsView : ViewBase
     }
 
     [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger)]
-    public async ValueTask DeleteMessage(ButtonEventArgs e) 
+    public async ValueTask DeleteMessage(ButtonEventArgs e)
     {
         await ClearResponseAsync();
 
@@ -125,17 +125,17 @@ public sealed class ManageAnnouncementsView : ViewBase
 
         var scope = _scopeFactory.CreateScope();
         var announcementService = scope.ServiceProvider.GetRequiredService<CustomAnnouncementService>();
-        
+
         var result = await announcementService.DeleteAnnouncementAsync(e.GuildId!.Value, _selectedAnnouncementType);
         var message = result.IsSuccessful ? result.Data : result.FailureReason;
 
         ReportChanges();
-     
+
         await e.Interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message));
     }
 
     [Button(Label = "Edit", Style = LocalButtonComponentStyle.Primary)]
-    public async ValueTask EditMessage(ButtonEventArgs e) 
+    public async ValueTask EditMessage(ButtonEventArgs e)
     {
         await ClearResponseAsync();
 
@@ -204,7 +204,7 @@ public sealed class ManageAnnouncementsView : ViewBase
         if (string.IsNullOrEmpty(_customMessage))
         {
             await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Select an announcement type!").WithIsEphemeral());
-            
+
             return false;
         }
 

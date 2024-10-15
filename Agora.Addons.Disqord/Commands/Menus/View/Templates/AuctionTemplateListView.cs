@@ -35,7 +35,7 @@ namespace Agora.Addons.Disqord.Commands
             if (result.IsSuccessful)
             {
                 AuctionTemplates.Remove(CurrentTemplate);
-                
+
                 var successMessage = new LocalInteractionMessageResponse()
                                             .AddEmbed(new LocalEmbed().WithDescription("Auction template deleted.").WithDefaultColor())
                                             .WithComponents()
@@ -80,7 +80,7 @@ namespace Agora.Addons.Disqord.Commands
                 CurrentPageIndex--;
 
             CurrentTemplate = AuctionTemplates[CurrentPageIndex];
-            
+
             return default;
         }
 
@@ -93,7 +93,7 @@ namespace Agora.Addons.Disqord.Commands
                 CurrentPageIndex++;
 
             CurrentTemplate = AuctionTemplates[CurrentPageIndex];
-            
+
             return default;
         }
 

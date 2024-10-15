@@ -3,7 +3,6 @@ using Agora.Addons.Disqord.Commands.Menus.View;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Addons.Disqord.Menus;
 using Agora.Addons.Disqord.Menus.View;
-using Agora.Shared.EconomyFactory;
 using Disqord;
 using Disqord.Bot.Commands;
 using Disqord.Bot.Commands.Application;
@@ -188,7 +187,7 @@ namespace Agora.Addons.Disqord.Commands
             [Description("Assign a new showroom (channel)")]
             public async Task<IResult> AddShowroom(
                 [Description("Select the type of room")] RoomType showroom,
-                [Description("Select a category channel")] Snowflake category, 
+                [Description("Select a category channel")] Snowflake category,
                 [Description("Select a text/forum channel")] Snowflake channel)
             {
                 var transactionResult = await Data.BeginTransactionAsync(async () =>

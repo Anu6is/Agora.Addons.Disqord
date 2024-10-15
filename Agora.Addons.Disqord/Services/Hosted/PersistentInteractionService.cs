@@ -80,7 +80,7 @@ namespace Agora.Addons.Disqord
                     ? Result.Success(HandleInteraction(interaction, roomId))
                     : await HandleModalInteraction(modalInteraction, roomId);
 
-                if (!result.IsSuccessful) 
+                if (!result.IsSuccessful)
                 {
                     IUserInteraction userInteraction = modalInteraction is null ? interaction : modalInteraction;
 
@@ -116,15 +116,15 @@ namespace Agora.Addons.Disqord
                 if (command is not null) result = await mediator.Send(command) as IResult;
 
                 var inError = result is not null && !result.IsSuccessful;
-                
-                if (modalInteraction is not null) 
+
+                if (modalInteraction is not null)
                 {
                     if (inError)
                         await modalInteraction.SendMessageAsync(
                             new LocalInteractionMessageResponse()
                                 .WithIsEphemeral()
                                 .AddEmbed(new LocalEmbed().WithColor(Color.Red).WithDescription(result.FailureReason)));
-                    else 
+                    else
                         await HandleResponse(modalInteraction);
                 }
                 else if (interaction is not null)
@@ -247,7 +247,7 @@ namespace Agora.Addons.Disqord
             };
 
             if (message == null) return;
-            
+
             await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, ex);
 
             var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
@@ -283,11 +283,11 @@ namespace Agora.Addons.Disqord
         private static void SetLogContext(DiscordInteractionContext interactionContext, ILoggerContext loggerContext)
         {
             var interaction = interactionContext.Interaction;
-            
+
             loggerContext.ContextInfo.Add("ID", interaction.Id);
 
             if (interaction is IComponentInteraction component)
-            loggerContext.ContextInfo.Add("Command", $"{component.Type}: {component.ComponentType} ({component.CustomId})");
+                loggerContext.ContextInfo.Add("Command", $"{component.Type}: {component.ComponentType} ({component.CustomId})");
 
             loggerContext.ContextInfo.Add("User", interaction.Author.GlobalName);
             loggerContext.ContextInfo.Add($"{interaction.Channel.Type}Channel", interaction.ChannelId);

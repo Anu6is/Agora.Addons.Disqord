@@ -9,7 +9,7 @@ namespace Agora.Addons.Disqord.Extensions
 {
     public static class AuctionTemplateExtensions
     {
-        public static LocalEmbed CreateEmbed(this ITemplate template) 
+        public static LocalEmbed CreateEmbed(this ITemplate template)
         {
             return template switch
             {
@@ -73,20 +73,20 @@ namespace Agora.Addons.Disqord.Extensions
 
             ListingModel listing = template.Type switch
             {
-                "Standard" => new StandardAuctionModel(scheduledStart, scheduledEnd, userId) 
-                { 
-                    BuyNowPrice = (decimal)template.BuyNowPrice, 
+                "Standard" => new StandardAuctionModel(scheduledStart, scheduledEnd, userId)
+                {
+                    BuyNowPrice = (decimal)template.BuyNowPrice,
                     Anonymous = template.Anonymous,
                     HiddenMessage = message
                 },
-                "Sealed" => new VickreyAuctionModel(scheduledStart, scheduledEnd, userId) 
-                { 
+                "Sealed" => new VickreyAuctionModel(scheduledStart, scheduledEnd, userId)
+                {
                     MaxParticipants = (uint)template.MaxParticipants,
                     Anonymous = template.Anonymous,
                     HiddenMessage = message
                 },
-                "Live" => new LiveAuctionModel(scheduledStart, scheduledEnd, template.Timeout, userId) 
-                { 
+                "Live" => new LiveAuctionModel(scheduledStart, scheduledEnd, template.Timeout, userId)
+                {
                     BuyNowPrice = (decimal)template.BuyNowPrice,
                     Timeout = template.Timeout,
                     Anonymous = template.Anonymous,

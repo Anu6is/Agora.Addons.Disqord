@@ -168,7 +168,7 @@ namespace Agora.Addons.Disqord.Commands
                                                .WithTitle($"Successfully add {donation} to")
                                                .WithDescription(string.Join(", ", successes)));
 
-                    await LogActionAsync($"{Context.Author.Mention} added **{donation}** to {string.Join(", " ,successes)}");
+                    await LogActionAsync($"{Context.Author.Mention} added **{donation}** to {string.Join(", ", successes)}");
                 }
                 else
                 {

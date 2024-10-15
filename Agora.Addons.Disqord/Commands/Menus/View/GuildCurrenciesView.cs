@@ -207,7 +207,7 @@ namespace Agora.Addons.Disqord.Menus.View
             await e.Interaction.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent($"Default currency set to {currency.Symbol}").WithIsEphemeral());
 
             return;
-        } 
+        }
 
 
         [Button(Label = "Register", Style = LocalButtonComponentStyle.Success, Position = 4, Row = 0)]

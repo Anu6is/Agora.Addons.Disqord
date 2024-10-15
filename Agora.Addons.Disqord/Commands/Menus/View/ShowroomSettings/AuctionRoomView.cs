@@ -53,13 +53,13 @@ namespace Agora.Addons.Disqord.Menus.View
         public async ValueTask UpdateHours(ButtonEventArgs e)
         {
             var room = _showrooms.FirstOrDefault(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
-            
+
             if (room is null)
             {
                 e.Button.IsDisabled = true;
                 return;
             }
-            
+
             var response = new LocalInteractionModalResponse()
                 .WithCustomId(e.Interaction.Message.Id.ToString())
                 .WithTitle($"Update Business Hours")

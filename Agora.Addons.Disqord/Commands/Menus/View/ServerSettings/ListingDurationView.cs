@@ -54,12 +54,12 @@ namespace Agora.Addons.Disqord.Menus.View
             var @default = rows[2].Components.OfType<ITextInputComponent>().First().Value;
             var emporium = await _context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(e.Interaction.GuildId.Value);
             var settings = (DefaultDiscordGuildSettings)_context.Settings;
-            
+
             if (minimum.IsNotNull())
             {
                 var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(minimum);
 
-                if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult) 
+                if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult)
                     settings.MinimumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
                 else
                 {
@@ -79,7 +79,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 var result = _context.Services.GetRequiredService<EmporiumTimeParser>().WithOffset(emporium.TimeOffset).Parse(maximum);
 
                 if (result is ISuccessfulTimeParsingResult<DateTime> successfulResult)
-                        settings.MaximumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
+                    settings.MaximumDuration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
                 else
                 {
                     await modal.Response().SendMessageAsync(
@@ -101,7 +101,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 {
                     var duration = (successfulResult.Value - emporium.LocalTime.DateTime).Add(TimeSpan.FromSeconds(1));
 
-                    if (settings.MinimumDuration > duration || settings.MaximumDuration < duration) 
+                    if (settings.MinimumDuration > duration || settings.MaximumDuration < duration)
                     {
                         await modal.Response().SendMessageAsync(
                          new LocalInteractionMessageResponse()

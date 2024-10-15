@@ -6,7 +6,6 @@ using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Humanizer;
 using Humanizer.Localisation;
-using System.Linq;
 
 namespace Agora.Addons.Disqord.Extensions
 {
@@ -88,7 +87,7 @@ namespace Agora.Addons.Disqord.Extensions
             var listinglimit = settings.MaxListingsLimit == 0 ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
             var economy = settings.EconomyType.Equals("Disabled") ? AgoraEmoji.RedCrossMark : AgoraEmoji.GreenCheckMark;
 
-            var toggleList = settings.Features.AsList().Select(x => 
+            var toggleList = settings.Features.AsList().Select(x =>
             {
                 var setting = x.flag.Humanize();
                 var emoji = x.isSet ^ ToggleFeatureView.InvertedSettings.Contains(x.flag)
@@ -97,15 +96,15 @@ namespace Agora.Addons.Disqord.Extensions
 
                 if (x.flag.Equals("SealedPayout"))
                     setting += x.isSet ? " (1st)" : " (2nd)";
-                
+
                 return $"{emoji} {setting}";
-            } );
+            });
 
             var localTime = Markdown.Timestamp(DateTimeOffset.UtcNow.ToOffset(settings.Offset));
-            
+
             if (settings.DefaultDuration == TimeSpan.Zero)
                 settings.DefaultDuration = settings.MinimumDurationDefault ? settings.MinimumDuration : settings.MaximumDuration;
-            
+
             var minDuration = settings.MinimumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var maxDuration = settings.MaximumDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);
             var defaultDuration = settings.DefaultDuration.Humanize(2, maxUnit: TimeUnit.Day, minUnit: TimeUnit.Second);

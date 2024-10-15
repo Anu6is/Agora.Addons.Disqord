@@ -168,7 +168,7 @@ namespace Agora.Addons.Disqord
             var description = new StringBuilder();
 
             if (productListing.Product is not GiveawayItem) description.Append("An offer of ");
-            
+
             description.Append(Markdown.Bold(offer.Submission))
                 .Append(productListing.Product is GiveawayItem ? " held by " : " made by ").Append(Mention.User(submitter))
                 .Append(" for ").Append(Markdown.Bold($"{quantity}{title}"))

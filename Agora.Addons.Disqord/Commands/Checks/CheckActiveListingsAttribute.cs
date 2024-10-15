@@ -11,7 +11,7 @@ using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands.Checks
 {
-    public class CheckActiveListingsAttribute: DiscordGuildCheckAttribute
+    public class CheckActiveListingsAttribute : DiscordGuildCheckAttribute
     {
         public override async ValueTask<IResult> CheckAsync(IDiscordGuildCommandContext context)
         {

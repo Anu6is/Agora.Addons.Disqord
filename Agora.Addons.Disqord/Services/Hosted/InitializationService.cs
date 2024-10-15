@@ -36,6 +36,7 @@ namespace Agora.Addons.Disqord
         {
             using var scope = Bot.Services.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
             var emporiumList = await mediator.Send(new GetEmporiumListQuery(), stoppingToken);
 
             foreach (var emporiumId in emporiumList.Data)

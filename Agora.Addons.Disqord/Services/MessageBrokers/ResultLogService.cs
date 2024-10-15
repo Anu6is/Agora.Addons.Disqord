@@ -71,15 +71,15 @@ namespace Agora.Addons.Disqord
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var buyer = productListing.CurrentOffer.UserReference.Value;
-            var claimant = winners.Length <= 1 
-                ? Mention.User(buyer) 
+            var claimant = winners.Length <= 1
+                ? Mention.User(buyer)
                 : string.Join(" | ", winners.Select(x => Mention.User(x.UserReference.Value)));
             var participants = $"{Mention.User(owner)} | {claimant}";
             var stock = productListing is MassMarket or MultiItemMarket
                 ? (productListing.Product as MarketItem).Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
                 : productListing.Product.Quantity.Amount;
-            var value = winners.Length <= 1 
-                ? Markdown.Bold(productListing.CurrentOffer.Submission) 
+            var value = winners.Length <= 1
+                ? Markdown.Bold(productListing.CurrentOffer.Submission)
                 : string.Join(", ", winners.Select(x => Markdown.Bold(x.Submission)));
             var quantity = stock == 1 ? string.Empty : $"{stock} ";
             var listing = productListing is CommissionTrade ? "Trade Request" : productListing.ToString();
@@ -109,7 +109,7 @@ namespace Agora.Addons.Disqord
 
             result = await AttachOfferLogsAsync(localMessage, productListing.Product, EmporiumId.Value, ShowroomId.Value);
 
-            if (result is IExceptionResult) 
+            if (result is IExceptionResult)
                 await TrySendFeedbackAsync(EmporiumId.Value, productListing.ShowroomId.Value, result.FailureReason);
 
             var message = await _agora.SendMessageAsync(ShowroomId.Value, localMessage);
@@ -138,7 +138,7 @@ namespace Agora.Addons.Disqord
 
             var result = await CheckPermissionsAsync(emporiumId, showroomId, Permissions.SendAttachments);
 
-            if (!result.IsSuccessful) 
+            if (!result.IsSuccessful)
                 return Result.Exception("The bot lacks the necessary permissions to attach logs", null);
 
             IEnumerable<OfferLog> logs = product switch
@@ -150,13 +150,13 @@ namespace Agora.Addons.Disqord
 
             var stream = new MemoryStream();
             var json = JsonSerializer.Serialize(logs, new JsonSerializerOptions() { WriteIndented = true });
-            
+
             await using var writer = new StreamWriter(stream, leaveOpen: true);
             await writer.WriteAsync(json);
             await writer.FlushAsync();
 
             stream.Seek(0, SeekOrigin.Begin);
-            
+
             localMessage.AddAttachment(new LocalAttachment(stream, $"{logs.Count()} offers"));
 
             return Result.Success();
@@ -169,14 +169,14 @@ namespace Agora.Addons.Disqord
             if (channel is CachedCategoryChannel or CachedForumChannel)
                 ShowroomId = new ShowroomId(productListing.ReferenceCode.Reference());
 
-            var result =await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
+            var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ViewChannels | Permissions.SendMessages | Permissions.SendEmbeds);
 
             if (!result.IsSuccessful) return ReferenceNumber.Create(await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason));
 
             var owner = productListing.Owner.ReferenceNumber.Value;
             var expiration = productListing.ExpirationDate.AddSeconds(1);
             var clock = SystemClock.Now.ToOffset(expiration.Offset).AddSeconds(3);
-            var duration =  clock < expiration ? TimeSpan.Zero : expiration - productListing.ScheduledPeriod.ScheduledStart;
+            var duration = clock < expiration ? TimeSpan.Zero : expiration - productListing.ScheduledPeriod.ScheduledStart;
             var quantity = productListing.Product.Quantity.Amount == 1 ? string.Empty : $"[{productListing.Product.Quantity}] ";
 
             var embed = new LocalEmbed().WithTitle($"{productListing} Expired")

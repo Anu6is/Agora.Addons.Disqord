@@ -137,7 +137,7 @@ namespace Agora.Addons.Disqord
 
             var embed = new LocalEmbed().WithDescription(reason).WithColor(0x2F3136);
             var module = context.Command.Module as ApplicationModule;
-            var parent = module?.Parent as ApplicationModule;
+            var parent = module?.Parent;
             var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
 
             if (alias.IndexOf(':') > 0) alias = alias[..alias.IndexOf(":")];

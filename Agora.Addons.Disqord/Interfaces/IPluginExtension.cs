@@ -10,7 +10,7 @@ namespace Agora.Addons.Disqord.Interfaces
         public ValueTask<IResult> Execute(PluginParameters parameters);
     }
 
-    public interface IInjectablePluginExtension : IPluginExtension 
+    public interface IInjectablePluginExtension : IPluginExtension
     {
         public IServiceCollection Configure(IServiceCollection services, IConfiguration configuration);
     }

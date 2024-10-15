@@ -11,12 +11,12 @@ namespace Agora.Addons.Disqord.Menus
 {
     public sealed class WatchlistView : PagedViewBase
     {
-        public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings) 
-            : base(new ListPageProvider(listings.Chunk(10).Select(x => 
+        public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings)
+            : base(new ListPageProvider(listings.Chunk(10).Select(x =>
                         new Page().WithEmbeds(new LocalEmbed()
                                   .WithDefaultColor()
                                   .WithTitle("Active Bids")
-                                  .WithFields(x.Select(l => 
+                                  .WithFields(x.Select(l =>
                                         new LocalEmbedField()
                                                 .WithName(l.Product.Title.ToString())
                                                 .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}{GetJumpLink(l)} Expires {GetExpiration(l)}")))))))
@@ -31,9 +31,9 @@ namespace Agora.Addons.Disqord.Menus
         {
             if (CurrentPageIndex + 1 == PageProvider.PageCount)
                 CurrentPageIndex = 0;
-            else 
+            else
                 CurrentPageIndex++;
-            
+
             return default;
         }
 
@@ -58,12 +58,12 @@ namespace Agora.Addons.Disqord.Menus
 
         private static string GetHighestBid(ReferenceNumber userReference, Listing listing)
             => listing is VickreyAuction
-                    ? "Current Value: **Sealed**" 
+                    ? "Current Value: **Sealed**"
                     : $"{HasHighest(userReference, listing)} Current Value: {listing.CurrentOffer.Submission.Value}";
 
-        private static LocalCustomEmoji HasHighest(ReferenceNumber userReference, Listing listing) 
+        private static LocalCustomEmoji HasHighest(ReferenceNumber userReference, Listing listing)
             => listing.CurrentOffer.UserReference.Equals(userReference) ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
-        
+
         private static string GetExpiration(Listing listing)
             => Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
     }

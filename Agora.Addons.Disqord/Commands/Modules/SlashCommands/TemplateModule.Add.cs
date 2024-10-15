@@ -59,7 +59,7 @@ namespace Agora.Addons.Disqord.Commands
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var auctionTemplate = AuctionTemplates.FirstOrDefault(x => x.Name.Equals(template, StringComparison.OrdinalIgnoreCase));
 
-                if (auctionTemplate is null) return ErrorResponse(isEphimeral:true, embeds: new LocalEmbed().WithDescription("Invalid Selection: Template not found."));
+                if (auctionTemplate is null) return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription("Invalid Selection: Template not found."));
 
                 if (!Settings.AllowedListings.Any(listing => listing.Equals($"{auctionTemplate.Type} Auction", StringComparison.OrdinalIgnoreCase)))
                     return ErrorResponse(embeds: new LocalEmbed().WithDescription($"{auctionTemplate.Type} Auctions are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command."));
@@ -71,7 +71,7 @@ namespace Agora.Addons.Disqord.Commands
                 auctionTemplate.Duration = duration == default ? auctionTemplate.Duration : duration;
                 auctionTemplate.Timeout = timeout == default ? auctionTemplate.Timeout : timeout;
                 auctionTemplate.Quantity = quantity == 0 ? auctionTemplate.Quantity : quantity;
-                auctionTemplate.Description = description ?? auctionTemplate.Description;   
+                auctionTemplate.Description = description ?? auctionTemplate.Description;
                 auctionTemplate.Message = message ?? auctionTemplate.Message;
                 auctionTemplate.Owner = owner == null ? auctionTemplate.Owner : owner.Id;
 
@@ -87,7 +87,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (auctionTemplate.Duration == default) auctionTemplate.Duration = defaultDuration;
 
-                if (!auctionTemplate.Validate(out var error)) return ErrorResponse(isEphimeral:true, embeds: new LocalEmbed().WithDescription(error));
+                if (!auctionTemplate.Validate(out var error)) return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(error));
 
                 var user = await Cache.GetUserAsync(Context.GuildId, auctionTemplate.Owner);
                 var scheduledStart = emporium.LocalTime.DateTime.AddSeconds(3);

@@ -52,7 +52,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict entry to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
@@ -132,7 +132,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the winner."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict entry to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
@@ -190,7 +190,7 @@ namespace Agora.Addons.Disqord.Commands
                 var result = await Base.ExecuteAsync(new CreateRaffleGiveawayCommand(showroom, item, listing));
 
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
-                
+
                 if (owner is not null) await PluginManagerService.StoreBrokerDetailsAsync(EmporiumId, result.Data.Id, Context.Author.Id);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));

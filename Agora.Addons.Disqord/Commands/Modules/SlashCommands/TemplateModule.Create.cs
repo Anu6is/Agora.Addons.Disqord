@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Commands
             [SlashCommand("auction")]
             [Description("Create a new auction template")]
             public async Task<IResult> CreateAuctionTemplate(
-                [Description("Type of auction")]AuctionType type,
+                [Description("Type of auction")] AuctionType type,
                 [Description("Title of the item"), Maximum(75)] string title = null,
                 [Description("Price bidding should start at"), Minimum(0)] double startingPrice = 0,
                 [Description("Currency to use")] string currency = null,
@@ -71,13 +71,13 @@ namespace Agora.Addons.Disqord.Commands
                     Owner = owner?.Id ?? 0,
                     ReverseBidding = reverseBidding,
                     Reschedule = reschedule,
-                    Anonymous = anonymous         
+                    Anonymous = anonymous
                 };
-                
+
                 currency ??= Settings.DefaultCurrency.Code;
-                
+
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
-                
+
                 template.Currency = emporium.Currencies.First(x => x.Matches(currency));
 
                 var provider = Context.Services.CreateScope().ServiceProvider;

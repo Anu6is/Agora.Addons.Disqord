@@ -32,15 +32,15 @@ namespace Agora.Addons.Disqord.Extensions
 
         public static LocalEmbed ToEmbed(this Listing listing)
         {
-            var prefix = listing.Status >= ListingStatus.Expired 
-                ? "Completed " 
-                : listing.Product is AuctionItem auctionItem && auctionItem.IsReversed 
-                    ? "Reverse " 
+            var prefix = listing.Status >= ListingStatus.Expired
+                ? "Completed "
+                : listing.Product is AuctionItem auctionItem && auctionItem.IsReversed
+                    ? "Reverse "
                     : string.Empty;
 
             var suffix = listing is CommissionTrade ? " Request" : string.Empty;
-            var type = listing is RaffleGiveaway 
-                ? "Raffle" 
+            var type = listing is RaffleGiveaway
+                ? "Raffle"
                 : listing.Type.ToString();
             var iconUrl = listing.ReschedulingChoice switch
             {
@@ -68,7 +68,7 @@ namespace Agora.Addons.Disqord.Extensions
         public static LocalRowComponent[] Buttons(this Listing listing, bool earlyAcceptance, bool hideMinButton = false)
         {
             var type = listing.Type.ToString();
-           
+
             if (listing.Status == ListingStatus.Sold)
             {
                 var relist = LocalComponent.Button($"revert{type}", "Revert Transaction").WithStyle(LocalButtonComponentStyle.Danger);
@@ -139,7 +139,7 @@ namespace Agora.Addons.Disqord.Extensions
             var secondRowButtons = ParticipantButtons(listing, hideMinButton);
 
             firstRowButtons.Components = firstRowButtons.Components.Value.Where(x => (x as LocalButtonComponentBase).IsDisabled != true).ToList();
-            
+
             if (secondRowButtons is not null)
                 secondRowButtons.Components = secondRowButtons.Components.Value.Where(x => (x as LocalButtonComponentBase).IsDisabled != true).ToList();
 
@@ -218,7 +218,7 @@ namespace Agora.Addons.Disqord.Extensions
             var hasMaxLimit = auctionItem.BidIncrement.MaxValue.HasValue;
             var allowInstantPurchase = listing is StandardAuction { BuyNowPrice: not null } || listing is LiveAuction { BuyNowPrice: not null };
 
-            if (!isVickrey && !hasMaxLimit && allowInstantPurchase) 
+            if (!isVickrey && !hasMaxLimit && allowInstantPurchase)
                 component.WithCustomId("instant").WithLabel($"Buy Now [{listing.BuyNowPrice()}]")
                          .WithStyle(LocalButtonComponentStyle.Success);
             else
@@ -245,8 +245,8 @@ namespace Agora.Addons.Disqord.Extensions
                                         .AddInlineField("Starting Price", auction.StartingPrice.ToString())
                                         .AddInlineField("Current Bid", auction.Offers.Count == 0
                                                                      ? "No Bids"
-                                                                     : listing is VickreyAuction 
-                                                                        ? $"{auction.Offers.Count}" 
+                                                                     : listing is VickreyAuction
+                                                                        ? $"{auction.Offers.Count}"
                                                                         : $"{listing.ValueTag}{(listing.Anonymous ? string.Empty : $"\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))
@@ -317,10 +317,10 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static string MinIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MinValue)}";
         private static string MaxIncrement(this AuctionItem auction) => $"{(auction.IsReversed ? "-" : "")}{auction.FormatIncrement(auction.BidIncrement.MaxValue.GetValueOrDefault())}";
-        private static string BuyNowPrice(this Listing listing) => listing is LiveAuction live 
+        private static string BuyNowPrice(this Listing listing) => listing is LiveAuction live
             ? live.FormatInstantPurchatePrice(live.BuyNowPrice.Value)
-            : listing is StandardAuction standard 
-                ?  standard.FormatInstantPurchatePrice(standard.BuyNowPrice.Value)
+            : listing is StandardAuction standard
+                ? standard.FormatInstantPurchatePrice(standard.BuyNowPrice.Value)
                 : throw new InvalidOperationException();
 
         private static string FormatInstantPurchatePrice(this Listing listing, decimal value)
@@ -386,8 +386,8 @@ namespace Agora.Addons.Disqord.Extensions
 
         private static LocalEmbed AddPriceDetailField(this LocalEmbed embed, Listing listing) => listing switch
         {
-            StandardMarket market => embed.AddInlineField(market.AllowOffers ? "Best Offer" : "Discounted Price", 
-                                                          market.AllowOffers 
+            StandardMarket market => embed.AddInlineField(market.AllowOffers ? "Best Offer" : "Discounted Price",
+                                                          market.AllowOffers
                 ? listing.CurrentOffer ?? Offer.Create(listing.Owner, listing.ProductId, Tag.Create("No Offers Submitted"))
                 : market.DiscountValue == 0
                     ? Markdown.Italics("No Discount Applied")

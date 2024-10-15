@@ -20,12 +20,12 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (context is IDiscordApplicationCommandContext cmdContext && cmdContext.Interaction.Type == InteractionType.ApplicationCommandAutoComplete) return Results.Success;
 
             var settings = await context.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(context.GuildId);
-            
+
             if (settings == null) return Results.Failure("Setup Required: No showrooms have been configured for this server.");
 
             var alias = (context.Command as ApplicationCommand).Alias;
             var listingType = $"{alias} {_roomType}";
-            var allow = alias.Equals(_roomType, StringComparison.OrdinalIgnoreCase) ;
+            var allow = alias.Equals(_roomType, StringComparison.OrdinalIgnoreCase);
 
             if (!allow && !settings.AllowedListings.Any(listing => listing.Equals(listingType, StringComparison.OrdinalIgnoreCase)))
                 return Results.Failure($"{listingType.Pascalize()} Listings are not allowed.{Environment.NewLine}Configure Allowed Listings using the </server settings:1013361602499723275> command.");

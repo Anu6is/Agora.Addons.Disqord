@@ -10,7 +10,6 @@ using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Qmmands;
 using Qommon;
-using Sentry;
 
 namespace Agora.Addons.Disqord
 {
@@ -76,7 +75,7 @@ namespace Agora.Addons.Disqord
                     type: "user");
 
                 scope.TransactionName = alias;
-                scope.User = new User() { Id = context.Author.Id.ToString(), Username = context.Author.Tag };
+                scope.User = new SentryUser() { Id = context.Author.Id.ToString(), Username = context.Author.Tag };
 
                 scope.SetTag("eventId", eventId);
                 scope.SetTag("GuildId", context.GuildId.ToString());
@@ -84,7 +83,7 @@ namespace Agora.Addons.Disqord
 
                 scope.SetExtra("Shard", Bot.ApiClient.GetShardId(context.GuildId));
                 scope.SetExtra("Arguments", $"{alias} {(context.Arguments != null ? string.Join(" | ", context.Arguments.Select(x => $"{x.Key.Name}: {x.Value}")) : string.Empty)}");
-                
+
                 if (guild is not null)
                     scope.SetExtra("Guild Permissions", currentMember.CalculateGuildPermissions(guild).ToString());
 
@@ -133,7 +132,7 @@ namespace Agora.Addons.Disqord
                         type: "user");
 
                     scope.TransactionName = command;
-                    scope.User = new User() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
+                    scope.User = new SentryUser() { Id = interaction.Author.Id.ToString(), Username = interaction.Author.Tag };
 
                     scope.SetTag("eventId", eventId);
                     scope.SetTag("GuildId", interaction.GuildId.ToString());

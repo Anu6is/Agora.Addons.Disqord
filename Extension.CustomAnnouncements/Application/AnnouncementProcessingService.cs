@@ -33,7 +33,7 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
         if (!result.IsSuccessful)
             result = await customAnnouncementService.GetAnnouncementAsync(listing.Owner.EmporiumId.Value, AnnouncementType.Default);
 
-        if (result.IsSuccessful) 
+        if (result.IsSuccessful)
             return MessageExtensions.ReplacePlaceholders(result.Data, placeholders);
 
         return null;
@@ -69,7 +69,7 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
             : listing.Product.Quantity.Amount;
 
         var quantity = stock == 1 ? string.Empty : $"{stock} ";
-        
+
         return quantity;
     }
 }

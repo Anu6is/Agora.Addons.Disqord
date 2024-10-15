@@ -235,7 +235,7 @@ namespace Agora.Addons.Disqord.Commands
                 var cur = emporium.Currencies.First(x => x.Matches(currency));
 
                 var item = new TradeItemModel<Money>(title, Money.Create((decimal)price, cur))
-                { 
+                {
                     ImageUrl = image == null ? null : new[] { image.Url },
                     Category = emporiumCategory?.Title,
                     Subcategory = emporiumSubcategory?.Title,

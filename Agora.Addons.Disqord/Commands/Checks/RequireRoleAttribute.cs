@@ -42,8 +42,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
             if (result.IsSuccessful)
                 return Results.Success;
             else
-                return _author 
-                    ? Results.Failure($"The {_role} role is required to set the {parameter.Name}") 
+                return _author
+                    ? Results.Failure($"The {_role} role is required to set the {parameter.Name}")
                     : Results.Failure($"The selected member requires the {_role} role");
         }
     }

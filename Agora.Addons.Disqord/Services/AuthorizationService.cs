@@ -39,7 +39,7 @@ namespace Agora.Addons.Disqord
         public async ValueTask<IResult> AuthroizeAsync<TRequest>(TRequest request, IEmporiumUser currentUser, IEnumerable<AuthorizeAttribute> authorizeAttributes)
         {
             IResult result = Result.Success();
-            
+
             var authorizeAttributesWithRoles = authorizeAttributes.Where(a => a.Role != AuthorizationRole.None);
 
             if (authorizeAttributesWithRoles.Any())
@@ -239,7 +239,7 @@ namespace Agora.Addons.Disqord
                     {
                         if (settings.EconomyType == "Disabled") return Result.Success();
 
-                        var cmd = command as CreatePaymentCommand;                        
+                        var cmd = command as CreatePaymentCommand;
 
                         var item = cmd.Showroom.Listings.First().Product as MarketItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
@@ -258,14 +258,14 @@ namespace Agora.Addons.Disqord
 
                     if (giveaway == null) return "Invalid Action: Listing is not longer available";
 
-                    if (giveaway is StandardGiveaway) 
+                    if (giveaway is StandardGiveaway)
                     {
                         var hasAccess = await _userManager.ValidateBuyerAsync(currentUser, command);
 
                         if (hasAccess.IsSuccessful) return string.Empty;
 
                         return hasAccess.FailureReason;
-                    } 
+                    }
 
                     var validClaim = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
@@ -338,7 +338,7 @@ namespace Agora.Addons.Disqord
             {
                 case WithdrawListingCommand command:
                     if (currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner)) return string.Empty;
-                    
+
                     break;
                 case UndoBidCommand command:
                     if (command.Showroom.Listings.FirstOrDefault() is VickreyAuction

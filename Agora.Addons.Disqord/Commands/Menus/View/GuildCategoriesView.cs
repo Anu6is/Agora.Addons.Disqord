@@ -76,7 +76,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 if (result is IExceptionResult exResult)
                     await scope.ServiceProvider.GetRequiredService<UnhandledExceptionService>().InteractionExecutionFailed(e, exResult.RaisedException);
-            }          
+            }
 
             return;
         }

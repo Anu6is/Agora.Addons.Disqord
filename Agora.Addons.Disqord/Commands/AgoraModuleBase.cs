@@ -12,7 +12,6 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Qmmands;
-using Sentry;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -27,7 +26,7 @@ namespace Agora.Addons.Disqord.Commands
 
         public IDataAccessor Data { get; private set; }
         public IMediator Mediator { get; private set; }
-        public ITransaction Transaction { get; private set; }
+        public ITransactionTracer Transaction { get; private set; }
         public IEmporiaCacheService Cache { get; private set; }
         public IDiscordGuildSettings Settings { get; private set; }
         public IGuildSettingsService SettingsService { get; private set; }
@@ -43,7 +42,7 @@ namespace Agora.Addons.Disqord.Commands
         public override async ValueTask OnBeforeExecuted()
         {
             Interlocked.Increment(ref _activeCommands);
-            
+
             SetLogContext();
 
             var contextService = Context.Services.GetService<AgoraContextService>();
@@ -62,7 +61,7 @@ namespace Agora.Addons.Disqord.Commands
             PluginManagerService = Context.Services.GetRequiredService<PluginManagerService>();
 
             Transaction = SentrySdk.StartTransaction(Context.Command.Module.Name, Context.Command.Name, $"{Context.Bot.ApiClient.GetShardId(Context.GuildId)}");
-            Transaction.User = new User() { Id = Context.AuthorId.ToString(), Username = Context.Author.Tag };
+            Transaction.User = new SentryUser() { Id = Context.AuthorId.ToString(), Username = Context.Author.Tag };
             Transaction.SetTag("guild", Context.GuildId.ToString());
             Transaction.SetTag("channel", Context.ChannelId.ToString());
             Transaction.SetExtra("active_commands", _activeCommands);

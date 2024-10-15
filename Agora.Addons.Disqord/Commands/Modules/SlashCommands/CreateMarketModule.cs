@@ -140,8 +140,8 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Category the item is associated with"), Maximum(25)] string category = null,
                 [Description("Subcategory to list the item under. Requires category"), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
-                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null, 
-                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
@@ -224,7 +224,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
-                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner")] bool anonymous = false)
             {
@@ -306,7 +306,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Subcategory to list the item under. Requires category."), Maximum(25)] string subcategory = null,
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
-                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner")] bool anonymous = false)
             {

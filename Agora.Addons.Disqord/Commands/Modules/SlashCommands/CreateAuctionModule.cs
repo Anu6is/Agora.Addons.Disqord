@@ -63,7 +63,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -163,7 +163,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -264,7 +264,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Restrict bidding to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Participation fee required to bid on this listing."), Minimum(0)] double entryFee = 0,
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
-                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)] [CheckListingLimit] IMember owner = null,
+                [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
                 [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
@@ -354,7 +354,7 @@ namespace Agora.Addons.Disqord.Commands
                 if (currency.IsFocused)
                 {
                     if (emporium.Currencies.Count == 0) return;
-                       
+
                     if (currency.RawArgument == string.Empty)
                         currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
                     else

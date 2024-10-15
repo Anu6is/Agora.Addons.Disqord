@@ -4,7 +4,6 @@ using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
 using Disqord.Rest;
-using Emporia.Domain.Entities;
 using Emporia.Domain.Extension;
 using Emporia.Domain.Services;
 using Emporia.Extensions.Discord;
@@ -28,7 +27,7 @@ namespace Agora.Addons.Disqord.Commands
         private SelectionViewComponent CategorySelection { get; set; }
         private SelectionViewComponent SubcategorySelection { get; set; }
 
-        public TemplateView(IEnumerable<T> templates, CachedEmporium emporium, IServiceProvider provider) 
+        public TemplateView(IEnumerable<T> templates, CachedEmporium emporium, IServiceProvider provider)
             : base(new ListPageProvider(templates.Select(template => new Page().AddEmbed(template.CreateEmbed()))))
         {
             Emporium = emporium;
@@ -68,7 +67,7 @@ namespace Agora.Addons.Disqord.Commands
             {
                 var category = Emporium.Categories[i];
                 var option = new LocalSelectionComponentOption(category.Title.ToString(), $"{i + 1}");
-                
+
                 CategorySelection.Options.Add(option);
             }
 
@@ -118,7 +117,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             _selectedSubcategory = string.Empty;
             CurrentTemplate.Subcategory = string.Empty;
-            
+
             SubcategorySelection.Options.Clear();
 
             RemoveComponent(SubcategorySelection);
@@ -182,7 +181,7 @@ namespace Agora.Addons.Disqord.Commands
         [Button(Label = "Edit Details", Style = LocalButtonComponentStyle.Primary, Position = 3, Row = 3)]
         public abstract ValueTask EditDetails(ButtonEventArgs e);
 
-        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position =  4, Row = 3)]
+        [Button(Label = "Save", Style = LocalButtonComponentStyle.Success, Position = 4, Row = 3)]
         public virtual async ValueTask SaveChanges(ButtonEventArgs e)
         {
             var modalResponse = new LocalInteractionModalResponse()

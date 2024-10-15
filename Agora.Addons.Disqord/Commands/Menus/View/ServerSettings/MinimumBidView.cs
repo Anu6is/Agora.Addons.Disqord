@@ -130,7 +130,7 @@ namespace Agora.Addons.Disqord.Menus.View
             if (absolute.IsNotNull() && percent.IsNotNull())
             {
                 await modal.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent("Only one option can be selected"));
-                
+
                 return true;
             }
 

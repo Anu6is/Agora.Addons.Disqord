@@ -42,8 +42,8 @@ namespace Agora.Addons.Disqord.Commands.Checks
                 var productMessage = pinnedMessages.FirstOrDefault(x =>
                 {
                     return x.Author.Id.Equals(context.Bot.CurrentUser.Id)
-                        && (x.Embeds.FirstOrDefault().Footer.Text.StartsWith("Reference Code:") 
-                        ||  x.Embeds.LastOrDefault().Footer.Text.StartsWith("Reference Code:"));
+                        && (x.Embeds.FirstOrDefault().Footer.Text.StartsWith("Reference Code:")
+                        || x.Embeds.LastOrDefault().Footer.Text.StartsWith("Reference Code:"));
                 });
 
                 if (productMessage == null)

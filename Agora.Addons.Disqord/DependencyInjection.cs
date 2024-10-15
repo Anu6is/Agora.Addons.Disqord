@@ -93,7 +93,7 @@ namespace Agora.Addons.Disqord
             var addonAssemblies = addons.Select(name => Assembly.LoadFrom(name)).ToArray();
 
             services.AddMediatR(x => x.RegisterServicesFromAssemblies(addonAssemblies).Lifetime = ServiceLifetime.Scoped);
-            
+
             services.AddScoped<PluginManagerService>();
 
             var pluginTypes = addonAssemblies.SelectMany(x => x.GetTypes()).ToArray();
@@ -120,9 +120,9 @@ namespace Agora.Addons.Disqord
         {
             ImmutableArray<Type> immutableArray = type.GetServiceInterfaces().ToImmutableArray();
             AgoraServiceAttribute.ServiceLifetime scope = type.GetCustomAttribute<AgoraServiceAttribute>()?.Scope ?? AgoraServiceAttribute.ServiceLifetime.Singleton;
-            
+
             services.SetLifetime(scope, type);
-            
+
             ImmutableArray<Type>.Enumerator enumerator = immutableArray.GetEnumerator();
             while (enumerator.MoveNext())
             {

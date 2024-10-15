@@ -96,7 +96,7 @@ namespace Agora.Addons.Disqord
             var response = await _agora.SendMessageAsync(channelId, message);
 
             result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageMessages);
-           
+
             try
             {
                 if (channel is ITextChannel textChannel && textChannel.Type == ChannelType.News)
@@ -111,7 +111,7 @@ namespace Agora.Addons.Disqord
                     await textChannel.CrosspostMessageAsync(response.Id);
                 }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to complete news channel publishing");
             }
@@ -147,7 +147,7 @@ namespace Agora.Addons.Disqord
                 if (refreshMessage) await RefreshProductListingAsync(productListing, productEmbeds, channelId, settings);
 
                 var status = productListing.Status;
-                var updateTag =  status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
+                var updateTag = status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
 
                 if (channel is IForumChannel forumChannel && updateTag) forumChannel = await UpdateForumTagAsync(productListing, forumChannel);
 
@@ -193,12 +193,12 @@ namespace Agora.Addons.Disqord
                         var count = tagIds.Count;
 
                         if (!tagIds.Contains(active.Value)) tagIds.Add(active.Value);
-                        
+
                         if (isSoon && !tagIds.Contains(soon.Value)) tagIds.Add(soon.Value);
 
                         if (count != tagIds.Count) await ModifyThreadTagsAsync(thread, tagIds);
                     }
-                    
+
                     if (!isSoon && soon is not null && thread.TagIds.Contains(soon.Value))
                         await ModifyThreadTagsAsync(thread, thread.TagIds.Where(tag => tag != pending.GetValueOrDefault() && tag != soon.GetValueOrDefault() && tag != locked.GetValueOrDefault()).ToList());
                 }
@@ -234,7 +234,7 @@ namespace Agora.Addons.Disqord
 
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
             var buttons = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
-            
+
             await UpdateMessageAsync(channelId, productListing, content, productEmbeds, buttons);
         }
 
@@ -276,7 +276,7 @@ namespace Agora.Addons.Disqord
             {
                 AddEntryFeeButton(interaction.Message, productListing, productEmbeds, buttons);
             }
-            
+
             await interaction.ModifyMessageAsync(new LocalInteractionMessageResponse
             {
                 Content = content,
@@ -382,7 +382,7 @@ namespace Agora.Addons.Disqord
                 channelId = productListing.ReferenceCode.Reference();
 
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
-            
+
             try
             {
                 if (productListing.Status != ListingStatus.Withdrawn && showroom is IForumChannel forum)
@@ -424,7 +424,7 @@ namespace Agora.Addons.Disqord
 
                         if (result.IsSuccessful)
                             await _agora.DeleteMessageAsync(channel.Id, productListing.Product.ReferenceNumber.Value);
-                        else 
+                        else
                             await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
                     }
                     else
@@ -433,7 +433,7 @@ namespace Agora.Addons.Disqord
 
                         if (result.IsSuccessful)
                             await _agora.DeleteChannelAsync(channelId);
-                        else 
+                        else
                             await TrySendFeedbackAsync(EmporiumId.Value, ShowroomId.Value, result.FailureReason);
                     }
                 }
@@ -518,7 +518,7 @@ namespace Agora.Addons.Disqord
             if (channelPerms.HasFlag(permissions)) return Result.Success();
 
             var message = $"The bot lacks the necessary permissions ({permissions & ~channelPerms}) to post to {Mention.Channel(ShowroomId.Value)}";
-            
+
             return Result.Failure(message);
         }
 
@@ -527,7 +527,7 @@ namespace Agora.Addons.Disqord
             var feedbackId = _interactionAccessor?.Context?.ChannelId ?? _commandAccessor?.Context?.ChannelId;
 
             if (feedbackId.HasValue && feedbackId != channelId) return feedbackId.Value;
-            
+
             var settings = await _agora.Services.GetRequiredService<IGuildSettingsService>().GetGuildSettingsAsync(guildId);
 
             if (settings.AuditLogChannelId != 0) return settings.AuditLogChannelId;
@@ -550,7 +550,7 @@ namespace Agora.Addons.Disqord
                     var feedbackId = await GetFeedbackChannelAsync(guildId, channelId);
 
                     if (feedbackId == 0) return feedbackId;
-                    
+
                     var response = await _agora.SendMessageAsync(feedbackId, new LocalMessage().AddEmbed(embed));
                     return response.Id;
                 }
@@ -564,7 +564,7 @@ namespace Agora.Addons.Disqord
             {
                 //unable to notify the user
             }
-         
+
             return 0;
         }
 

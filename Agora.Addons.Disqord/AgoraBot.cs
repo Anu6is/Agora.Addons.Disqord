@@ -42,6 +42,15 @@ namespace Agora.Addons.Disqord
             if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress)
                 return Results.Failure("Services are presently unavailable, while entering maintenance mode.");
 
+            if (context.Command is not null)
+            {
+                var parameters = context.Arguments?
+                    .Where(x => x.Value is not null && x.Value is not 0)
+                    .Select(x => $"{x.Key.Name}: {x.Value}");
+
+                _logger.LogInformation("{Author} executed {MethodName}({parameters})", context.Author, context.Command.MethodInfo.Name, parameters);
+            }
+
             return base.OnBeforeExecuted(context);
         }
 

@@ -37,6 +37,22 @@ namespace Agora.Addons.Disqord
         {
             if (args.GuildId == null) return;
 
+            if (args.Interaction is IComponentInteraction action)
+                _logger.LogInformation("{Author} executed {Component} {ID}", action.Author, action.ComponentType, action.CustomId);
+
+            if (args.Interaction is IModalSubmitInteraction modalSubmit)
+            {
+
+                var values = modalSubmit.Components.SelectMany(x => (x as IRowComponent).Components).Select(x => 
+                {
+                    var textComponent = x as TransientTextInputComponent;
+
+                    return $"{textComponent.CustomId}: {textComponent.Value}";
+                });
+
+                _logger.LogInformation("{Author} submitted {ID} {Values}", modalSubmit.Author, modalSubmit.CustomId.Split(':')[0], values);
+            }
+
             if (args.Interaction is IComponentInteraction interaction
                 && interaction.ComponentType == ComponentType.Button
                 && interaction.Message.Author.Id == Bot.CurrentUser.Id)

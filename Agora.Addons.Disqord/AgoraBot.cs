@@ -45,7 +45,7 @@ namespace Agora.Addons.Disqord
             if (context.Command is not null)
             {
                 var parameters = context.Arguments?
-                    .Where(x => x.Value is not null && x.Value is not 0)
+                    .Where(x => x.Value is not null && x.Value.ToString() != "0")
                     .Select(x => $"{x.Key.Name}: {x.Value}");
 
                 _logger.LogInformation("{Author} executed {MethodName}({parameters})", context.Author, context.Command.MethodInfo.Name, parameters);

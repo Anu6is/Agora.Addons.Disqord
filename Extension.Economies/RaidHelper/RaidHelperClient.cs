@@ -34,7 +34,7 @@ namespace Extension.Economies.RaidHelper
             return await SendRequestAsync(HttpMethod.Get, guildId.ToString(), userId.ToString());
         }
 
-        public async Task<IResult<RaidHelperResponse>> SetUserBalanceAsync(ulong guildId, ulong userId, decimal value, string reason = null)
+        public async Task<IResult<RaidHelperResponse>> SetUserBalanceAsync(ulong guildId, ulong userId, decimal value, string? reason = null)
         {
             return await SendRequestAsync(HttpMethod.Patch, guildId.ToString(), userId.ToString(), new
             {
@@ -44,7 +44,7 @@ namespace Extension.Economies.RaidHelper
             });
         }
 
-        public async Task<IResult<RaidHelperResponse>> IncreaseUserBalanceAsync(ulong guildId, ulong userId, decimal value, string reason = null)
+        public async Task<IResult<RaidHelperResponse>> IncreaseUserBalanceAsync(ulong guildId, ulong userId, decimal value, string? reason = null)
         {
             return await SendRequestAsync(HttpMethod.Patch, guildId.ToString(), userId.ToString(), new
             {
@@ -54,7 +54,7 @@ namespace Extension.Economies.RaidHelper
             });
         }
 
-        public async Task<IResult<RaidHelperResponse>> DecreaseUserBalanceAsync(ulong guildId, ulong userId, decimal value, string reason = null)
+        public async Task<IResult<RaidHelperResponse>> DecreaseUserBalanceAsync(ulong guildId, ulong userId, decimal value, string? reason = null)
         {
             return await SendRequestAsync(HttpMethod.Patch, guildId.ToString(), userId.ToString(), new
             {
@@ -64,7 +64,7 @@ namespace Extension.Economies.RaidHelper
             });
         }
 
-        private async Task<IResult<RaidHelperResponse>> SendRequestAsync(HttpMethod method, string serverId, string userId, object requestBody = null)
+        private async Task<IResult<RaidHelperResponse>> SendRequestAsync(HttpMethod method, string serverId, string userId, object? requestBody = null)
         {
             var settings = await _settingsService.GetGuildSettingsAsync(ulong.Parse(serverId));
 
@@ -74,22 +74,31 @@ namespace Extension.Economies.RaidHelper
             var url = _configuration[$"Url:{SectionName}"];
 
             using var httpClient = _httpClientFactory.CreateClient(SectionName);
-            httpClient.BaseAddress = new Uri(url);
+            httpClient.BaseAddress = new Uri(url!);
             httpClient.DefaultRequestHeaders.Add("Authorization", apiKey);
 
-            using var request = new HttpRequestMessage(method, $"servers/{serverId}/entities/{userId}/dkp");
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1250));
 
-            if (requestBody != null)
-                request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            try
+            {
+                using var request = new HttpRequestMessage(method, $"servers/{serverId}/entities/{userId}/dkp");
 
-            var response = await httpClient.SendAsync(request);
+                if (requestBody != null)
+                    request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-            if (!response.IsSuccessStatusCode)
-                return Result<RaidHelperResponse>.Failure($"Failed to process DKP request: {response.ReasonPhrase}");
+                var response = await httpClient.SendAsync(request, cts.Token);
 
-            var responseContent = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                    return Result<RaidHelperResponse>.Failure($"Failed to process DKP request: {response.ReasonPhrase}");
 
-            return Result.Success(JsonSerializer.Deserialize<ResponseList>(responseContent)!.Results.First());
+                var responseContent = await response.Content.ReadAsStringAsync(cts.Token);
+
+                return Result.Success(JsonSerializer.Deserialize<ResponseList>(responseContent)!.Results.First());
+            }
+            catch (Exception)
+            {
+                return Result<RaidHelperResponse>.Failure("Raid-Helper failed to respond in time. Please try again!");
+            }
         }
     }
 

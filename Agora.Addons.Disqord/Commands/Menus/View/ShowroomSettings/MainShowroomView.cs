@@ -2,9 +2,13 @@
 using Disqord;
 using Disqord.Bot;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Gateway;
 using Disqord.Rest;
+using Emporia.Application.Features.Commands;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus.View
 {
@@ -27,6 +31,34 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             _context = context;
             _showrooms = showrooms;
+        }
+
+        [Button(Emoji ="🔄", Style = LocalButtonComponentStyle.Primary, Row = 4 )]
+        public async ValueTask Refresh(ButtonEventArgs e)
+        {
+            var guildId = _context.Guild.Id;
+            var bot = e.Interaction.Client as DiscordBotBase;
+            var missingRooms = _showrooms.Where(room => bot.GetChannel(guildId, room.Id.Value) is null).ToArray();
+
+            using var scope = _context.Services.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IInteractionContextAccessor>().Context = new DiscordInteractionContext(e);
+
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+            for (int i = missingRooms.Length - 1; i >= 0; i--)
+            {
+                var room = missingRooms[i];
+
+                await mediator.Send(new DeleteShowroomCommand(new EmporiumId(_context.Guild.Id), room.Id, Enum.Parse<ListingType>(room.ListingType)));
+
+                _showrooms.Remove(room);
+            }
+
+            MessageTemplate = message => message.WithEmbeds(_context.Settings.ToEmbed(_showrooms));
+
+            ReportChanges();
+
+            return;
         }
 
         [Button(Label = "Permissions", Style = LocalButtonComponentStyle.Primary, Row = 4)]

@@ -246,7 +246,7 @@ namespace Agora.Addons.Disqord.Extensions
                                         .AddInlineField("Current Bid", auction.Offers.Count == 0
                                                                      ? "No Bids"
                                                                      : listing is VickreyAuction
-                                                                        ? $"{auction.Offers.Count}"
+                                                                        ? listing.Anonymous ? "Ongoing" : $"{auction.Offers.Count}"
                                                                         : $"{listing.ValueTag}{(listing.Anonymous ? string.Empty : $"\n{Mention.User(listing.CurrentOffer.UserReference.Value)}")}")
                                         .AddInlineField("Scheduled Start", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledStart))
                                         .AddInlineField("Scheduled End", Markdown.Timestamp(listing.ScheduledPeriod.ScheduledEnd))

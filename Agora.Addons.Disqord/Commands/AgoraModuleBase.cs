@@ -8,6 +8,7 @@ using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -69,6 +70,11 @@ namespace Agora.Addons.Disqord.Commands
             Settings = await SettingsService.GetGuildSettingsAsync(Context.GuildId);
 
             var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
+
+            if (Channel is null)
+            {
+                throw new ValidationException("The bot does not have permissions to access this channel");
+            }
 
             if (Channel is IThreadChannel thread)
                 ShowroomId = new(thread.ChannelId);

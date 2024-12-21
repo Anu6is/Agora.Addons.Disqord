@@ -33,7 +33,12 @@ namespace Agora.Addons.Disqord.Commands.Checks
             var emporium = await context.Services.GetRequiredService<IEmporiaCacheService>().GetEmporiumAsync(context.GuildId);
             var showrooms = emporium.Showrooms.Where(x => x.ListingType.Equals(_roomType, StringComparison.OrdinalIgnoreCase));
 
-            if (context.Bot.GetChannel(context.GuildId, context.ChannelId) is not ICategorizableGuildChannel channel)
+            var cachedChannel = context.Bot.GetChannel(context.GuildId, context.ChannelId);
+
+            if (cachedChannel is null)
+                return Results.Failure("The bot does not have access to this channel");
+
+            if (cachedChannel is not ICategorizableGuildChannel channel)
                 return Results.Failure($"Command must be executed in a {_roomType} Room:{Environment.NewLine}{string.Join(" | ", showrooms.Select(x => Mention.Channel(x.Id.Value)))}");
 
             if (showrooms.Any(x => x.Id.Value.Equals(context.ChannelId)

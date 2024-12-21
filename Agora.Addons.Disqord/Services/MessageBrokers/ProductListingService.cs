@@ -620,7 +620,8 @@ namespace Agora.Addons.Disqord
 
             try
             {
-                await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
+                if (!productListing.Anonymous) 
+                    await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
             }
             catch (Exception)
             {

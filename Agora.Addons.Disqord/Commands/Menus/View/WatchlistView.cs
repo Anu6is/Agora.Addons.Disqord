@@ -3,14 +3,18 @@ using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
+using Disqord.Gateway;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Microsoft.Extensions.DependencyInjection;
 
 
 namespace Agora.Addons.Disqord.Menus
 {
     public sealed class WatchlistView : PagedViewBase
     {
+        private readonly ulong _guildId;
+
         public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings)
             : base(new ListPageProvider(listings.Chunk(10).Select(x =>
                         new Page().WithEmbeds(new LocalEmbed()
@@ -21,9 +25,20 @@ namespace Agora.Addons.Disqord.Menus
                                                 .WithName(l.Product.Title.ToString())
                                                 .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}{GetJumpLink(l)} Expires {GetExpiration(l)}")))))))
         {
+            _guildId = listings.First().Owner.EmporiumId.Value;
+
+
+
             if (listings.Count() < 10)
+            {
                 foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
                     RemoveComponent(button);
+            } 
+            else
+            {
+                foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+                    button.Label = TranslateButton(button.Label);
+            }
         }
 
         [Button(Label = "Continue")]
@@ -66,5 +81,17 @@ namespace Agora.Addons.Disqord.Menus
 
         private static string GetExpiration(Listing listing)
             => Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+
+        private string TranslateButton(string key)
+        {
+            var bot = Menu.Client as AgoraBot;
+
+            using var scope = bot.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(Menu.Client.GetGuild(_guildId)!.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
+        }
     }
 }

@@ -2,6 +2,7 @@
 using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Persistence.DataAccess;
@@ -29,12 +30,14 @@ public sealed class TransactionFeesView : ViewBase
         _settings = settings;
         _scopeFactory = scopeFactory;
 
-        AddComponent(new ButtonViewComponent(x => default) { Label = "Close", Style = LocalButtonComponentStyle.Secondary });
+        AddComponent(new ButtonViewComponent(x => default) { Label = TranslateButton("Close"), Style = LocalButtonComponentStyle.Secondary });
 
         foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
         {
-            if (button.Label!.Equals("Entry Fees"))
-                button.Label = settings?.AllowEntryFee is true ? "Disable Entry Fees" : "Enable Entry Fees";
+            button.Label = TranslateButton(button.Label!);
+
+            if (button.Label!.Equals(TranslateButton("Entry Fees")))
+                button.Label = TranslateButton(settings?.AllowEntryFee is true ? "Disable Entry Fees" : "Enable Entry Fees");
         }
     }
 
@@ -87,7 +90,7 @@ public sealed class TransactionFeesView : ViewBase
 
         await SaveSettingsAsync();
 
-        e.Button.Label = _settings?.AllowEntryFee is true ? "Disable Entry Fees" : "Enable Entry Fees";
+        e.Button.Label = TranslateButton(_settings?.AllowEntryFee is true ? "Disable Entry Fees" : "Enable Entry Fees");
 
         RefreshView();
     }
@@ -166,5 +169,14 @@ public sealed class TransactionFeesView : ViewBase
         if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
         return base.GetCustomId(component);
+    }
+
+    private string TranslateButton(string key)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+        localization.SetCulture(Menu.Client.GetCurrentMember(_settings.Id.Value)!.GetGuild()!.PreferredLocale);
+
+        return localization.Translate(key, "ButtonStrings");
     }
 }

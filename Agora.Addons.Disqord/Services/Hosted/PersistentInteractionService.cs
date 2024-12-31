@@ -14,6 +14,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord
 {
@@ -190,6 +191,7 @@ namespace Agora.Addons.Disqord
         {
             if (!_confirmationRequired.TryGetValue(interaction.CustomId.Split(':').First(), out var label)) return true;
 
+            var locale = Bot.GetGuild(interaction.GuildId.Value).PreferredLocale;
             var components = interaction.Message.Components
                 .Select(row =>
                 {
@@ -197,7 +199,7 @@ namespace Agora.Addons.Disqord
                     {
                         var button = (IButtonComponent)component;
 
-                        return LocalComponent.Button(button.CustomId, button.Label)
+                        return LocalComponent.Button(button.CustomId, TranslateButton(button.Label, locale))
                                              .WithStyle((LocalButtonComponentStyle)button.Style)
                                              .WithIsDisabled(button.IsDisabled);
                     }).ToArray());
@@ -208,8 +210,8 @@ namespace Agora.Addons.Disqord
                 Components = new[]
                 {
                     LocalComponent.Row(
-                        LocalComponent.Button($"{interaction.Message.Id}:deny", "Cancel").WithStyle(LocalButtonComponentStyle.Danger),
-                        LocalComponent.Button($"{interaction.Message.Id}:confirm", label).WithStyle(LocalButtonComponentStyle.Primary))
+                        LocalComponent.Button($"{interaction.Message.Id}:deny", TranslateButton("Cancel", locale)).WithStyle(LocalButtonComponentStyle.Danger),
+                        LocalComponent.Button($"{interaction.Message.Id}:confirm", TranslateButton(label, locale)).WithStyle(LocalButtonComponentStyle.Primary))
                 }
             });
 
@@ -251,7 +253,7 @@ namespace Agora.Addons.Disqord
             return roomId;
         }
 
-        private static async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IUserInteraction interaction, IServiceScope scope, Exception ex)
+        private async ValueTask SendErrorResponseAsync(InteractionReceivedEventArgs e, IUserInteraction interaction, IServiceScope scope, Exception ex)
         {
             var message = ex switch
             {
@@ -269,7 +271,7 @@ namespace Agora.Addons.Disqord
             var response = new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message);
 
             if (message.EndsWith("contact support."))
-                response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
+                response.WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", TranslateButton("Support Server", Bot.GetGuild(interaction.GuildId.Value).PreferredLocale))));
 
             await interaction.SendMessageAsync(response);
 
@@ -308,6 +310,15 @@ namespace Agora.Addons.Disqord
             loggerContext.ContextInfo.Add("User", interaction.Author.GlobalName);
             loggerContext.ContextInfo.Add($"{interaction.Channel.Type}Channel", interaction.ChannelId);
             loggerContext.ContextInfo.Add("Guild", interaction.GuildId);
+        }
+
+        private string TranslateButton(string key, CultureInfo locale)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+            localization.SetCulture(locale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

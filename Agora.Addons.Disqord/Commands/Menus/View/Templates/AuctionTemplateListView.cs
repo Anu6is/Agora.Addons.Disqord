@@ -18,6 +18,11 @@ namespace Agora.Addons.Disqord.Commands
         public AuctionTemplateListView(CachedEmporium emporium, IEnumerable<AuctionTemplate> templates, IServiceProvider provider) : base(emporium, templates, provider)
         {
             AuctionTemplates = templates.ToList();
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
         }
 
         [Button(Label = "Delete", Style = LocalButtonComponentStyle.Danger, Row = 3)]

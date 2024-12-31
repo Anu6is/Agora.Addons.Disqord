@@ -39,7 +39,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var selectedEconomy = e.SelectedOptions[0];
 
             foreach (var component in EnumerateComponents().OfType<ButtonViewComponent>())
-                if (component.Label.Contains("Default Balance")) RemoveComponent(component);
+                if (component.Label.Contains(TranslateButton("Default Balance"))) RemoveComponent(component);
 
             switch (selectedEconomy.Value.Value)
             {
@@ -62,7 +62,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 case "AuctionBot":
                     AddComponent(new ButtonViewComponent(ClearDefaultBalance)
                     {
-                        Label = "Remove Default Balance",
+                        Label = TranslateButton("Remove Default Balance"),
                         Position = 1,
                         Row = 4,
                         Style = LocalButtonComponentStyle.Danger,
@@ -70,7 +70,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     });
                     AddComponent(new ButtonViewComponent(SetDefaultBalance)
                     {
-                        Label = "Set Default Balance",
+                        Label = TranslateButton("Set Default Balance"),
                         Position = 2,
                         Row = 4,
                         Style = LocalButtonComponentStyle.Primary
@@ -112,7 +112,7 @@ namespace Agora.Addons.Disqord.Menus.View
                 new LocalInteractionMessageResponse().WithIsEphemeral()
                     .AddEmbed(new LocalEmbed().WithDescription("Default balance reset to 0").WithDefaultColor()));
 
-            var reset = EnumerateComponents().OfType<ButtonViewComponent>().First(x => x.Label == "Remove Default Balance").IsDisabled = true;
+            var reset = EnumerateComponents().OfType<ButtonViewComponent>().First(x => x.Label == TranslateButton("Remove Default Balance")).IsDisabled = true;
 
             MessageTemplate = message => message.WithEmbeds(_settings.ToEmbed("Server Economy", new LocalEmoji("💰")));
 
@@ -161,7 +161,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     .WithContent($"Default Balance: {(settings.DefaultCurrency == null ? balance : Money.Create(balance, settings.DefaultCurrency))}")
                     .WithIsEphemeral());
 
-            var reset = EnumerateComponents().OfType<ButtonViewComponent>().FirstOrDefault(x => x.Label == "Remove Default Balance");
+            var reset = EnumerateComponents().OfType<ButtonViewComponent>().FirstOrDefault(x => x.Label == TranslateButton("Remove Default Balance"));
 
             if (reset != null) reset.IsDisabled = false;
 

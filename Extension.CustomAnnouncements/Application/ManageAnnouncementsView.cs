@@ -3,6 +3,7 @@ using Agora.Addons.Disqord.Extensions;
 using Disqord;
 using Disqord.Bot;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Extension.CustomAnnouncements.Domain;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,7 @@ namespace Extension.CustomAnnouncements.Application;
 
 public sealed class ManageAnnouncementsView : ViewBase
 {
+    private readonly ulong _guildId;
     private string _customMessage;
     private AnnouncementType _selectedAnnouncementType;
     private ISelectionComponentInteraction? _interaction;
@@ -75,6 +77,13 @@ public sealed class ManageAnnouncementsView : ViewBase
             MaximumSelectedOptions = 1,
             Options = _options
         });
+
+        foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+        {
+            button.Label = TranslateButton(button.Label!);
+        }
+
+        _guildId = customAnnouncements.First().GuildId;
     }
 
     public async ValueTask SelectAnnouncementType(SelectionEventArgs e)
@@ -285,5 +294,15 @@ public sealed class ManageAnnouncementsView : ViewBase
         var value = rows.First().Components.OfType<ITextInputComponent>().First().Value!;
 
         return value;
+    }
+
+    private string TranslateButton(string key)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+        localization.SetCulture(Menu.Client.GetGuild(_guildId)!.PreferredLocale);
+
+        return localization.Translate(key, "ButtonStrings");
     }
 }

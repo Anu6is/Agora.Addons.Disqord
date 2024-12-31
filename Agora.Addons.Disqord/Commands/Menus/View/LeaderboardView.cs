@@ -3,6 +3,7 @@ using Agora.Shared.Features.Queries;
 using Agora.Shared.Persistence.Specifications.Filters;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Disqord.Gateway;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
@@ -24,10 +25,12 @@ namespace Agora.Addons.Disqord.Menus.View
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
-                if (button.Label == "Previous") button.IsDisabled = response.PageNumber == 1;
-                if (button.Label == "Next") button.IsDisabled = response.PageNumber == response.TotalPages;
+                button.Label = TranslateButton(button.Label);
 
-                if (response.TotalPages <= 1 && button.Label != "Close") RemoveComponent(button);
+                if (button.Label == TranslateButton("Previous")) button.IsDisabled = response.PageNumber == 1;
+                if (button.Label == TranslateButton("Next")) button.IsDisabled = response.PageNumber == response.TotalPages;
+
+                if (response.TotalPages <= 1 && button.Label != TranslateButton("Close")) RemoveComponent(button);
             }
         }
 
@@ -116,8 +119,8 @@ namespace Agora.Addons.Disqord.Menus.View
         {
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
-                if (button.Label == "Previous") button.IsDisabled = _response.PageNumber == 1;
-                if (button.Label == "Next") button.IsDisabled = _response.PageNumber == _response.TotalPages;
+                if (button.Label == TranslateButton("Previous")) button.IsDisabled = _response.PageNumber == 1;
+                if (button.Label == TranslateButton("Next")) button.IsDisabled = _response.PageNumber == _response.TotalPages;
             }
 
             return base.UpdateAsync();
@@ -128,6 +131,18 @@ namespace Agora.Addons.Disqord.Menus.View
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        private string TranslateButton(string key)
+        {
+            var bot = Menu.Client as AgoraBot;
+
+            using var scope = bot.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(bot.GetGuild(_settings.GuildId).PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

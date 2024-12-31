@@ -1,9 +1,11 @@
-﻿using Agora.Addons.Disqord.Common;
+﻿using Agora.Addons.Disqord;
+using Agora.Addons.Disqord.Common;
 using Agora.Addons.Disqord.Extensions;
 using Agora.Addons.Disqord.Interfaces;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Domain.Common;
@@ -11,6 +13,7 @@ using Emporia.Domain.Entities;
 using Emporia.Domain.Services;
 using Emporia.Persistence.DataAccess;
 using Extension.TransactionFees.Domain;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Extension.TransactionFees.Application;
 
@@ -45,7 +48,7 @@ public class EntryFeeValidator(IDataAccessor dataAccessor) : IPluginExtension
     }
 }
 
-public class PremiumListingManager(DiscordBotBase bot, IDataAccessor dataAccessor) : IPluginExtension
+public class PremiumListingManager(DiscordBotBase bot, IDataAccessor dataAccessor, IServiceScopeFactory scopeFactory) : IPluginExtension
 {
     public async ValueTask<IResult> Execute(PluginParameters parameters)
     {
@@ -99,7 +102,7 @@ public class PremiumListingManager(DiscordBotBase bot, IDataAccessor dataAccesso
         var premiumEmbed = Display(premiumListing);
         var registerButton = new LocalButtonComponent()
             .WithCustomId($"#PayAuctionFee:{listing.Id.Value}")
-            .WithLabel("Pay Entry Fee")
+            .WithLabel(TranslateButton(listing.Owner.EmporiumId.Value, "Pay Entry Fee"))
             .WithStyle(LocalButtonComponentStyle.Success);
 
         embeds.Insert(0, premiumEmbed);
@@ -123,5 +126,14 @@ public class PremiumListingManager(DiscordBotBase bot, IDataAccessor dataAccesso
             embed.WithFooter($"Required Entries: {Math.Min(premium.EntryList.Count, premium.RequiredEntries)}/{premium.RequiredEntries}");
 
         return embed;
+    }
+
+    private string TranslateButton(ulong guildId, string key)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+        localization.SetCulture(bot.GetGuild(guildId)!.PreferredLocale);
+
+        return localization.Translate(key, "ButtonStrings");
     }
 }

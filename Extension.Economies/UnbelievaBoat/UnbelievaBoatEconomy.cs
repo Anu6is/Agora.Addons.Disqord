@@ -57,7 +57,7 @@ namespace Extension.Economies.UnbelievaBoat
                 if (!result.IsSuccessful) return result;
             }
 
-            if (userBalance.IsRateLimited)
+            if (userBalance!.IsRateLimited)
             {
                 await Task.Delay(userBalance.RetryAfter);
 
@@ -80,7 +80,7 @@ namespace Extension.Economies.UnbelievaBoat
                 if (!result.IsSuccessful) return result;
             }
 
-            if (userBalance.IsRateLimited)
+            if (userBalance!.IsRateLimited)
                 return Result<Money>.Failure($"UnbelievaBoat transaction processing is on cooldown. Retry after {userBalance.RetryAfter.Humanize()}");
 
             return Result.Success(Money.Create(ParseToDecimal(userBalance.Total), amount.Currency));

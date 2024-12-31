@@ -34,8 +34,8 @@ namespace Agora.Addons.Disqord.Menus.View
             {
                 if (button.Position == 1)
                     button.Label = _flag == SettingsFlags.SealedPayout
-                        ? _settings.Features.HasFlag(_flag) ? "Second Highest" : "Highest Bid"
-                        : $"{(_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable"))} {featureText}";
+                        ? TranslateButton(_settings.Features.HasFlag(_flag) ? "Second Highest" : "Highest Bid")
+                        : $"{TranslateButton((_settings.Features.HasFlag(_flag) ? (_invert ? "Enable" : "Disable") : (_invert ? "Disable" : "Enable")))} {TranslateButton(featureText)}";
             }
         }
 
@@ -73,7 +73,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())
-                if (button.Label != "Close") button.IsDisabled = true;
+                if (button.Label != TranslateButton("Close")) button.IsDisabled = true;
 
             ReportChanges();
 

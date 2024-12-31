@@ -1,5 +1,6 @@
 ﻿using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Agora.Addons.Disqord.Menus
 {
@@ -34,6 +35,11 @@ namespace Agora.Addons.Disqord.Menus
             }
 
             if (Selection.Options.Count > 0) AddComponent(Selection);
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
         }
 
         private ValueTask HandleSelection(SelectionEventArgs e)
@@ -72,6 +78,16 @@ namespace Agora.Addons.Disqord.Menus
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        protected string TranslateButton(string key)
+        {
+            using var scope = _context.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(_context.Guild.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

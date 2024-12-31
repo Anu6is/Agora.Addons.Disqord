@@ -23,6 +23,7 @@ namespace Agora.Addons.Disqord
     {
         private readonly DiscordBotBase _agora;
         private readonly ILogger _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly IGuildSettingsService _settingsService;
         private readonly ICommandContextAccessor _commandAccessor;
         private readonly IInteractionContextAccessor _interactionAccessor;
@@ -31,13 +32,15 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public ProductListingService(DiscordBotBase bot,
-                                        IGuildSettingsService settingsService,
-                                        ICommandContextAccessor commandAccessor,
-                                        IInteractionContextAccessor interactionAccessor,
-                                        ILogger<MessageProcessingService> logger) : base(logger)
+                                     IServiceScopeFactory scopeFactory,
+                                     IGuildSettingsService settingsService,
+                                     ICommandContextAccessor commandAccessor,
+                                     IInteractionContextAccessor interactionAccessor,
+                                     ILogger<MessageProcessingService> logger) : base(logger)
         {
             _agora = bot;
             _logger = logger;
+            _scopeFactory = scopeFactory;
             _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
@@ -70,7 +73,7 @@ namespace Agora.Addons.Disqord
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
             var message = new LocalMessage().AddEmbed(productListing.ToEmbed().WithCategory(categorization))
-                                            .WithComponents(productListing.Buttons(settings.Features.AcceptOffers, hideMinButton));
+                                            .WithComponents(productListing.Buttons(_scopeFactory, settings.Features.AcceptOffers, hideMinButton));
 
             if (channel is CachedForumChannel forum)
             {
@@ -233,7 +236,7 @@ namespace Agora.Addons.Disqord
             }
 
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
-            var buttons = productListing.Buttons(settings.Features.AcceptOffers, hideMinButton);
+            var buttons = productListing.Buttons(_scopeFactory, settings.Features.AcceptOffers, hideMinButton);
 
             await UpdateMessageAsync(channelId, productListing, content, productEmbeds, buttons);
         }

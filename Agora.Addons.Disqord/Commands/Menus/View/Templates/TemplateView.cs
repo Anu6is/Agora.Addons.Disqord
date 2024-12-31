@@ -3,6 +3,7 @@ using Agora.Addons.Disqord.Parsers;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
+using Disqord.Gateway;
 using Disqord.Rest;
 using Emporia.Domain.Extension;
 using Emporia.Domain.Services;
@@ -40,6 +41,11 @@ namespace Agora.Addons.Disqord.Commands
             SubcategorySelection = new SelectionViewComponent(SelectSubcategory) { MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Placeholder = "Select a default Subcategory", Row = 2 };
 
             AddCategorySelection();
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
         }
 
         [Selection(MaximumSelectedOptions = 1, MinimumSelectedOptions = 0, Row = 0, Placeholder = "Change the default owner", Type = SelectionComponentType.User)]
@@ -314,6 +320,16 @@ namespace Agora.Addons.Disqord.Commands
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        protected string TranslateButton(string key)
+        {
+            using var scope = Provider.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(Menu.Client.GetGuild(Emporium.EmporiumId)!.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

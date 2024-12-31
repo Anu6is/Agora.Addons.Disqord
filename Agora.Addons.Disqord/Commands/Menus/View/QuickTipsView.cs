@@ -2,12 +2,16 @@
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
+using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Commands
 {
     public class QuickTipsView : PagedViewBase
     {
-        public QuickTipsView(IEnumerable<Fact> tips)
+        private readonly CultureInfo _locale;
+
+        public QuickTipsView(IEnumerable<Fact> tips, CultureInfo locale)
             : base(new ListPageProvider(tips.Select(tip =>
             {
                 var embed = new LocalEmbed().WithTitle("💡 Did You Know").WithDescription(tip.Summary);
@@ -16,7 +20,14 @@ namespace Agora.Addons.Disqord.Commands
 
                 return new Page().AddEmbed(embed);
             }).ToArray()))
-        { }
+        {
+            _locale = locale;
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
+        }
 
         [Button(Label = "Back", Style = LocalButtonComponentStyle.Primary)]
         public ValueTask Previous(ButtonEventArgs e)
@@ -48,6 +59,18 @@ namespace Agora.Addons.Disqord.Commands
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        private string TranslateButton(string key)
+        {
+            var bot = Menu.Client as AgoraBot;
+
+            using var scope = bot.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(_locale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

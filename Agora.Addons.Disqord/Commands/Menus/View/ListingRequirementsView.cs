@@ -52,6 +52,11 @@ namespace Agora.Addons.Disqord.Commands.Menus.View
             }
 
             AddComponent(Selection);
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
         }
 
         public async ValueTask RequirementSelection(SelectionEventArgs e)
@@ -87,6 +92,16 @@ namespace Agora.Addons.Disqord.Commands.Menus.View
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        private string TranslateButton(string key)
+        {
+            using var scope = Context.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(Context.Guild.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

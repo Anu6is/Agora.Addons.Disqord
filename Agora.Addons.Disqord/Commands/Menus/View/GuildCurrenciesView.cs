@@ -36,6 +36,11 @@ namespace Agora.Addons.Disqord.Menus.View
             _currencies = currencies;
             _selection = EnumerateComponents().OfType<SelectionViewComponent>().First();
 
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
+
             if (_currencies.Count == 0)
                 _selection.Options.Add(new LocalSelectionComponentOption("No Currencies Exist", "0"));
 
@@ -354,9 +359,9 @@ namespace Agora.Addons.Disqord.Menus.View
                     var currency = _currencies.First(x => x.Code == _code);
 
                     if (currency.Format == CurrencyFormat.RightAlign)
-                        button.Label = "Left Align";
+                        button.Label = TranslateButton("Left Align");
                     else
-                        button.Label = "Right Align";
+                        button.Label = TranslateButton("Right Align");
                 }
 
                 if (button.Position == 3 && _code == _context.Settings.DefaultCurrency.Code) button.IsDisabled = true;
@@ -376,6 +381,16 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
             }
+        }
+
+        protected string TranslateButton(string key)
+        {
+            using var scope = _context.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(_context.Guild.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

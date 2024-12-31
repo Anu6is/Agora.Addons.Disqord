@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Agora.Addons.Translations\Agora.Addons.Translations.csproj" />
     <ProjectReference Include="..\Agora.Addons.Disqord\Agora.Addons.Disqord.csproj" />
     <ProjectReference Include="..\Extension.CustomAnnouncements\Extension.CustomAnnouncements.csproj" />
     <ProjectReference Include="..\Extension.Economies\Extension.Economies.csproj" />

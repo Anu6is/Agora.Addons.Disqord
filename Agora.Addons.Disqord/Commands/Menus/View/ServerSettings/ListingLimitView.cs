@@ -83,11 +83,11 @@ namespace Agora.Addons.Disqord.Menus.View
             ReportChanges();
         }
 
-        protected override string GetCustomId(InteractableViewComponent component)
-        {
-            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+        //protected override string GetCustomId(InteractableViewComponent component)
+        //{
+        //    if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
-            return base.GetCustomId(component);
-        }
+        //    return base.GetCustomId(component);
+        //}
     }
 }

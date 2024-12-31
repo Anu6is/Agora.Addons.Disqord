@@ -37,7 +37,7 @@ namespace Agora.Addons.Disqord.Commands
         {
             var tips = _configuration.GetSection("Facts").Get<List<Fact>>();
 
-            return View(new QuickTipsView(tips.OrderBy(x => _random.Next())));
+            return View(new QuickTipsView(tips.OrderBy(x => _random.Next()), Context.GuildLocale));
         }
 
         private async Task<IResult> GetStatsAsync()

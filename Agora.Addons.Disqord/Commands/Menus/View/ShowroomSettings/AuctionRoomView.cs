@@ -68,7 +68,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     {
                         Style = TextInputComponentStyle.Short,
                         CustomId = "opening",
-                        Label = "Opens At",
+                        Label = TranslateButton("Opens At"),
                         Placeholder = room.ActiveHours?.OpensAt.ToString(@"hh\:mm") ?? "00:00",
                         MaximumInputLength = 5,
                         MinimumInputLength = 4,
@@ -78,7 +78,7 @@ namespace Agora.Addons.Disqord.Menus.View
                     {
                         Style = TextInputComponentStyle.Short,
                         CustomId = "closing",
-                        Label = "Closes At",
+                        Label = TranslateButton("Closes At"),
                         Placeholder = room.ActiveHours?.ClosesAt.ToString(@"hh\:mm") ?? "00:00",
                         MaximumInputLength = 5,
                         MinimumInputLength = 4,
@@ -195,7 +195,7 @@ namespace Agora.Addons.Disqord.Menus.View
             var exists = _showrooms.Any(x => x.Id.Value == SelectedChannelId && x.ListingType == ListingType.Auction.ToString());
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
-                if (button.Label != "Close")
+                if (button.Label != TranslateButton("Close"))
                     button.IsDisabled = !exists;
                 else
                     button.IsDisabled = false;
@@ -205,11 +205,11 @@ namespace Agora.Addons.Disqord.Menus.View
 
         public override ValueTask LockSelectionAsync() => default;
 
-        protected override string GetCustomId(InteractableViewComponent component)
-        {
-            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+        //protected override string GetCustomId(InteractableViewComponent component)
+        //{
+        //    if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
-            return base.GetCustomId(component);
-        }
+        //    return base.GetCustomId(component);
+        //}
     }
 }

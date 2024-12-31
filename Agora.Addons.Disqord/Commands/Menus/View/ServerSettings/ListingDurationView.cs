@@ -23,7 +23,7 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
                 if (button.Position == 2)
-                    button.Label = $"Default to {(_context.Settings.MinimumDurationDefault ? "Max" : "Min")}";
+                    button.Label = $"{TranslateButton("Default to")} {TranslateButton((_context.Settings.MinimumDurationDefault ? "Max" : "Min"))}";
             }
         }
 
@@ -155,18 +155,18 @@ namespace Agora.Addons.Disqord.Menus.View
                 await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new UpdateGuildSettingsCommand(settings));
             }
 
-            e.Button.Label = $"Default to {(_context.Settings.MinimumDurationDefault ? "Max" : "Min")}";
+            e.Button.Label = $"{TranslateButton("Default to")} {TranslateButton((_context.Settings.MinimumDurationDefault ? "Max" : "Min"))}";
 
             MessageTemplate = message => message.WithEmbeds(settings.ToEmbed("Duration Settings", new LocalEmoji("⏲️")));
 
             ReportChanges();
         }
 
-        protected override string GetCustomId(InteractableViewComponent component)
-        {
-            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+        //protected override string GetCustomId(InteractableViewComponent component)
+        //{
+        //    if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
-            return base.GetCustomId(component);
-        }
+        //    return base.GetCustomId(component);
+        //}
     }
 }

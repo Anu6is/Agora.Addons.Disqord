@@ -18,197 +18,205 @@ using Qmmands.Default;
 using Qmmands.Text;
 using System.Reflection;
 
-namespace Agora.Addons.Disqord
+namespace Agora.Addons.Disqord;
+
+internal class AgoraBot : DiscordBot
 {
-    internal class AgoraBot : DiscordBot
+    private readonly ILogger<DiscordBot> _logger;
+
+    public AgoraBot(IOptions<DiscordBotConfiguration> options, ILogger<DiscordBot> logger, IServiceProvider services, DiscordClient client)
+        : base(options, logger, services, client) { _logger = logger; }
+
+    protected override IEnumerable<Assembly> GetModuleAssemblies()
     {
-        private readonly ILogger<DiscordBot> _logger;
+        var assemblies = new List<Assembly> { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
+        var externalAssemblies = Services.GetRequiredService<IConfiguration>().LoadCommandAssemblies();
 
-        public AgoraBot(IOptions<DiscordBotConfiguration> options, ILogger<DiscordBot> logger, IServiceProvider services, DiscordClient client)
-            : base(options, logger, services, client) { _logger = logger; }
+        assemblies.AddRange(externalAssemblies);
 
-        protected override IEnumerable<Assembly> GetModuleAssemblies()
+        return assemblies;
+    }
+
+    protected override ValueTask<IResult> OnBeforeExecuted(IDiscordCommandContext context)
+    {
+        if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress)
+            return Results.Failure("Services are presently unavailable, while entering maintenance mode.");
+
+        if (context.Command is not null)
         {
-            var assemblies = new List<Assembly> { Assembly.GetEntryAssembly(), Assembly.GetExecutingAssembly() };
-            var externalAssemblies = Services.GetRequiredService<IConfiguration>().LoadCommandAssemblies();
+            var parameters = context.Arguments?
+                .Where(x => x.Value is not null && x.Value.ToString() != "0")
+                .Select(x => $"{x.Key.Name}: {x.Value}");
 
-            assemblies.AddRange(externalAssemblies);
-
-            return assemblies;
+            _logger.LogInformation("{Author} executed {MethodName}({parameters})", context.Author, context.Command.MethodInfo.Name, parameters);
         }
 
-        protected override ValueTask<IResult> OnBeforeExecuted(IDiscordCommandContext context)
+        return base.OnBeforeExecuted(context);
+    }
+
+    protected async override ValueTask OnFailedResult(IDiscordCommandContext context, IResult result)
+    {
+        if (result is CommandNotFoundResult) return;
+
+        await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
+
+        LocalMessageBase localMessageBase = CreateFailureMessage(context);
+
+        if (localMessageBase == null) return;
+        if (result is ExceptionResult err && err.Exception is ValidationException or UnauthorizedAccessException)
+            localMessageBase.Components = new List<LocalRowComponent>();
+
+        if (result is ChecksFailedResult || result is ParameterChecksFailedResult)
+            localMessageBase.Components = new List<LocalRowComponent>();
+
+        if (!FormatFailureMessage(context, localMessageBase, result)) return;
+
+        try
         {
-            if (AgoraModuleBase.ShutdownInProgress || AgoraModuleBase.RebootInProgress)
-                return Results.Failure("Services are presently unavailable, while entering maintenance mode.");
+            await SendFailureMessageAsync(context, localMessageBase);
+        }
+        catch (Exception)
+        {
+            var failureReason = result.FailureReason;
 
-            if (context.Command is not null)
+            if (result is ChecksFailedResult checksFailedResult)
+                failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
+
+            _logger.LogError("Failed to log {type} exception {result} for {command}",
+                            result.GetType(),
+                            failureReason ?? "no reason",
+                            context.Command == null ? "non command action" : context.Command.Name);
+        }
+
+        return;
+    }
+
+    protected override LocalMessageBase CreateFailureMessage(IDiscordCommandContext context)
+    {
+        if (context is IDiscordInteractionCommandContext)
+            return new LocalInteractionMessageResponse()
+                .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", TranslateButton(context, "Support Server"))))
+                .WithIsEphemeral();
+
+        return new LocalMessage()
+            .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", TranslateButton(context, "Support Server"))));
+    }
+
+    protected override string FormatFailureReason(IDiscordCommandContext context, IResult result)
+    {
+        if (result is ExceptionResult executionFailedResult)
+            return executionFailedResult.Exception switch
             {
-                var parameters = context.Arguments?
-                    .Where(x => x.Value is not null && x.Value.ToString() != "0")
-                    .Select(x => $"{x.Key.Name}: {x.Value}");
+                ValidationException validationException => $"{validationException.Message}\n{string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"))}",
+                UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
+                _ => executionFailedResult.Exception.Message.Replace("parameter", "")
+            };
 
-                _logger.LogInformation("{Author} executed {MethodName}({parameters})", context.Author, context.Command.MethodInfo.Name, parameters);
+        if (result is CommandRateLimitedResult rateLimitedResult)
+            return rateLimitedResult.FailureReason.Replace("News", "Publish");
+
+        return base.FormatFailureReason(context, result);
+    }
+
+    protected override bool FormatFailureMessage(IDiscordCommandContext context, LocalMessageBase message, IResult result)
+    {
+        static string FormatParameter(IParameter parameter)
+        {
+            var typeInformation = parameter.GetTypeInformation();
+            var format = "{0}";
+            if (typeInformation.IsEnumerable)
+            {
+                format = "{0}[]";
+            }
+            else if (parameter is IPositionalParameter positionalParameter && positionalParameter.IsRemainder)
+            {
+                format = "{0}…";
             }
 
-            return base.OnBeforeExecuted(context);
+            format = typeInformation.IsOptional
+                ? $"[{format}]"
+                : $"<{format}>";
+
+            return string.Format(format, parameter.Name);
         }
 
-        protected async override ValueTask OnFailedResult(IDiscordCommandContext context, IResult result)
+        var reason = FormatFailureReason(context, result);
+        if (reason == null)
+            return false;
+
+        var embed = new LocalEmbed().WithDescription(reason).WithColor(0x2F3136);
+        var module = context.Command.Module as ApplicationModule;
+        var parent = module?.Parent;
+        var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
+
+        if (alias.IndexOf(':') > 0) alias = alias[..alias.IndexOf(":")];
+
+        if (result is OverloadsFailedResult overloadsFailedResult)
         {
-            if (result is CommandNotFoundResult) return;
-
-            await Services.GetRequiredService<UnhandledExceptionService>().CommandExecutionFailed(context, result);
-
-            LocalMessageBase localMessageBase = CreateFailureMessage(context);
-
-            if (localMessageBase == null) return;
-            if (result is ExceptionResult err && err.Exception is ValidationException or UnauthorizedAccessException)
-                localMessageBase.Components = new List<LocalRowComponent>();
-
-            if (result is ChecksFailedResult || result is ParameterChecksFailedResult)
-                localMessageBase.Components = new List<LocalRowComponent>();
-
-            if (!FormatFailureMessage(context, localMessageBase, result)) return;
-
-            try
+            foreach (var (overload, overloadResult) in overloadsFailedResult.FailedOverloads)
             {
-                await SendFailureMessageAsync(context, localMessageBase);
+                var overloadReason = FormatFailureReason(context, overloadResult);
+                if (overloadReason == null)
+                    continue;
+
+                embed.AddField($"Overload: {alias} {string.Join(' ', overload.Parameters.Select(FormatParameter))}", overloadReason);
             }
-            catch (Exception)
+        }
+        else if (context.Command != null)
+        {
+            embed.WithTitle($"Command: {alias} ");
+        }
+
+        message.AddEmbed(embed);
+        message.WithAllowedMentions(LocalAllowedMentions.None);
+        return true;
+    }
+
+    protected override ValueTask InitializeRateLimiter(CancellationToken cancellationToken)
+    {
+        if (Services.GetService<ICommandRateLimiter>() is AgoraCommandRateLimiter rateLimiter)
+        {
+            rateLimiter.BucketKeyGenerator = (_, bucketType) =>
             {
-                var failureReason = result.FailureReason;
+                if (_ is not IDiscordCommandContext context)
+                    throw new ArgumentException($"Context must be a {typeof(IDiscordCommandContext)}.", nameof(context));
 
-                if (result is ChecksFailedResult checksFailedResult)
-                    failureReason = string.Join('\n', checksFailedResult.FailedChecks.Values.Select(x => $"• {x.FailureReason}"));
-
-                _logger.LogError("Failed to log {type} exception {result} for {command}",
-                                result.GetType(),
-                                failureReason ?? "no reason",
-                                context.Command == null ? "non command action" : context.Command.Name);
-            }
-
-            return;
+                return GetRateLimitBucketKey(context, bucketType.ToString());
+            };
         }
 
-        protected override LocalMessageBase CreateFailureMessage(IDiscordCommandContext context)
-        {
-            if (context is IDiscordInteractionCommandContext)
-                return new LocalInteractionMessageResponse()
-                    .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")))
-                    .WithIsEphemeral();
+        return default;
+    }
 
-            return new LocalMessage()
-                .WithComponents(LocalComponent.Row(LocalComponent.LinkButton("https://discord.gg/WmCpC8G", "Support Server")));
-        }
+    private static object GetRateLimitBucketKey(IDiscordCommandContext context, string bucketType) => bucketType switch
+    {
+        "User" => context.Author.Id,
+        "Member" => (context.GuildId, context.Author.Id),
+        "Guild" => context.GuildId ?? context.Author.Id,
+        "Channel" => context.ChannelId,
+        "News" => context.Bot.GetChannel(context.GuildId.Value, context.ChannelId).Type == ChannelType.News ? context.ChannelId : null,
+        _ => throw new ArgumentOutOfRangeException(nameof(bucketType))
+    };
 
-        protected override string FormatFailureReason(IDiscordCommandContext context, IResult result)
-        {
-            if (result is ExceptionResult executionFailedResult)
-                return executionFailedResult.Exception switch
-                {
-                    ValidationException validationException => $"{validationException.Message}\n{string.Join('\n', validationException.Errors.Select(x => $"• {x.ErrorMessage}"))}",
-                    UnauthorizedAccessException unauthorizedAccessException => unauthorizedAccessException.Message,
-                    _ => executionFailedResult.Exception.Message.Replace("parameter", "")
-                };
+    protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)
+    {
+        typeParserProvider.AddParser(new StringValueTypeParser<ProductTitle>(75));
+        typeParserProvider.AddParser(new StringValueTypeParser<HiddenMessage>(250));
+        typeParserProvider.AddParser(new StringValueTypeParser<ProductDescription>(500));
+        typeParserProvider.AddParser(new IntValueTypeParser<Stock>());
+        typeParserProvider.AddParser(new DateTimeTypeParser());
+        typeParserProvider.AddParser(new TimeSpanTypeParser());
+        typeParserProvider.AddParser(new TimeTypeParser());
 
-            if (result is CommandRateLimitedResult rateLimitedResult)
-                return rateLimitedResult.FailureReason.Replace("News", "Publish");
+        return base.AddTypeParsers(typeParserProvider, cancellationToken);
+    }
 
-            return base.FormatFailureReason(context, result);
-        }
+    private string TranslateButton(IDiscordCommandContext context, string key)
+    {
+        using var scope = Services.CreateScope();
+        var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+        localization.SetCulture(context.GuildLocale);
 
-        protected override bool FormatFailureMessage(IDiscordCommandContext context, LocalMessageBase message, IResult result)
-        {
-            static string FormatParameter(IParameter parameter)
-            {
-                var typeInformation = parameter.GetTypeInformation();
-                var format = "{0}";
-                if (typeInformation.IsEnumerable)
-                {
-                    format = "{0}[]";
-                }
-                else if (parameter is IPositionalParameter positionalParameter && positionalParameter.IsRemainder)
-                {
-                    format = "{0}…";
-                }
-
-                format = typeInformation.IsOptional
-                    ? $"[{format}]"
-                    : $"<{format}>";
-
-                return string.Format(format, parameter.Name);
-            }
-
-            var reason = FormatFailureReason(context, result);
-            if (reason == null)
-                return false;
-
-            var embed = new LocalEmbed().WithDescription(reason).WithColor(0x2F3136);
-            var module = context.Command.Module as ApplicationModule;
-            var parent = module?.Parent;
-            var alias = $"{parent?.Alias} {module?.Alias} {context.Command.Name}".TrimStart();
-
-            if (alias.IndexOf(':') > 0) alias = alias[..alias.IndexOf(":")];
-
-            if (result is OverloadsFailedResult overloadsFailedResult)
-            {
-                foreach (var (overload, overloadResult) in overloadsFailedResult.FailedOverloads)
-                {
-                    var overloadReason = FormatFailureReason(context, overloadResult);
-                    if (overloadReason == null)
-                        continue;
-
-                    embed.AddField($"Overload: {alias} {string.Join(' ', overload.Parameters.Select(FormatParameter))}", overloadReason);
-                }
-            }
-            else if (context.Command != null)
-            {
-                embed.WithTitle($"Command: {alias} ");
-            }
-
-            message.AddEmbed(embed);
-            message.WithAllowedMentions(LocalAllowedMentions.None);
-            return true;
-        }
-
-        protected override ValueTask InitializeRateLimiter(CancellationToken cancellationToken)
-        {
-            if (Services.GetService<ICommandRateLimiter>() is AgoraCommandRateLimiter rateLimiter)
-            {
-                rateLimiter.BucketKeyGenerator = (_, bucketType) =>
-                {
-                    if (_ is not IDiscordCommandContext context)
-                        throw new ArgumentException($"Context must be a {typeof(IDiscordCommandContext)}.", nameof(context));
-
-                    return GetRateLimitBucketKey(context, bucketType.ToString());
-                };
-            }
-
-            return default;
-        }
-
-        private static object GetRateLimitBucketKey(IDiscordCommandContext context, string bucketType) => bucketType switch
-        {
-            "User" => context.Author.Id,
-            "Member" => (context.GuildId, context.Author.Id),
-            "Guild" => context.GuildId ?? context.Author.Id,
-            "Channel" => context.ChannelId,
-            "News" => context.Bot.GetChannel(context.GuildId.Value, context.ChannelId).Type == ChannelType.News ? context.ChannelId : null,
-            _ => throw new ArgumentOutOfRangeException(nameof(bucketType))
-        };
-
-        protected override ValueTask AddTypeParsers(DefaultTypeParserProvider typeParserProvider, CancellationToken cancellationToken)
-        {
-            typeParserProvider.AddParser(new StringValueTypeParser<ProductTitle>(75));
-            typeParserProvider.AddParser(new StringValueTypeParser<HiddenMessage>(250));
-            typeParserProvider.AddParser(new StringValueTypeParser<ProductDescription>(500));
-            typeParserProvider.AddParser(new IntValueTypeParser<Stock>());
-            typeParserProvider.AddParser(new DateTimeTypeParser());
-            typeParserProvider.AddParser(new TimeSpanTypeParser());
-            typeParserProvider.AddParser(new TimeTypeParser());
-
-            return base.AddTypeParsers(typeParserProvider, cancellationToken);
-        }
+        return localization.Translate(key, "ButtonStrings");
     }
 }

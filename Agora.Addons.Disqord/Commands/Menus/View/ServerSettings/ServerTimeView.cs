@@ -89,7 +89,7 @@ namespace Agora.Addons.Disqord.Menus.View
             }
 
             foreach (ButtonViewComponent button in EnumerateComponents().OfType<ButtonViewComponent>())
-                if (button.Label != "Close") button.IsDisabled = true;
+                if (button.Label != TranslateButton("Close")) button.IsDisabled = true;
 
             ReportChanges();
 
@@ -111,11 +111,11 @@ namespace Agora.Addons.Disqord.Menus.View
         private static string TimeFromOffset(TimeSpan offset, int shift = 0)
             => DateTimeOffset.UtcNow.ToOffset(offset).AddHours(shift).ToString("HH:mm");
 
-        protected override string GetCustomId(InteractableViewComponent component)
-        {
-            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+        //protected override string GetCustomId(InteractableViewComponent component)
+        //{
+        //    if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
-            return base.GetCustomId(component);
-        }
+        //    return base.GetCustomId(component);
+        //}
     }
 }

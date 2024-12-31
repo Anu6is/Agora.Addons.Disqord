@@ -26,6 +26,11 @@ namespace Agora.Addons.Disqord.Menus.View
             _categories = categories;
 
             AddCategoryComponents();
+
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+            {
+                button.Label = TranslateButton(button.Label);
+            }
         }
 
         public async ValueTask AddCategory(ButtonEventArgs e)
@@ -181,7 +186,7 @@ namespace Agora.Addons.Disqord.Menus.View
 
                 _selectedSubcategory = e.SelectedOptions[0].Label.Value;
 
-                EnumerateComponents().OfType<ButtonViewComponent>().First(x => x.Label == "Remove Subcategory").IsDisabled = false;
+                EnumerateComponents().OfType<ButtonViewComponent>().First(x => x.Label == TranslateButton("Remove Subcategory")).IsDisabled = false;
 
                 ReportChanges();
             }
@@ -269,7 +274,7 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var componenet in EnumerateComponents().Where(x => x.Row < 4))
                 RemoveComponent(componenet);
 
-            var removeCategory = new ButtonViewComponent(RemoveCategory) { Label = "Remove Category", Style = LocalButtonComponentStyle.Danger, Row = 0, Position = 0 };
+            var removeCategory = new ButtonViewComponent(RemoveCategory) { Label = TranslateButton("Remove Category"), Style = LocalButtonComponentStyle.Danger, Row = 0, Position = 0 };
             var selection = new SelectionViewComponent(SelectCategory) { MaximumSelectedOptions = 1, Placeholder = "Select a Category", Row = 1 };
 
             if (_categories.Count == 0)
@@ -286,7 +291,7 @@ namespace Agora.Addons.Disqord.Menus.View
             selection.IsDisabled = _categories.Count == 0;
             removeCategory.IsDisabled = _selectedCategory == string.Empty;
 
-            AddComponent(new ButtonViewComponent(AddCategory) { Label = "Add Category", Style = LocalButtonComponentStyle.Success, Row = 0, Position = 1 });
+            AddComponent(new ButtonViewComponent(AddCategory) { Label = TranslateButton("Add Category"), Style = LocalButtonComponentStyle.Success, Row = 0, Position = 1 });
             AddComponent(removeCategory);
             AddComponent(selection);
         }
@@ -296,7 +301,7 @@ namespace Agora.Addons.Disqord.Menus.View
             foreach (var componenet in EnumerateComponents().Where(x => x.Row < 4))
                 RemoveComponent(componenet);
 
-            var removeSubcategory = new ButtonViewComponent(RemoveSubCategory) { Label = "Remove Subcategory", Style = LocalButtonComponentStyle.Danger, Row = 1, Position = 0 };
+            var removeSubcategory = new ButtonViewComponent(RemoveSubCategory) { Label = TranslateButton("Remove Subcategory"), Style = LocalButtonComponentStyle.Danger, Row = 1, Position = 0 };
             var selection = new SelectionViewComponent(SelectSubcategory) { MaximumSelectedOptions = 1, Placeholder = "Select a Subcategory", Row = 2 };
             var subcategories = _categories.First(x => x.Title.Equals(_selectedCategory)).SubCategories.Where(x => !x.Title.Equals(_selectedCategory)).ToArray();
 
@@ -314,9 +319,9 @@ namespace Agora.Addons.Disqord.Menus.View
             selection.IsDisabled = subcategories.Length == 0;
             removeSubcategory.IsDisabled = _selectedSubcategory == string.Empty;
 
-            AddComponent(new ButtonViewComponent(RemoveCategory) { Label = $"Remove Category", Style = LocalButtonComponentStyle.Danger, Row = 0, Position = 0 });
-            AddComponent(new ButtonViewComponent(CategoryView) { Label = $"Back to Categories", Style = LocalButtonComponentStyle.Primary, Row = 0, Position = 1 });
-            AddComponent(new ButtonViewComponent(AddSubcategory) { Label = "Add Subcategory", Style = LocalButtonComponentStyle.Success, Row = 1, Position = 1 });
+            AddComponent(new ButtonViewComponent(RemoveCategory) { Label = TranslateButton("Remove Category"), Style = LocalButtonComponentStyle.Danger, Row = 0, Position = 0 });
+            AddComponent(new ButtonViewComponent(CategoryView) { Label = TranslateButton("Back to Categories"), Style = LocalButtonComponentStyle.Primary, Row = 0, Position = 1 });
+            AddComponent(new ButtonViewComponent(AddSubcategory) { Label = TranslateButton("Add Subcategory"), Style = LocalButtonComponentStyle.Success, Row = 1, Position = 1 });
             AddComponent(removeSubcategory);
             AddComponent(selection);
         }
@@ -340,6 +345,16 @@ namespace Agora.Addons.Disqord.Menus.View
             if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
             return base.GetCustomId(component);
+        }
+
+        private string TranslateButton(string key)
+        {
+            using var scope = _context.Services.CreateScope();
+            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+
+            localization.SetCulture(_context.Guild.PreferredLocale);
+
+            return localization.Translate(key, "ButtonStrings");
         }
     }
 }

@@ -12,6 +12,7 @@ using Humanizer;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Qommon;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -22,15 +23,17 @@ namespace Agora.Addons.Disqord.Commands
 
         protected T CurrentTemplate { get; set; }
         protected IServiceProvider Provider { get; set; }
+        private readonly CultureInfo _locale;
 
         protected CachedEmporium Emporium { get; set; }
         protected EmporiumTimeParser TimeParser { get; set; }
         private SelectionViewComponent CategorySelection { get; set; }
         private SelectionViewComponent SubcategorySelection { get; set; }
 
-        public TemplateView(IEnumerable<T> templates, CachedEmporium emporium, IServiceProvider provider)
+        public TemplateView(IEnumerable<T> templates, CachedEmporium emporium, CultureInfo locale, IServiceProvider provider)
             : base(new ListPageProvider(templates.Select(template => new Page().AddEmbed(template.CreateEmbed()))))
         {
+            _locale = locale;
             Emporium = emporium;
             Provider = provider;
             CurrentTemplate = templates.First();
@@ -327,7 +330,7 @@ namespace Agora.Addons.Disqord.Commands
             using var scope = Provider.CreateScope();
             var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
-            localization.SetCulture(Menu.Client.GetGuild(Emporium.EmporiumId)!.PreferredLocale);
+            localization.SetCulture(_locale);
 
             return localization.Translate(key, "ButtonStrings");
         }

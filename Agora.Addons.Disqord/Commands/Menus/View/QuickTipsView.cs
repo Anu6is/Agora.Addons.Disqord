@@ -10,8 +10,9 @@ namespace Agora.Addons.Disqord.Commands
     public class QuickTipsView : PagedViewBase
     {
         private readonly CultureInfo _locale;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public QuickTipsView(IEnumerable<Fact> tips, CultureInfo locale)
+        public QuickTipsView(IEnumerable<Fact> tips, CultureInfo locale, IServiceScopeFactory scopeFactory)
             : base(new ListPageProvider(tips.Select(tip =>
             {
                 var embed = new LocalEmbed().WithTitle("💡 Did You Know").WithDescription(tip.Summary);
@@ -22,6 +23,7 @@ namespace Agora.Addons.Disqord.Commands
             }).ToArray()))
         {
             _locale = locale;
+            _scopeFactory = scopeFactory;
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
@@ -63,9 +65,7 @@ namespace Agora.Addons.Disqord.Commands
 
         private string TranslateButton(string key)
         {
-            var bot = Menu.Client as AgoraBot;
-
-            using var scope = bot.Services.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
             localization.SetCulture(_locale);

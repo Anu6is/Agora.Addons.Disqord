@@ -1,6 +1,7 @@
 ﻿using Agora.Addons.Disqord;
 using Agora.Addons.Disqord.Extensions;
 using Disqord;
+using Disqord.Bot;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Gateway;
 using Disqord.Rest;
@@ -175,7 +176,9 @@ public sealed class TransactionFeesView : ViewBase
     {
         using var scope = _scopeFactory.CreateScope();
         var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
-        localization.SetCulture(Menu.Client.GetCurrentMember(_settings.Id.Value)!.GetGuild()!.PreferredLocale);
+        var bot = scope.ServiceProvider.GetRequiredService<DiscordBotBase>();
+
+        localization.SetCulture(bot.GetGuild(_settings.Id.Value)!.PreferredLocale);
 
         return localization.Translate(key, "ButtonStrings");
     }

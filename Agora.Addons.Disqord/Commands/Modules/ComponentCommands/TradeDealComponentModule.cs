@@ -59,7 +59,7 @@ public sealed class TradeDealComponentModule : DiscordComponentModuleBase
 
         var item = (TradeItem)response.Data.Listing.Product;
 
-        return View(new TradeOffersView(_scopeFactory, response.Data.Listing, item.Offers.OrderBy(x => x.SubmittedOn).ToArray()));
+        return View(new TradeOffersView(_scopeFactory, Context.GuildLocale, response.Data.Listing, item.Offers.OrderBy(x => x.SubmittedOn).ToArray()));
     }
 
     [ButtonCommand("#closeNegotiations:*:*:*:*")]

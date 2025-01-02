@@ -7,6 +7,7 @@ using Disqord.Gateway;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 
 namespace Agora.Addons.Disqord.Menus
@@ -15,7 +16,7 @@ namespace Agora.Addons.Disqord.Menus
     {
         private readonly ulong _guildId;
 
-        public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings)
+        public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings, CultureInfo locale, IServiceScopeFactory scopeFactory)
             : base(new ListPageProvider(listings.Chunk(10).Select(x =>
                         new Page().WithEmbeds(new LocalEmbed()
                                   .WithDefaultColor()

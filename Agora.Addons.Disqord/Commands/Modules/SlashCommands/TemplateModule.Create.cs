@@ -82,7 +82,7 @@ namespace Agora.Addons.Disqord.Commands
 
                 var provider = Context.Services.CreateScope().ServiceProvider;
 
-                return View(new AuctionTemplateView(emporium, template, provider));
+                return View(new AuctionTemplateView(emporium, template, Context.GuildLocale, provider));
             }
 
             [AutoComplete("auction")]

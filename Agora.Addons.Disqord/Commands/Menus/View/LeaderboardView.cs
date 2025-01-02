@@ -2,6 +2,7 @@
 using Agora.Shared.Features.Queries;
 using Agora.Shared.Persistence.Specifications.Filters;
 using Disqord;
+using Disqord.Bot;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Gateway;
 using Emporia.Application.Common;
@@ -16,12 +17,14 @@ namespace Agora.Addons.Disqord.Menus.View
     {
         private readonly IDiscordGuildSettings _settings;
         private PagedResponse<LeaderboardResponse> _response;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public LeaderboardView(IDiscordGuildSettings settings, PagedResponse<LeaderboardResponse> response)
+        public LeaderboardView(IDiscordGuildSettings settings, PagedResponse<LeaderboardResponse> response, IServiceScopeFactory scopeFactory)
             : base(message => LeaderboardMessage(response, message, settings.DefaultCurrency))
         {
             _settings = settings;
             _response = response;
+            _scopeFactory = scopeFactory;
 
             foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
             {
@@ -135,12 +138,11 @@ namespace Agora.Addons.Disqord.Menus.View
 
         private string TranslateButton(string key)
         {
-            var bot = Menu.Client as AgoraBot;
-
-            using var scope = bot.Services.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+            var bot = scope.ServiceProvider.GetRequiredService<DiscordBotBase>();
 
-            localization.SetCulture(bot.GetGuild(_settings.GuildId).PreferredLocale);
+            localization.SetCulture(bot.GetGuild(_settings.GuildId)!.PreferredLocale);
 
             return localization.Translate(key, "ButtonStrings");
         }

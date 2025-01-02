@@ -5,26 +5,16 @@ using Disqord.Bot.Commands.Application;
 using Humanizer;
 using Humanizer.Localisation;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Qmmands;
 using System.Diagnostics;
 
 namespace Agora.Addons.Disqord.Commands
 {
-    public sealed class BotControlModule : AgoraModuleBase
+    public sealed class BotControlModule(Random random, IHost applicationHost, IConfiguration configuration, IServiceScopeFactory scopeFactory, ILoggingLevelSwitcher switcher) : AgoraModuleBase
     {
-        public IHost ApplicationHost { get; init; }
-        private readonly ILoggingLevelSwitcher _switcher;
-        private readonly IConfiguration _configuration;
-        private readonly Random _random;
-
-        public BotControlModule(Random random, IHost applicationHost, IConfiguration configuration, ILoggingLevelSwitcher switcher)
-        {
-            ApplicationHost = applicationHost;
-            _configuration = configuration;
-            _switcher = switcher;
-            _random = random;
-        }
+        public IHost ApplicationHost { get; init; } = applicationHost;
 
         [SlashCommand("ping")]
         [Description("Test application responsiveness.")]
@@ -35,9 +25,9 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Quick tips about Auction Bot")]
         public IResult Tips()
         {
-            var tips = _configuration.GetSection("Facts").Get<List<Fact>>();
+            var tips = configuration.GetSection("Facts").Get<List<Fact>>();
 
-            return View(new QuickTipsView(tips.OrderBy(x => _random.Next()), Context.GuildLocale));
+            return View(new QuickTipsView(tips.OrderBy(x => random.Next()), Context.GuildLocale, scopeFactory));
         }
 
         private async Task<IResult> GetStatsAsync()

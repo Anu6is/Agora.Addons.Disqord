@@ -8,6 +8,7 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Commands
 {
@@ -15,7 +16,7 @@ namespace Agora.Addons.Disqord.Commands
     {
         private List<AuctionTemplate> AuctionTemplates { get; set; }
 
-        public AuctionTemplateListView(CachedEmporium emporium, IEnumerable<AuctionTemplate> templates, IServiceProvider provider) : base(emporium, templates, provider)
+        public AuctionTemplateListView(CachedEmporium emporium, IEnumerable<AuctionTemplate> templates, CultureInfo locale, IServiceProvider provider) : base(emporium, templates,locale, provider)
         {
             AuctionTemplates = templates.ToList();
 

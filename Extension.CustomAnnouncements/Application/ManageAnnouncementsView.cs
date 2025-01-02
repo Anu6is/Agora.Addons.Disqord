@@ -300,8 +300,9 @@ public sealed class ManageAnnouncementsView : ViewBase
     {
         using var scope = _scopeFactory.CreateScope();
         var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+        var bot = scope.ServiceProvider.GetRequiredService<DiscordBotBase>();
 
-        localization.SetCulture(Menu.Client.GetGuild(_guildId)!.PreferredLocale);
+        localization.SetCulture(bot.GetGuild(_guildId)!.PreferredLocale);
 
         return localization.Translate(key, "ButtonStrings");
     }

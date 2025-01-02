@@ -8,13 +8,14 @@ using Emporia.Application.Specifications;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireBuyer]
-    public sealed class UserUtilityModule : AgoraModuleBase
+    public sealed class UserUtilityModule(IServiceScopeFactory scopeFactory) : AgoraModuleBase
     {
         [SlashCommand("Watchlist")]
         [Description("View all active auctions on which you've placed a bid")]
@@ -35,7 +36,7 @@ namespace Agora.Addons.Disqord.Commands
             if (listings.Count == 0)
                 return Response(new LocalEmbed().WithDefaultColor().WithDescription("There are no active listings that you've bid on"));
 
-            return View(new WatchlistView(userReference, listings.OrderBy(x => x.ExpiresAt()).ToArray()));
+            return View(new WatchlistView(userReference, listings.OrderBy(x => x.ExpiresAt()).ToArray(), Context.GuildLocale, scopeFactory));
         }
     }
 }

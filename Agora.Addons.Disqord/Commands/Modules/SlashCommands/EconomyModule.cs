@@ -11,24 +11,16 @@ using Emporia.Application.Common;
 using Emporia.Domain.Common;
 using Emporia.Extensions.Discord;
 using Emporia.Persistence.DataAccess;
+using Microsoft.Extensions.DependencyInjection;
 using Qmmands;
 
 namespace Agora.Addons.Disqord.Commands
 {
     [RequireSetup]
     [RequireEconomy("AuctionBot")]
-    public sealed class EconomyModule : AgoraModuleBase
+    public sealed class EconomyModule(EconomyFactoryService economyFactory, AuditLogService auditLog, IDataAccessor dataAccessor, IServiceScopeFactory scopeFactory) : AgoraModuleBase
     {
-        private readonly IEconomy _economy;
-        private readonly AuditLogService _auditLog;
-        private readonly IDataAccessor _dataAccessor;
-
-        public EconomyModule(EconomyFactoryService economyFactory, AuditLogService auditLog, IDataAccessor dataAccessor)
-        {
-            _economy = economyFactory.Create("AuctionBot");
-            _auditLog = auditLog;
-            _dataAccessor = dataAccessor;
-        }
+        private readonly IEconomy _economy = economyFactory.Create("AuctionBot");
 
         [SlashCommand("leaderboard")]
         [Description("View the leaderboard")]
@@ -40,7 +32,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var response = await Base.ExecuteAsync(new GetEmporiumLeaderboardQuery(filter));
 
-            return View(new LeaderboardView(Settings, response));
+            return View(new LeaderboardView(Settings, response, scopeFactory));
         }
 
         [SlashCommand("balance")]
@@ -244,9 +236,9 @@ namespace Agora.Addons.Disqord.Commands
         [Description("Set all balances zero")]
         public async Task<IResult> ResetEconomy()
         {
-            var users = await _dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().ListAsync(new EconomyUsersSpec(new EmporiumId(Context.GuildId)));
+            var users = await dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().ListAsync(new EconomyUsersSpec(new EmporiumId(Context.GuildId)));
 
-            await _dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().DeleteRangeAsync(users);
+            await dataAccessor.Transaction<GenericRepository<DefaultEconomyUser>>().DeleteRangeAsync(users);
 
             return Response(new LocalInteractionMessageResponse()
                     .AddEmbed(new LocalEmbed().WithColor(Color.Teal)
@@ -262,7 +254,7 @@ namespace Agora.Addons.Disqord.Commands
 
             var embed = new LocalEmbed().WithAuthor(Context.Author).WithDescription(message).WithColor(Color.MediumPurple);
 
-            await _auditLog.TrySendMessageAsync(logChannel, new LocalMessage().AddEmbed(embed));
+            await auditLog.TrySendMessageAsync(logChannel, new LocalMessage().AddEmbed(embed));
         }
     }
 }

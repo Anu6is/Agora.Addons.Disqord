@@ -11,6 +11,7 @@ using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Commands.View;
 
@@ -22,10 +23,10 @@ public class TradeOffersView : PagedViewBase
     private readonly ulong _showroomId;
     private readonly ulong _reference;
     private readonly Listing _listing;
-
+    private readonly CultureInfo _locale;
     private Deal _selectedOffer;
 
-    public TradeOffersView(IServiceScopeFactory scopeFactory, Listing listing, IEnumerable<Deal> deals)
+    public TradeOffersView(IServiceScopeFactory scopeFactory, CultureInfo locale, Listing listing, IEnumerable<Deal> deals)
         : base(new ListPageProvider(deals.Chunk(5).Select((offers, index) =>
         {
             var shift = index * 5;
@@ -50,6 +51,7 @@ public class TradeOffersView : PagedViewBase
         _scopeFactory = scopeFactory;
         _deals = deals.ToList();
         _listing = listing;
+        _locale = locale;
 
         UpdateSelection();
         ToggleButtons(true);
@@ -309,7 +311,7 @@ public class TradeOffersView : PagedViewBase
     {
         using var scope = _scopeFactory.CreateScope();
         var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
-        localization.SetCulture(Menu.Client.GetCurrentMember(_emporiumId).GetGuild().PreferredLocale);
+        localization.SetCulture(_locale);
 
         return localization.Translate(key, "ButtonStrings");
     }

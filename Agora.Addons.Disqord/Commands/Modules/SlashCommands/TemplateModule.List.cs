@@ -27,7 +27,7 @@ namespace Agora.Addons.Disqord.Commands
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
                 var provider = Context.Services.CreateScope().ServiceProvider;
 
-                return View(new AuctionTemplateListView(emporium, templates.Data, provider));
+                return View(new AuctionTemplateListView(emporium, templates.Data, Context.GuildLocale, provider));
             }
         }
     }

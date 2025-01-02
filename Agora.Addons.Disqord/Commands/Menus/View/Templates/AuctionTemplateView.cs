@@ -9,13 +9,14 @@ using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using HumanTimeParser.Core.Parsing;
 using MediatR;
+using System.Globalization;
 
 namespace Agora.Addons.Disqord.Commands
 {
     public class AuctionTemplateView : TemplateView<AuctionTemplate>
     {
-        public AuctionTemplateView(CachedEmporium emporium, AuctionTemplate template, IServiceProvider provider) : base(new[] { template }, emporium, provider) { }
-        internal AuctionTemplateView(CachedEmporium emporium, IEnumerable<AuctionTemplate> templates, IServiceProvider provider) : base(templates, emporium, provider) { }
+        public AuctionTemplateView(CachedEmporium emporium, AuctionTemplate template, CultureInfo cultureInfo, IServiceProvider provider) : base(new[] { template }, emporium, cultureInfo, provider) { }
+        internal AuctionTemplateView(CachedEmporium emporium, IEnumerable<AuctionTemplate> templates, CultureInfo cultureInfo, IServiceProvider provider) : base(templates, emporium, cultureInfo, provider) { }
 
         public override async ValueTask EditItem(ButtonEventArgs e)
         {

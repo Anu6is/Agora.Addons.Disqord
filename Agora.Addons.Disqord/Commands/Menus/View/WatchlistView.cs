@@ -3,96 +3,92 @@ using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Extensions.Interactivity.Menus;
 using Disqord.Extensions.Interactivity.Menus.Paged;
-using Disqord.Gateway;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Globalization;
 
 
-namespace Agora.Addons.Disqord.Menus
+namespace Agora.Addons.Disqord.Menus;
+
+public sealed class WatchlistView : PagedViewBase
 {
-    public sealed class WatchlistView : PagedViewBase
+    private readonly CultureInfo _locale;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings, CultureInfo locale, IServiceScopeFactory scopeFactory)
+        : base(new ListPageProvider(listings.Chunk(10).Select(x =>
+                    new Page().WithEmbeds(new LocalEmbed()
+                              .WithDefaultColor()
+                              .WithTitle("Active Bids")
+                              .WithFields(x.Select(l =>
+                                    new LocalEmbedField()
+                                            .WithName(l.Product.Title.ToString())
+                                            .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}{GetJumpLink(l)} Expires {GetExpiration(l)}")))))))
     {
-        private readonly ulong _guildId;
+        _locale = locale;
+        _scopeFactory = scopeFactory;
 
-        public WatchlistView(ReferenceNumber userReference, IEnumerable<Listing> listings, CultureInfo locale, IServiceScopeFactory scopeFactory)
-            : base(new ListPageProvider(listings.Chunk(10).Select(x =>
-                        new Page().WithEmbeds(new LocalEmbed()
-                                  .WithDefaultColor()
-                                  .WithTitle("Active Bids")
-                                  .WithFields(x.Select(l =>
-                                        new LocalEmbedField()
-                                                .WithName(l.Product.Title.ToString())
-                                                .WithValue($"{GetHighestBid(userReference, l)} | **{GetUserBid(userReference, l)}**{Environment.NewLine}{GetJumpLink(l)} Expires {GetExpiration(l)}")))))))
+        if (listings.Count() < 10)
         {
-            _guildId = listings.First().Owner.EmporiumId.Value;
-
-
-
-            if (listings.Count() < 10)
-            {
-                foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
-                    RemoveComponent(button);
-            } 
-            else
-            {
-                foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
-                    button.Label = TranslateButton(button.Label);
-            }
-        }
-
-        [Button(Label = "Continue")]
-        public ValueTask Continue(ButtonEventArgs e)
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+                RemoveComponent(button);
+        } 
+        else
         {
-            if (CurrentPageIndex + 1 == PageProvider.PageCount)
-                CurrentPageIndex = 0;
-            else
-                CurrentPageIndex++;
-
-            return default;
+            foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
+                button.Label = TranslateButton(button.Label);
         }
+    }
 
-        protected override string GetCustomId(InteractableViewComponent component)
-        {
-            if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
+    [Button(Label = "Continue")]
+    public ValueTask Continue(ButtonEventArgs e)
+    {
+        if (CurrentPageIndex + 1 == PageProvider.PageCount)
+            CurrentPageIndex = 0;
+        else
+            CurrentPageIndex++;
 
-            return base.GetCustomId(component);
-        }
+        return default;
+    }
 
-        private static string GetJumpLink(Listing listing)
-        {
-            var channelReference = listing.ReferenceCode.Reference();
-            var channelId = channelReference == 0 ? listing.ShowroomId.Value : channelReference;
-            var link = Discord.MessageJumpLink(listing.Owner.EmporiumId.Value, channelId, listing.Product.ReferenceNumber.Value);
+    protected override string GetCustomId(InteractableViewComponent component)
+    {
+        if (component is ButtonViewComponent buttonComponent) return $"#{buttonComponent.Label}";
 
-            return link;
-        }
+        return base.GetCustomId(component);
+    }
 
-        private static string GetUserBid(ReferenceNumber userReference, Listing listing)
-            => $"Your Bid: {(listing.Product as AuctionItem).Offers.OrderByDescending(o => o.SubmittedOn).First(b => b.UserReference.Equals(userReference)).Submission.Value}";
+    private static string GetJumpLink(Listing listing)
+    {
+        var channelReference = listing.ReferenceCode.Reference();
+        var channelId = channelReference == 0 ? listing.ShowroomId.Value : channelReference;
+        var link = Discord.MessageJumpLink(listing.Owner.EmporiumId.Value, channelId, listing.Product.ReferenceNumber.Value);
 
-        private static string GetHighestBid(ReferenceNumber userReference, Listing listing)
-            => listing is VickreyAuction
-                    ? "Current Value: **Sealed**"
-                    : $"{HasHighest(userReference, listing)} Current Value: {listing.CurrentOffer.Submission.Value}";
+        return link;
+    }
 
-        private static LocalCustomEmoji HasHighest(ReferenceNumber userReference, Listing listing)
-            => listing.CurrentOffer.UserReference.Equals(userReference) ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
+    private static string GetUserBid(ReferenceNumber userReference, Listing listing)
+        => $"Your Bid: {(listing.Product as AuctionItem).Offers.OrderByDescending(o => o.SubmittedOn).First(b => b.UserReference.Equals(userReference)).Submission.Value}";
 
-        private static string GetExpiration(Listing listing)
-            => Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
+    private static string GetHighestBid(ReferenceNumber userReference, Listing listing)
+        => listing is VickreyAuction
+                ? "Current Value: **Sealed**"
+                : $"{HasHighest(userReference, listing)} Current Value: {listing.CurrentOffer.Submission.Value}";
 
-        private string TranslateButton(string key)
-        {
-            var bot = Menu.Client as AgoraBot;
+    private static LocalCustomEmoji HasHighest(ReferenceNumber userReference, Listing listing)
+        => listing.CurrentOffer.UserReference.Equals(userReference) ? AgoraEmoji.GreenCheckMark : AgoraEmoji.RedCrossMark;
 
-            using var scope = bot.Services.CreateScope();
-            var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
+    private static string GetExpiration(Listing listing)
+        => Markdown.Timestamp(listing.ExpiresAt(), Markdown.TimestampFormat.RelativeTime);
 
-            localization.SetCulture(Menu.Client.GetGuild(_guildId)!.PreferredLocale);
+    private string TranslateButton(string key)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var localization = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
-            return localization.Translate(key, "ButtonStrings");
-        }
+        localization.SetCulture(_locale);
+
+        return localization.Translate(key, "ButtonStrings");
     }
 }

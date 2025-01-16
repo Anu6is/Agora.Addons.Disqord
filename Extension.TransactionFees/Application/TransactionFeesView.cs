@@ -31,7 +31,7 @@ public sealed class TransactionFeesView : ViewBase
         _settings = settings;
         _scopeFactory = scopeFactory;
 
-        AddComponent(new ButtonViewComponent(x => default) { Label = TranslateButton("Close"), Style = LocalButtonComponentStyle.Secondary });
+        //AddComponent(new ButtonViewComponent(x => default) { Label = TranslateButton("Close"), Style = LocalButtonComponentStyle.Secondary });
 
         foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
         {
@@ -95,6 +95,9 @@ public sealed class TransactionFeesView : ViewBase
 
         RefreshView();
     }
+
+    [Button(Label = "Close", Style = LocalButtonComponentStyle.Secondary)]
+    public ValueTask CloseView(ButtonEventArgs e) => default;
 
     private static async Task<TransactionFee?> GetFeeSubmissionAsync(IModalSubmitInteraction modal)
     {

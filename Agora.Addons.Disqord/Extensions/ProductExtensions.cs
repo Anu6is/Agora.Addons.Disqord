@@ -170,7 +170,7 @@ public static class ProductExtensions
                 LocalComponent.Button("undobid", TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, "Undo Bid"))
                               .WithStyle(LocalButtonComponentStyle.Danger)
                               .WithIsDisabled(listing.CurrentOffer == null),
-                LocalComponent.Button("minbid", TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, $"Min Bid [{auctionItem.MinIncrement()}]"))
+                LocalComponent.Button("minbid", $"{TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, "Min Bid")} [{auctionItem.MinIncrement()}]")
                               .WithStyle(LocalButtonComponentStyle.Primary)
                               .WithIsDisabled(listing is VickreyAuction || hideMinButton)
                               .WithEmoji(LocalEmoji.FromString(auctionItem.StartingPrice.Currency.Symbol)),
@@ -183,7 +183,7 @@ public static class ProductExtensions
                 LocalComponent.Button("undobid", TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, "Undo Bid"))
                               .WithStyle(LocalButtonComponentStyle.Danger)
                               .WithIsDisabled(listing.CurrentOffer == null),
-                LocalComponent.Button("minbid", TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, $"Min Bid [{auctionItem.MinIncrement()}]"))
+                LocalComponent.Button("minbid", $"{TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, "Min Bid")} [{auctionItem.MinIncrement()}]")
                               .WithStyle(LocalButtonComponentStyle.Primary)
                               .WithIsDisabled(listing is VickreyAuction || hideMinButton),
                 LocalComponent.Button("custombid", TranslateButton(scopeFactory, listing.Owner.EmporiumId.Value, "Custom Bid"))

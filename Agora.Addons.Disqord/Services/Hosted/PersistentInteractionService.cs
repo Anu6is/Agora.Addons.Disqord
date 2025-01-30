@@ -110,7 +110,7 @@ namespace Agora.Addons.Disqord
                 {
                     var command = result.Data;
 
-                    if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand { UseMinimum: false, UseMaximum: false })
+                    if (command is CreatePaymentCommand { Offer: not null } || command is CreateBidCommand cmd && cmd.UseMinimum == cmd.UseMaximum)
                         scope.ServiceProvider.GetRequiredService<IAuthorizationService>().IsAuthorized = false;
 
                     await HandleInteractionResponseAsync(args, interaction, scope, modalInteraction, command, mediator);

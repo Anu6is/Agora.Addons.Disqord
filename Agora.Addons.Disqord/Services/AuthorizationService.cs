@@ -205,20 +205,29 @@ namespace Agora.Addons.Disqord
 
                     var validBid = await _userManager.ValidateBuyerAsync(currentUser, command, async (currentUser, command) =>
                     {
-                        if (settings.EconomyType == "Disabled") return Result.Success();
+                        if (settings.EconomyType == "Disabled")
+                            return Result.Success();
 
                         var cmd = command as CreateBidCommand;
                         var item = listing.Product as AuctionItem;
                         var economy = _agora.Services.GetRequiredService<EconomyFactoryService>().Create(settings.EconomyType);
                         var userBalance = await economy.GetBalanceAsync(currentUser, item.StartingPrice.Currency);
+                        var balance = userBalance.Data.Value;
 
-                        if (cmd.UseMinimum && userBalance.Data >= item.CurrentPrice.Value + item.BidIncrement.MinValue) return Result.Success();
+                        if (cmd.AuthorizeOnly && !cmd.UseMinimum && !cmd.UseMaximum)
+                            return Result.Success();
 
-                        if (cmd.UseMaximum && userBalance.Data >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value) return Result.Success();
+                        if (cmd.UseMinimum && cmd.UseMaximum && balance >= BuyNowPrice(listing).Value)
+                            return Result.Success();
 
-                        if (cmd.AuthorizeOnly && !cmd.UseMinimum && !cmd.UseMaximum) return Result.Success();
+                        if (cmd.UseMinimum && !cmd.UseMaximum && balance >= item.CurrentPrice.Value + item.BidIncrement.MinValue)
+                            return Result.Success();
 
-                        if (cmd.Amount > 0 && userBalance.Data >= cmd.Amount) return Result.Success();
+                        if (cmd.UseMaximum && !cmd.UseMinimum && balance >= item.CurrentPrice.Value + item.BidIncrement.MaxValue.Value)
+                            return Result.Success();
+
+                        if (cmd.Amount > 0 && balance >= cmd.Amount)
+                            return Result.Success();
 
                         return Result.Failure("Transaction Denied: Insufficient balance available to complete this transaction.");
                     });
@@ -323,6 +332,14 @@ namespace Agora.Addons.Disqord
             }
 
             return string.Empty;
+        }
+
+        private static Money BuyNowPrice(Listing listing)
+        {
+            if (listing is StandardAuction standard) return standard.BuyNowPrice;
+            if (listing is LiveAuction live) return live.BuyNowPrice;
+
+            return null;
         }
 
         private async Task<string> ValidateManagerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)

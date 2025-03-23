@@ -254,6 +254,8 @@ namespace Agora.Addons.Disqord.Commands
 
             var embed = new LocalEmbed().WithAuthor(Context.Author).WithDescription(message).WithColor(Color.MediumPurple);
 
+            auditLog.EmporiumId = EmporiumId;
+
             await auditLog.TrySendMessageAsync(logChannel, new LocalMessage().AddEmbed(embed));
         }
     }

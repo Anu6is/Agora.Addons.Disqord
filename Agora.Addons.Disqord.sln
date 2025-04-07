@@ -20,8 +20,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Extension.CustomAnnouncemen
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Extension.Economies", "Extension.Economies\Extension.Economies.csproj", "{4CCF6AF8-5D5B-4637-8B11-7540BB1C9C00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agora.Addons.Translations", "..\Agora.Addons.Translations\Agora.Addons.Translations.csproj", "{26B5C047-03D1-4B93-854C-DB7421E5025D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,10 +46,6 @@ Global
 		{4CCF6AF8-5D5B-4637-8B11-7540BB1C9C00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CCF6AF8-5D5B-4637-8B11-7540BB1C9C00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CCF6AF8-5D5B-4637-8B11-7540BB1C9C00}.Release|Any CPU.Build.0 = Release|Any CPU
-		{26B5C047-03D1-4B93-854C-DB7421E5025D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{26B5C047-03D1-4B93-854C-DB7421E5025D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{26B5C047-03D1-4B93-854C-DB7421E5025D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{26B5C047-03D1-4B93-854C-DB7421E5025D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

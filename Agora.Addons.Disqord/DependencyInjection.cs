@@ -15,6 +15,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Qmmands;
 using System.Collections.Immutable;
@@ -112,6 +113,8 @@ namespace Agora.Addons.Disqord
                     services.AddPluginService(pluginType);
                 }
             }
+
+            services.TryAddSingleton<ILocalizationService, DefaultTranslatorService>();
 
             return services;
         }

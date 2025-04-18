@@ -25,6 +25,7 @@ namespace Agora.Addons.Disqord.Menus.View
                       new ("Sealed Payout", "Winner pays highest or second highest bid", (ctx, opts) => new ToggleFeatureView(SettingsFlags.SealedPayout, "Sealed Payout", ctx, opts)),
                       new ("Confirm Transactions", "Confirm Market and Trade transactions before they are closed", (ctx, opts) => new ToggleFeatureView(SettingsFlags.ConfirmTransactions, "Transaction Confirmation", ctx, opts)),
                       new ("Donations", "Allow users to give money to others (Auction Bot Economy ONLY!)", (ctx, opts) => new ToggleFeatureView(SettingsFlags.Donations, "Donations", ctx, opts, true)),
+                      new ("Auto-Reschedule", "Prevent users from automatically rescheduling listings", (ctx, opts) => new ToggleFeatureView(SettingsFlags.DisableRelisting, "Auto-Reschedule", ctx, opts, true)),
                       new ("Recall Listings", "Allow users to withdraw a listing after an offer was made.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.RecallListings, "Recall Listings", ctx, opts)),
                       new ("Attach Logs", "Attach all offers made to the results posting.", (ctx, opts) => new ToggleFeatureView(SettingsFlags.AttachLogs, "Attach Logs", ctx, opts)),
                       new ("Manager Role", "Role that has admin privilages for listed items.", (ctx, opts) => new RoleAssignmentView(ctx, opts)),

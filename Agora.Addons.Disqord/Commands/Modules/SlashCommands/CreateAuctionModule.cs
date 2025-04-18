@@ -65,7 +65,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends."), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -119,6 +119,10 @@ namespace Agora.Addons.Disqord.Commands
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
 
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
+
                 var listing = new StandardAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
                     BuyNowPrice = (decimal)buyNowPrice,
@@ -165,7 +169,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends."), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -218,6 +222,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
 
                 var listing = new VickreyAuctionModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
@@ -266,7 +274,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Total participants required to start this auction."), Minimum(0)] int requiredEntries = 0,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("True to allow the lowest bid to win")] bool reverseBidding = false,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends."), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -319,6 +327,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
 
                 var listing = new LiveAuctionModel(scheduledStart.Value, scheduledEnd, timeout, new UserId(userDetails.UserId))
                 {

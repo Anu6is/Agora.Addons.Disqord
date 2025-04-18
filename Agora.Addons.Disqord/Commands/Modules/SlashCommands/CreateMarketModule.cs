@@ -58,7 +58,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the buyer."), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends."), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -99,6 +99,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
 
                 var listing = new StandardMarketModel(scheduledStart.Value, scheduledEnd, new UserId(userDetails.UserId))
                 {
@@ -142,7 +146,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends.")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends."), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner.")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -183,6 +187,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
 
                 var listing = new FlashMarketModel(scheduledStart.Value, scheduledEnd, timeout, new UserId(userDetails.UserId))
                 {
@@ -225,7 +233,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends"), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -267,6 +275,10 @@ namespace Agora.Addons.Disqord.Commands
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
 
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
+
                 var listing = new MassMarketModel(scheduledStart.Value, scheduledEnd, (decimal)pricePerItem, new UserId(userDetails.UserId))
                 {
                     AmountPerBundle = amountInBundle,
@@ -307,7 +319,7 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("A hidden message to be sent to the buyer"), Maximum(250)] HiddenMessage message = null,
                 [Description("Restrict purchases to this role"), RequireRole(AuthorizationRole.Broker)] IRole requiredRole = null,
                 [Description("Item owner. Defaults to the command user"), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
-                [Description("Repost the listing after it ends")] RescheduleOption reschedule = RescheduleOption.Never,
+                [Description("Repost the listing after it ends"), RequireReschedule()] RescheduleOption reschedule = RescheduleOption.Never,
                 [Description("True to hide the item owner")] bool anonymous = false)
             {
                 await Deferral(isEphemeral: true);
@@ -348,6 +360,10 @@ namespace Agora.Addons.Disqord.Commands
 
                 var ownerId = owner?.Id ?? Context.Author.Id;
                 var userDetails = await Cache.GetUserAsync(Context.GuildId, ownerId);
+
+                reschedule = Settings.Features.HasFlag(SettingsFlags.DisableRelisting)
+                    ? RescheduleOption.Never
+                    : reschedule;
 
                 var listing = new MassMarketModel(scheduledStart.Value, scheduledEnd, (decimal)pricePerItem, new UserId(userDetails.UserId))
                 {

@@ -1,4 +1,6 @@
-﻿using Agora.Addons.Disqord.Extensions;
+﻿using Agora.Addons.Disqord.Common;
+using Agora.Addons.Disqord.Extensions;
+using Agora.Addons.Disqord.Services;
 using Agora.Shared.Attributes;
 using Agora.Shared.Extensions;
 using Agora.Shared.Services;
@@ -21,6 +23,7 @@ namespace Agora.Addons.Disqord
     [AgoraService(AgoraServiceAttribute.ServiceLifetime.Transient)]
     public sealed class ProductListingService : AgoraService, IProductListingService
     {
+        private readonly PluginManagerService _pluginService;
         private readonly DiscordBotBase _agora;
         private readonly ILogger _logger;
         private readonly IServiceScopeFactory _scopeFactory;
@@ -32,6 +35,7 @@ namespace Agora.Addons.Disqord
         public ShowroomId ShowroomId { get; set; }
 
         public ProductListingService(DiscordBotBase bot,
+                                     PluginManagerService pluginService,
                                      IServiceScopeFactory scopeFactory,
                                      IGuildSettingsService settingsService,
                                      ICommandContextAccessor commandAccessor,
@@ -41,6 +45,7 @@ namespace Agora.Addons.Disqord
             _agora = bot;
             _logger = logger;
             _scopeFactory = scopeFactory;
+            _pluginService = pluginService;
             _settingsService = settingsService;
             _commandAccessor = commandAccessor;
             _interactionAccessor = interactionAccessor;
@@ -69,6 +74,10 @@ namespace Agora.Addons.Disqord
                 return id == 0 ? null : ReferenceNumber.Create(id);
             }
 
+            var parameters = new PluginParameters() { { "Listing", productListing } };
+            var pluginResult = await _pluginService.ExecutePlugin("CustomAnnouncement", parameters) as Result<string>;
+            var announcement = pluginResult.IsSuccessful ? pluginResult.Data : string.Empty;
+
             var categorization = await GetCategoryAsync(productListing);
             var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
             var hideMinButton = productListing.Product is AuctionItem && settings.Features.HideMinMaxButtons;
@@ -77,7 +86,7 @@ namespace Agora.Addons.Disqord
 
             if (channel is CachedForumChannel forum)
             {
-                var id = await CreateForumPostAsync(forum, message, productListing, categorization);
+                var id = await CreateForumPostAsync(forum, message, announcement, productListing, categorization);
 
                 return id == 0 ? null : ReferenceNumber.Create(id);
             }
@@ -94,6 +103,11 @@ namespace Agora.Addons.Disqord
                 }
 
                 channelId = category.Data;
+            }
+
+            if (pluginResult.IsSuccessful)
+            {
+                message.WithContent(announcement);
             }
 
             var response = await _agora.SendMessageAsync(channelId, message);
@@ -225,7 +239,9 @@ namespace Agora.Addons.Disqord
 
         private async Task RefreshProductListingAsync(Listing productListing, List<LocalEmbed> productEmbeds, ulong channelId, IDiscordGuildSettings settings)
         {
-            var content = string.Empty;
+            var parameters = new PluginParameters() { { "Listing", productListing } };
+            var pluginResult = await _pluginService.ExecutePlugin("CustomAnnouncement", parameters) as Result<string>;
+            var content = pluginResult.IsSuccessful ? pluginResult.Data : string.Empty;
             var status = productListing.Status;
             var channel = _agora.GetChannel(EmporiumId.Value, channelId);
             var updateTag = status == ListingStatus.Active || status == ListingStatus.Locked || status == ListingStatus.Sold;
@@ -571,7 +587,7 @@ namespace Agora.Addons.Disqord
             return 0;
         }
 
-        private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, Listing productListing, string category)
+        private async ValueTask<ulong> CreateForumPostAsync(IForumChannel forum, LocalMessage message, string announcement, Listing productListing, string category)
         {
             var result = await CheckPermissionsAsync(EmporiumId.Value, ShowroomId.Value, Permissions.ManageThreads | Permissions.SendMessagesInThreads | Permissions.ManageChannels);
 
@@ -623,6 +639,9 @@ namespace Agora.Addons.Disqord
 
             try
             {
+                if (!string.IsNullOrEmpty(announcement))
+                    await showroom.SendMessageAsync(new LocalMessage().WithContent(announcement));
+
                 if (!productListing.Anonymous) 
                     await showroom.AddMemberAsync(productListing.Owner.ReferenceNumber.Value);
             }

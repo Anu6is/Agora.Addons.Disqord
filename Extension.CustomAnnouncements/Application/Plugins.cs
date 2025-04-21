@@ -9,9 +9,13 @@ public class CustomAnnouncement(AnnouncementProcessingService announcementServic
 {
     public async ValueTask<IResult> Execute(PluginParameters parameters)
     {
+        var announcement = string.Empty;
         var listing = parameters.GetValue<Listing>("Listing");
 
-        var announcement = await announcementService.GetAnnouncementMessageAsync(listing);
+        if (listing.Status < Emporia.Domain.Common.ListingStatus.Active)
+            announcement = await announcementService.GetListingMessageAsync(listing);
+        else
+            announcement = await announcementService.GetAnnouncementMessageAsync(listing);
 
         if (announcement is null) return Result<string>.Failure("No custom announcement configured");
 

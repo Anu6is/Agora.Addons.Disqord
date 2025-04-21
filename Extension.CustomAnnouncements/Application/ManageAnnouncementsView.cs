@@ -30,14 +30,15 @@ public sealed class ManageAnnouncementsView : ViewBase
 
     private static readonly LocalEmbed ExplanationEmbed = new LocalEmbed()
                 .WithDefaultColor()
-                .WithTitle("Customize Winner Announcements")
+                .WithTitle("Customize Announcements")
                 .WithDescription(CustomizationExplanation + "​\u200b")
                 .AddField("{owner}", Markdown.CodeBlock("The username of the owner (mentions/pings the user)"))
-                .AddField("{winner}", Markdown.CodeBlock("The username(s) of the winner(s) (mentions/pings the user(s))"))
+                .AddField("{winner} - for Result Logs ONLY", Markdown.CodeBlock("The username(s) of the winner(s) (mentions/pings the user(s))"))
                 .AddField("{quantity}", Markdown.CodeBlock("The number of items in this transaction"))
                 .AddField("{itemName}", Markdown.CodeBlock("The name of the item that was sold"))
                 .AddField("{listingType}", Markdown.CodeBlock("The type of listing. Example: Live Auction"))
-                .AddField("{forumPost}", Markdown.CodeBlock("A link to the listing's forum post - only applicable to forum showrooms") + "​​​​​​​​​​​​​​​\u200b \u200b​")
+                .AddField("{forumPost} - for Result Logs ONLY", Markdown.CodeBlock("A link to the listing's forum post - only applicable to forum showrooms"))
+                .AddField("{@RoleName} - for New Listing ONLY", Markdown.CodeBlock("A role to ping") + "​​​​​​​​​​​​​​​\u200b \u200b​")
                 .AddField("Example", "Congratulations **{winner}**!\nYou just won **{quantity} {itemname}**.\nDM **{owner}** to claim your prize :tada:");
 
     private readonly List<LocalSelectionComponentOption> _options =
@@ -49,19 +50,23 @@ public sealed class ManageAnnouncementsView : ViewBase
         new LocalSelectionComponentOption().WithLabel($"{AnnouncementType.Auction}")
                                            .WithEmoji(AgoraEmoji.RedCrossMark)
                                            .WithValue($"{(int)AnnouncementType.Auction}")
-                                           .WithDescription("Custom message for Auction listings"),
+                                           .WithDescription("Custom message for Auction listings results"),
         new LocalSelectionComponentOption().WithLabel($"{AnnouncementType.Giveaway}")
                                            .WithEmoji(AgoraEmoji.RedCrossMark)
                                            .WithValue($"{(int)AnnouncementType.Giveaway}")
-                                           .WithDescription("Custom message for Giveaway listings"),
+                                           .WithDescription("Custom message for Giveaway listings results"),
         new LocalSelectionComponentOption().WithLabel($"{AnnouncementType.Market}")
                                            .WithEmoji(AgoraEmoji.RedCrossMark)
                                            .WithValue($"{(int)AnnouncementType.Market}")
-                                           .WithDescription("Custom message for Market listings"),
+                                           .WithDescription("Custom message for Market listings results"),
         new LocalSelectionComponentOption().WithLabel($"{AnnouncementType.Trade}")
                                            .WithEmoji(AgoraEmoji.RedCrossMark)
                                            .WithValue($"{(int)AnnouncementType.Trade}")
-                                           .WithDescription("Custom message for Trade listings"),
+                                           .WithDescription("Custom message for Trade listings resuts"),
+        new LocalSelectionComponentOption().WithLabel("New Listing")
+                                           .WithEmoji(AgoraEmoji.RedCrossMark)
+                                           .WithValue($"{(int)AnnouncementType.Listing}")
+                                           .WithDescription("Add a message for newly created listings")
     ];
 
     public ManageAnnouncementsView(IEnumerable<Announcement> customAnnouncements, IServiceScopeFactory scopeFactory) : base(message => message.AddEmbed(ExplanationEmbed))
@@ -69,7 +74,7 @@ public sealed class ManageAnnouncementsView : ViewBase
         _scopeFactory = scopeFactory;
 
         foreach (var customAnnouncement in customAnnouncements)
-            _options.First(options => options.Label.Equals($"{customAnnouncement.AnnouncementType}")).Emoji = AgoraEmoji.GreenCheckMark;
+            _options.First(options => options.Label.Value.Contains($"{customAnnouncement.AnnouncementType}")).Emoji = AgoraEmoji.GreenCheckMark;
 
         AddComponent(new SelectionViewComponent(SelectAnnouncementType)
         {
@@ -78,12 +83,12 @@ public sealed class ManageAnnouncementsView : ViewBase
             Options = _options
         });
 
+        _guildId = customAnnouncements.First().GuildId;
+
         foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
         {
             button.Label = TranslateButton(button.Label!);
         }
-
-        _guildId = customAnnouncements.First().GuildId;
     }
 
     public async ValueTask SelectAnnouncementType(SelectionEventArgs e)
@@ -102,7 +107,10 @@ public sealed class ManageAnnouncementsView : ViewBase
         if (!announcement.IsSuccessful && _selectedAnnouncementType != AnnouncementType.Default)
             announcement = await announcementService.GetAnnouncementAsync(e.GuildId!.Value, AnnouncementType.Default);
 
-        _customMessage = announcement.Data ?? "{owner} | {winner}";
+        if (_selectedAnnouncementType == AnnouncementType.Listing)
+            _customMessage = announcement.Data ?? string.Concat("Use Edit to create a new listing message.\n Example: ", Mention.Everyone, " a new {listingType} is available!");
+        else 
+            _customMessage = announcement.Data ?? "{owner} | {winner}";
 
         var embed = new LocalEmbed()
             .WithColor(Color.Teal)
@@ -182,10 +190,11 @@ public sealed class ManageAnnouncementsView : ViewBase
 
         if (!await AnnouncementTypeSelected(e)) return;
 
+        var bot = e.Interaction.Client as DiscordBot;
         var title = "Sample Item";
         var quantity = Random.Shared.Next(1, 6).ToString();
         var winner = Mention.User(e.AuthorId);
-        var owner = Mention.User((e.Interaction.Client as DiscordBot)!.CurrentUser.Id);
+        var owner = Mention.User(bot!.CurrentUser.Id);
         var listingType = $"Standard {(_selectedAnnouncementType == AnnouncementType.Default ? "Listing" : _selectedAnnouncementType)}";
         var placeholders = new Dictionary<string, string>
         {
@@ -197,14 +206,16 @@ public sealed class ManageAnnouncementsView : ViewBase
             { "forumPost", Discord.MessageJumpLink(e.GuildId, e.ChannelId, e.Interaction.Message.Id) }
         };
 
-        var message = MessageExtensions.ReplacePlaceholders(_customMessage, placeholders);
+        var guildRoles = await bot!.FetchRolesAsync(e.GuildId!.Value);
+        var roles = guildRoles.ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
+        var message = MessageExtensions.ReplacePlaceholders(_customMessage, placeholders.Concat(roles).ToDictionary());
         var embed = new LocalEmbed().WithTitle($"{listingType} Claimed")
                             .WithDescription($"{Markdown.Bold($"{quantity} {title}")} for **xXx**")
                             .WithFooter("review this transaction | right-click -> apps -> review")
                             .AddInlineField("Owner", owner)
                             .AddInlineField("Claimed By", winner)
                             .WithColor(Color.Teal);
-
+        
         await e.Interaction.SendMessageAsync(new LocalInteractionMessageResponse().WithIsEphemeral().WithContent(message).AddEmbed(embed));
     }
 

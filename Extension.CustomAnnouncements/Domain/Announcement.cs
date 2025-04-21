@@ -24,5 +24,6 @@ public enum AnnouncementType
     Auction,
     Market,
     Giveaway,
-    Trade
+    Trade,
+    Listing
 }

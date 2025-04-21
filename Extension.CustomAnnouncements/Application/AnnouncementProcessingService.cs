@@ -4,6 +4,7 @@ using Agora.Shared.Services;
 using Disqord;
 using Disqord.Bot;
 using Disqord.Gateway;
+using Disqord.Rest;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
 using Extension.CustomAnnouncements.Domain;
@@ -35,6 +36,29 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
 
         if (result.IsSuccessful)
             return MessageExtensions.ReplacePlaceholders(result.Data, placeholders);
+
+        return null;
+    }
+
+    public async Task<string?> GetListingMessageAsync(Listing listing)
+    {
+        var guildRoles = await bot.FetchRolesAsync(listing.Owner.EmporiumId.Value);
+        var roles = guildRoles.ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
+
+        var placeholders = new Dictionary<string, string>
+        {
+            { "owner", Mention.User(listing.Owner.ReferenceNumber.Value) },
+            { "quantity",  GetQuantity(listing)},
+            { "itemName", listing.Product.Title.Value },
+            { "listingType", listing is CommissionTrade ? "Trade Request" : listing.ToString()! },
+        };
+
+        var result = await customAnnouncementService.GetAnnouncementAsync(listing.Owner.EmporiumId.Value, AnnouncementType.Listing);
+
+        if (!result.IsSuccessful) return string.Empty;
+
+        if (result.IsSuccessful)
+            return MessageExtensions.ReplacePlaceholders(result.Data, placeholders.Concat(roles).ToDictionary());
 
         return null;
     }

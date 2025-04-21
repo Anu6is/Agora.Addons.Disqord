@@ -69,7 +69,7 @@ public sealed class ManageAnnouncementsView : ViewBase
                                            .WithDescription("Add a message for newly created listings")
     ];
 
-    public ManageAnnouncementsView(IEnumerable<Announcement> customAnnouncements, IServiceScopeFactory scopeFactory) : base(message => message.AddEmbed(ExplanationEmbed))
+    public ManageAnnouncementsView(ulong guildId, IEnumerable<Announcement> customAnnouncements, IServiceScopeFactory scopeFactory) : base(message => message.AddEmbed(ExplanationEmbed))
     {
         _scopeFactory = scopeFactory;
 
@@ -83,7 +83,7 @@ public sealed class ManageAnnouncementsView : ViewBase
             Options = _options
         });
 
-        _guildId = customAnnouncements.First().GuildId;
+        _guildId = guildId;
 
         foreach (var button in EnumerateComponents().OfType<ButtonViewComponent>())
         {

@@ -22,6 +22,6 @@ public sealed class CustomAnnouncementModule(IServiceScopeFactory scopeFactory) 
     {
         var customAnnouncements = await Data.Transaction<GenericRepository<Announcement>>().ListAsync(new EntitySpec<Announcement>(x => x.GuildId == Guild.Id.RawValue));
 
-        return View(new ManageAnnouncementsView(customAnnouncements, scopeFactory));
+        return View(new ManageAnnouncementsView(Guild.Id.RawValue, customAnnouncements, scopeFactory));
     }
 }

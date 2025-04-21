@@ -75,7 +75,10 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
 
     private static string GetWinners(Listing listing)
     {
-        var buyer = listing.CurrentOffer.UserReference.Value;
+        var buyer = listing.CurrentOffer?.UserReference?.Value;
+
+        if (buyer is null) return "¯\\_(ツ)_/¯";
+
         var winners = listing switch
         {
             StandardGiveaway giveaway => giveaway.Winners,
@@ -83,7 +86,7 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
             _ => []
         };
 
-        return winners.Length <= 1 ? Mention.User(buyer) : string.Join(" | ", winners.Select(x => Mention.User(x.UserReference.Value)));
+        return winners.Length <= 1 ? Mention.User(buyer.Value) : string.Join(" | ", winners.Select(x => Mention.User(x.UserReference.Value)));
     }
 
     private static string GetQuantity(Listing listing)

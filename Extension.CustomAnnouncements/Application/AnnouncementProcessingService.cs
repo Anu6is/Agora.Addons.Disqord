@@ -43,7 +43,7 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
     public async Task<string?> GetListingMessageAsync(Listing listing)
     {
         var guildRoles = await bot.FetchRolesAsync(listing.Owner.EmporiumId.Value);
-        var roles = guildRoles.ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
+        var roles = guildRoles.DistinctBy(x => x.Name).ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
 
         var placeholders = new Dictionary<string, string>
         {

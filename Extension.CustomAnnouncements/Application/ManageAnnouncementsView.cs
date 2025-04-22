@@ -207,7 +207,7 @@ public sealed class ManageAnnouncementsView : ViewBase
         };
 
         var guildRoles = await bot!.FetchRolesAsync(e.GuildId!.Value);
-        var roles = guildRoles.ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
+        var roles = guildRoles.DistinctBy(x => x.Name).ToDictionary(x => $"@{x.Name}", x => Mention.Role(x.Id));
         var message = MessageExtensions.ReplacePlaceholders(_customMessage, placeholders.Concat(roles).ToDictionary());
         var embed = new LocalEmbed().WithTitle($"{listingType} Claimed")
                             .WithDescription($"{Markdown.Bold($"{quantity} {title}")} for **xXx**")

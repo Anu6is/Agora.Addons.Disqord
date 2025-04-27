@@ -12,7 +12,7 @@ public class CustomAnnouncement(AnnouncementProcessingService announcementServic
         var announcement = string.Empty;
         var listing = parameters.GetValue<Listing>("Listing");
 
-        if (listing.Status < Emporia.Domain.Common.ListingStatus.Active)
+        if (listing.Status <= Emporia.Domain.Common.ListingStatus.Locked)
             announcement = await announcementService.GetListingMessageAsync(listing);
         else
             announcement = await announcementService.GetAnnouncementMessageAsync(listing);

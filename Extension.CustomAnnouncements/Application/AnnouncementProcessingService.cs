@@ -92,7 +92,7 @@ public class AnnouncementProcessingService(DiscordBotBase bot, CustomAnnouncemen
     private static string GetQuantity(Listing listing)
     {
         var stock = listing is MassMarket or MultiItemMarket
-            ? (listing.Product as MarketItem)!.Offers.OrderBy(x => x.SubmittedOn).Last().ItemCount
+            ? (listing.Product as MarketItem)!.Offers.OrderBy(x => x.SubmittedOn).LastOrDefault()?.ItemCount ?? listing.Product.Quantity.Amount
             : listing.Product.Quantity.Amount;
 
         var quantity = stock == 1 ? string.Empty : $"{stock} ";

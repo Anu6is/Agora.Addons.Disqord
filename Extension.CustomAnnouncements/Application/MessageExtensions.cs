@@ -6,9 +6,9 @@ public static class MessageExtensions
 {
     public static string ReplacePlaceholders(string message, Dictionary<string, string> placeholders)
     {
-        placeholders["{@@everyone}"] = "@everyone";
-        placeholders.Add("@everyone", "@everyone");
-        placeholders.Add("@here", "@here");
+        placeholders["{@@everyone}"] = Mention.Everyone;
+        placeholders.Add("@everyone", Mention.Everyone);
+        placeholders.Add("@here", Mention.Here);
 
         foreach (var placeholder in placeholders)
         {

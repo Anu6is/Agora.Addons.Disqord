@@ -687,8 +687,20 @@ namespace Agora.Addons.Disqord
                 tagAdded = true;
             }
 
+            tags = tags.DistinctBy(x => x.Name);
+
             if (tagAdded)
-                forum = await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
+            {
+                try
+                {
+                    forum = await forum.ModifyAsync(x => x.Tags = tags.Take(20).ToArray());
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine($"Tags: {string.Join(", ", tags.Select(x => x.Name))}");
+                }
+            }
+
 
             return forum.Tags.Where(x => tagNames.Any(name => name.Trim().Equals(x.Name))).Select(x => x.Id);
         }

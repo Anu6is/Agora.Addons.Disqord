@@ -4,11 +4,14 @@ using Agora.Shared.Cache;
 using Agora.Shared.Extensions;
 using Disqord;
 using Disqord.Bot.Commands.Application;
+using Disqord.Extensions.Interactivity;
+using Disqord.Rest;
 using Emporia.Application.Common;
 using Emporia.Application.Features.Commands;
 using Emporia.Application.Models;
 using Emporia.Domain.Common;
 using Emporia.Domain.Entities;
+using Emporia.Domain.Extension;
 using Emporia.Extensions.Discord;
 using Emporia.Extensions.Discord.Features.Commands;
 using Qmmands;
@@ -52,8 +55,6 @@ namespace Agora.Addons.Disqord.Commands
                 [Description("Item owner. Defaults to the command user."), RequireRole(AuthorizationRole.Broker)][CheckListingLimit] IMember owner = null,
                 [Description("Max time between bids. Auction ends if no new bids. (example: 5m or 5 minutes)"), RestrictTimeout(5, 432000)] TimeSpan timeout = default)
             {
-                await Deferral(true);
-
                 AuctionTemplates = await TemplateCacheService.GetAuctionTemplatesAsync(Context.GuildId);
 
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
@@ -87,6 +88,45 @@ namespace Agora.Addons.Disqord.Commands
 
                 if (auctionTemplate.Duration == default) auctionTemplate.Duration = defaultDuration;
 
+                if (auctionTemplate.Title.IsNull() || auctionTemplate.StartingPrice <= 0)
+                {
+                    var modal = new LocalInteractionModalResponse()
+                        .WithCustomId(Context.Interaction.Id.ToString())
+                        .WithTitle("Missing Values")
+                        .WithComponents(
+                            LocalComponent.Row(LocalComponent.TextInput("title", "Title", TextInputComponentStyle.Short).WithIsRequired(true).WithPrefilledValue(auctionTemplate.Title)),
+                            LocalComponent.Row(LocalComponent.TextInput("startingPrice", "Starting Price", TextInputComponentStyle.Short).WithIsRequired(true).WithPrefilledValue(auctionTemplate.StartingPrice.ToString())));
+
+                    await Context.Interaction.Response().SendModalAsync(modal);
+
+                    var reply = await Context.WaitForInteractionAsync(x => 
+                    {
+                        if (x.Interaction is not IModalSubmitInteraction modal) return false;
+                        if (modal.CustomId != Context.Interaction.Id.ToString()) return false;
+                        return true;
+                    } , timeout:TimeSpan.FromSeconds(15), cancellationToken: CancellationToken.None);
+
+                    if (reply == null && !auctionTemplate.Validate(out var err))
+                        return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(err));
+
+                    var response = (IModalSubmitInteraction)reply.Interaction;
+                    var values = response.Components.OfType<IRowComponent>()
+                                       .Select(row => row.Components.OfType<ITextInputComponent>().First().Value);
+
+                    var titleInput = values.FirstOrDefault();
+                    var startingPriceInput = values.LastOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(titleInput)) auctionTemplate.Title = titleInput;
+                    if (double.TryParse(startingPriceInput, out var price) && price > 0) auctionTemplate.StartingPrice = price;
+
+                    await response.Response().SendMessageAsync(new LocalInteractionMessageResponse().WithContent("Values updated").WithIsEphemeral());
+                }
+                else
+                {
+                    await Deferral(true);
+
+                }
+
                 if (!auctionTemplate.Validate(out var error)) return ErrorResponse(isEphimeral: true, embeds: new LocalEmbed().WithDescription(error));
 
                 var user = await Cache.GetUserAsync(Context.GuildId, auctionTemplate.Owner);
@@ -116,6 +156,9 @@ namespace Agora.Addons.Disqord.Commands
                 if (!result.IsSuccessful) return ErrorResponse(isEphimeral: true, content: result.FailureReason);
 
                 _ = Base.ExecuteAsync(new UpdateGuildSettingsCommand((DefaultDiscordGuildSettings)Settings));
+
+                //var success = new LocalInteractionMessageResponse().WithContent("Auction successfully created!").WithIsEphemeral();
+                //await Context.Interaction.SendMessageAsync(success);
 
                 return Response("Auction successfully created!");
             }

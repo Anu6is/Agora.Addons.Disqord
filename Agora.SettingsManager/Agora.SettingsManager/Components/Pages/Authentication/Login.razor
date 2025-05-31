@@ -1,0 +1,34 @@
+@page "/authentication/login"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect // Required for OpenIdConnectDefaults
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+<MudText Typo="Typo.h5">Processing login...</MudText>
+<MudText>You will be redirected to the login provider.</MudText>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext != null && HttpContext.User?.Identity?.IsAuthenticated == false)
+        {
+            // Initiate server-side OIDC challenge
+            await HttpContext.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme);
+        }
+        else if (HttpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            // Already authenticated, redirect to home.
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            // HttpContext is null (could be WASM trying to access this, which is wrong)
+            // Or some other unexpected state. Redirect to home or show error.
+            Navigation.NavigateTo("/");
+        }
+    }
+}

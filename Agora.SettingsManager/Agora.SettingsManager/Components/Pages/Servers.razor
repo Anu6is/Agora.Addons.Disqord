@@ -1,0 +1,96 @@
+@page "/servers"
+@attribute [Authorize]
+@inject Agora.SettingsManager.Client.DiscordAuthenticationService DiscordAuthService
+@inject NavigationManager NavigationManager
+@inject ILogger<Servers> Logger
+
+<PageTitle>Select Server</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Select a Server to Manage</MudText>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+}
+else if (_managableGuilds == null || !_managableGuilds.Any())
+{
+    <MudText>No servers found where you have 'Manage Server' permissions and the bot is present.</MudText>
+    <MudText>Ensure you are logged in with the correct Discord account.</MudText>
+}
+else
+{
+    <MudList T="Agora.SettingsManager.Client.DiscordGuild" clickable="true">
+        @foreach (var guild in _managableGuilds)
+        {
+            <MudListItem T="Agora.SettingsManager.Client.DiscordGuild" OnClick="@(() => NavigateToGuildSettings(guild.Id))">
+                <div style="display: flex; align-items: center;">
+                    @if (!string.IsNullOrEmpty(guild.Icon))
+                    {
+                        <MudAvatar image="@GetGuildIconUrl(guild.Id, guild.Icon)" alt="@($"{guild.Name} icon")" Class="mr-3" />
+                    }
+                    else
+                    {
+                        <MudAvatar Color="Color.Primary" Class="mr-3">@guild.Name.FirstOrDefault()</MudAvatar>
+                    }
+                    <MudText>@guild.Name</MudText>
+                </div>
+            </MudListItem>
+        }
+    </MudList>
+}
+
+@code {
+    private List<Agora.SettingsManager.Client.DiscordGuild>? _managableGuilds;
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            Logger.LogInformation("Fetching manageable guilds...");
+            _managableGuilds = await DiscordAuthService.GetManagableGuildsAsync();
+
+            if (_managableGuilds != null)
+            {
+                 Logger.LogInformation($"Found {_managableGuilds.Count} manageable guilds.");
+            }
+            else
+            {
+                Logger.LogWarning("Manageable guilds list is null.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error fetching manageable guilds.");
+            _errorMessage = $"An error occurred while fetching server list: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void NavigateToGuildSettings(string guildId)
+    {
+        if (string.IsNullOrEmpty(guildId) || guildId == "0")
+        {
+            Logger.LogWarning("Invalid guild ID for navigation: {GuildId}", guildId);
+            _errorMessage = "Cannot navigate to settings for an invalid server ID.";
+            return;
+        }
+        Logger.LogInformation("Navigating to settings for guild {GuildId}", guildId);
+        NavigationManager.NavigateTo($"/guild/{guildId}/settings");
+    }
+
+    private string GetGuildIconUrl(string guildId, string iconHash)
+    {
+        if (string.IsNullOrEmpty(iconHash)) return string.Empty;
+        return $"https://cdn.discordapp.com/icons/{guildId}/{iconHash}.png";
+    }
+}

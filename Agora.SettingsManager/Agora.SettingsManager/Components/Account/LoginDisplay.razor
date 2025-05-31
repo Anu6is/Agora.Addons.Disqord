@@ -1,0 +1,9 @@
+<AuthorizeView>
+    <Authorized>
+        <MudText>Hello, @context.User.Identity?.Name!</MudText>
+        <MudButton Color="Color.Primary" Href="authentication/logout">Log out</MudButton>
+    </Authorized>
+    <NotAuthorized>
+        <MudButton Color="Color.Primary" Href="authentication/login">Log in</MudButton>
+    </NotAuthorized>
+</AuthorizeView>

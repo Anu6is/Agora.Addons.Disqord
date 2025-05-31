@@ -1,0 +1,30 @@
+@page "/authentication/logout"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Navigation
+
+<PageTitle>Log out</PageTitle>
+<MudText Typo="Typo.h5">Processing logout...</MudText>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext != null && HttpContext.User?.Identity?.IsAuthenticated == true)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            // This should trigger redirect to IdP logout and then back to PostLogoutRedirectUri
+            await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+        }
+        else
+        {
+            // Not authenticated or no HttpContext (e.g. WASM somehow hit this page)
+            // Just navigate to home. The client-side app should handle its own state.
+            Navigation.NavigateTo("/");
+        }
+    }
+}

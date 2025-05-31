@@ -1,0 +1,499 @@
+@page "/guild/{GuildId}/settings"
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject ILogger<GuildSettingsPage> Logger
+@inject Agora.SettingsManager.Client.Services.ISettingsApiService SettingsApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject IJSRuntime JSRuntime // Added for fallback confirmation
+
+<PageTitle>Settings for Guild @GuildId</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Manage Settings for Server @GuildId</MudText>
+<MudText Typo="Typo.subtitle1" Class="mb-4">Selected Guild ID: <strong>@GuildId</strong></MudText>
+
+@if (_isLoadingInitial)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (string.IsNullOrEmpty(GuildId) || _parsedGuildId == 0)
+{
+    <MudAlert Severity="Severity.Error">Invalid Server ID provided: @GuildId</MudAlert>
+}
+else
+{
+    <MudTabs Elevation="2" Rounded="true" PanelClass="mt-4">
+        <MudTabPanel Text="General Settings">
+            @if (_settings == null) { <MudAlert Severity="Severity.Error">Could not load general settings. @(_errorMessage)</MudAlert> }
+            else
+            {
+                <MudForm @ref="_generalSettingsForm" @bind-IsValid="@_isGeneralSettingsFormValid" Class="mt-4">
+                    <MudCard><MudCardHeader><MudText Typo="Typo.h6">General Server Settings</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <MudSelect T="ulong?" @bind-Value="_settings.ResultLogChannelId" For="@(() => _settings.ResultLogChannelId)" Label="Result Log Channel" Variant="Variant.Outlined" Clearable="true">@foreach (var ch in _discordChannels.Where(c=>c.Type=="Text")){<MudSelectItem T="ulong?" Value="ch.Id">@ch.Name (#@ch.Id)</MudSelectItem>}</MudSelect>
+                        <MudSelect T="ulong?" @bind-Value="_settings.AuditLogChannelId" For="@(() => _settings.AuditLogChannelId)" Label="Audit Log Channel" Variant="Variant.Outlined" Class="mt-3" Clearable="true">@foreach (var ch in _discordChannels.Where(c=>c.Type=="Text")){<MudSelectItem T="ulong?" Value="ch.Id">@ch.Name (#@ch.Id)</MudSelectItem>}</MudSelect>
+                        <MudTextField @bind-Value="_settings.DefaultCurrencySymbol" For="@(() => _settings.DefaultCurrencySymbol)" Label="Default Currency Symbol" Variant="Variant.Outlined" Class="mt-3" Required="true"/>
+                        <MudNumericField @bind-Value="_settings.CurrencyDecimalPlaces" For="@(() => _settings.CurrencyDecimalPlaces)" Label="Currency Decimal Places" Variant="Variant.Outlined" Class="mt-3" Min="0" Max="18" Required="true"/>
+                        <MudTextField @bind-Value="_settings.ServerTimezone" For="@(() => _settings.ServerTimezone)" Label="Server Timezone (IANA ID)" HelperText="e.g. Europe/London. Bot default: UTC." Variant="Variant.Outlined" Class="mt-3"/>
+                        <MudTimePicker Label="Server Time Offset" @bind-Time="_settings.ServerTimeOffset" For="@(() => _settings.ServerTimeOffset)" Variant="Variant.Outlined" Class="mt-3" HelperText="Used if Timezone not set." Clearable="true"/>
+                    </MudCardContent>
+                    <MudCardActions><MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isGeneralSettingsFormValid || _isSavingGeneralSettings)" OnClick="SaveGeneralSettings">@if (_isSavingGeneralSettings){<MudProgressCircular Size="Size.Small" Indeterminate="true"/><MudText Class="ms-2">Saving...</MudText>}else{<MudText>Save General</MudText>}</MudButton></MudCardActions>
+                    </MudCard>
+                </MudForm>
+
+                <MudDivider Class="my-6" />
+
+                <MudText Typo="Typo.h6" Color="Color.Error" Class="mb-2">Danger Zone</MudText>
+                <MudCard Elevation="2">
+                    <MudCardHeader><MudText Typo="Typo.subtitle1" Color="Color.Error">Server Reset</MudText></MudCardHeader>
+                    <MudCardContent>
+                        <MudText>Resetting the server will clear all bot configurations, including showrooms, categories, currencies, listing requirements, and bot roles for this server. <strong>This action cannot be undone.</strong></MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Warning" OnClick="ConfirmAndResetServerSettings" Disabled="@_isResettingServer">
+                            @if(_isResettingServer) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/> }
+                            Reset All Server Settings
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Showrooms">
+            <MudText Typo="Typo.h6" GutterBottom="true">Manage Showrooms</MudText>
+            <MudPaper Elevation="2" Class="pa-4 mt-4 mb-6">
+                <MudText Typo="Typo.subtitle1" GutterBottom="true">Add New Showroom</MudText>
+                <MudForm @ref="_addShowroomForm" @bind-IsValid="@_isAddShowroomFormValid">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="5"><MudSelect T="ulong" @bind-Value="_newShowroomChannelId" For="@(() => _newShowroomChannelId)" Label="Channel" Required="true">@foreach(var ch in _discordChannels.Where(c=>c.Type=="Text"||c.Type=="Forum")){<MudSelectItem T="ulong" Value="ch.Id">@ch.Name</MudSelectItem>}</MudSelect></MudItem>
+                    <MudItem xs="12" sm="5"><MudSelect T="ListingType" @bind-Value="_newShowroomType" For="@(() => _newShowroomType)" Label="Type" Required="true">@foreach(ListingType lt in Enum.GetValues(typeof(ListingType))){<MudSelectItem T="ListingType" Value="lt">@lt</MudSelectItem>}</MudSelect></MudItem>
+                    <MudItem xs="12" sm="2" Class="d-flex align-center"><MudButton Variant="Variant.Filled" OnClick="HandleAddShowroom" Disabled="@(!_isAddShowroomFormValid || _isAddingShowroom)">@if(_isAddingShowroom){<MudProgressCircular Size="Size.Small" Indeterminate="true"/>}Add</MudButton></MudItem>
+                </MudGrid>
+                </MudForm>
+            </MudPaper>
+            @if(_isLoadingShowrooms){<MudProgressCircular Indeterminate="true"/>}else if(!_showrooms.Any()){<MudText>No showrooms.</MudText>}else{
+                <MudTable Items="_showrooms" Dense="true" Hover="true" Striped="true"><HeaderContent><MudTh>Channel Name</MudTh><MudTh>Type</MudTh><MudTh>Actions</MudTh></HeaderContent>
+                <RowTemplate><MudTd DataLabel="Ch">@context.ChannelName</MudTd><MudTd DataLabel="Type">@context.Type</MudTd><MudTd DataLabel="Act"><MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(()=>HandleRemoveShowroom(context))"/></MudTd></RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Categories">
+            <MudText Typo="Typo.h6" GutterBottom="true">Manage Categories</MudText>
+            <MudPaper Elevation="2" Class="pa-4 mt-4 mb-6">
+                <MudText Typo="Typo.subtitle1" GutterBottom="true">Add New Category</MudText>
+                <MudForm @ref="_addCategoryForm" @bind-IsValid="@_isAddCategoryFormValid" Model="@_newCategoryNameObject">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="10"><MudTextField @bind-Value="_newCategoryNameObject.Name" For="@(()=>_newCategoryNameObject.Name)" Label="Category Name" Required="true"/></MudItem>
+                    <MudItem xs="12" sm="2" Class="d-flex align-center"><MudButton Variant="Variant.Filled" OnClick="HandleAddCategory" Disabled="@(!_isAddCategoryFormValid || _isAddingCategory)">@if(_isAddingCategory){<MudProgressCircular Size="Size.Small" Indeterminate="true"/>}Add</MudButton></MudItem>
+                </MudGrid>
+                </MudForm>
+            </MudPaper>
+            @if(_isLoadingCategories){<MudProgressCircular Indeterminate="true"/>}else if(!_guildCategories.Any()){<MudText>No categories.</MudText>}else{
+                <MudList T="Agora.SettingsManager.Client.Models.GuildCategory" clickable="false">@foreach(var cat in _guildCategories){<MudListItem T="Agora.SettingsManager.Client.Models.GuildCategory"><MudText>@cat.Name</MudText><MudListItemMeta Action="Action.End"><MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(()=>HandleRemoveCategory(cat))"/></MudListItemMeta></MudListItem><MudDivider/>}</MudList>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Currencies">
+            <MudText Typo="Typo.h6" GutterBottom="true">Manage Currencies</MudText>
+            <MudPaper Elevation="2" Class="pa-4 mt-4 mb-6">
+                <MudText Typo="Typo.subtitle1" GutterBottom="true">Add New Currency</MudText>
+                <MudForm @ref="_addCurrencyForm" @bind-IsValid="@_isAddCurrencyFormValid" Model="@_newCurrency">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="4"><MudTextField @bind-Value="_newCurrency.Name" For="@(()=>_newCurrency.Name)" Label="Name" Required="true"/></MudItem>
+                    <MudItem xs="12" sm="3"><MudTextField @bind-Value="_newCurrency.Symbol" For="@(()=>_newCurrency.Symbol)" Label="Symbol" Required="true"/></MudItem>
+                    <MudItem xs="12" sm="3"><MudNumericField @bind-Value="_newCurrency.DecimalPlaces" For="@(()=>_newCurrency.DecimalPlaces)" Label="Decimals" Min="0" Max="18" Required="true"/></MudItem>
+                    <MudItem xs="12" sm="2" Class="d-flex align-center"><MudButton Variant="Variant.Filled" OnClick="HandleAddCurrency" Disabled="@(!_isAddCurrencyFormValid || _isAddingCurrency)">@if(_isAddingCurrency){<MudProgressCircular Size="Size.Small" Indeterminate="true"/>}Add</MudButton></MudItem>
+                </MudGrid>
+                </MudForm>
+            </MudPaper>
+            @if(_isLoadingCurrencies){<MudProgressCircular Indeterminate="true"/>}else if(!_guildCurrencies.Any()){<MudText>No currencies.</MudText>}else{
+                <MudTable Items="_guildCurrencies" Dense="true" Hover="true" Striped="true"><HeaderContent><MudTh>Name</MudTh><MudTh>Symbol</MudTh><MudTh>Decimals</MudTh><MudTh>Actions</MudTh></HeaderContent>
+                <RowTemplate><MudTd>@context.Name</MudTd><MudTd>@context.Symbol</MudTd><MudTd>@context.DecimalPlaces</MudTd><MudTd><MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" OnClick="@(()=>HandleRemoveCurrency(context))"/></MudTd></RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Listing Requirements">
+             <MudText Typo="Typo.h6" GutterBottom="true">Configure Listing Requirements</MudText>
+            <MudSelect T="ListingType?" Label="Select Listing Type to Configure" @bind-Value="_selectedListingTypeForRequirements" For="@(() => _selectedListingTypeForRequirements)" Variant="Variant.Outlined" Class="mt-4 mb-4">
+                @foreach (ListingType type in Enum.GetValues(typeof(ListingType)))
+                {
+                    <MudSelectItem T="ListingType?" Value="@type">@type.ToString()</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (_isLoadingListingRequirements)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_currentListingRequirements != null)
+            {
+                <MudForm @ref="_listingRequirementsForm" @bind-IsValid="@_isListingRequirementsFormValid" Model="@_currentListingRequirements">
+                    <MudCard>
+                        <MudCardHeader><MudText Typo="Typo.subtitle1">Requirements for @_currentListingRequirements.Type.ToString()</MudText></MudCardHeader>
+                        <MudCardContent>
+                            <MudCheckBox @bind-checked="@_currentListingRequirements.RequireImage" For="@(() => _currentListingRequirements.RequireImage)" Label="Require Image" Color="Color.Primary" Dense="true"/>
+                            <MudCheckBox @bind-checked="@_currentListingRequirements.RequireDescription" For="@(() => _currentListingRequirements.RequireDescription)" Label="Require Description" Color="Color.Primary" Dense="true" Class="ml-2"/>
+                            <MudCheckBox @bind-checked="@_currentListingRequirements.RequirePrice" For="@(() => _currentListingRequirements.RequirePrice)" Label="Require Price (for relevant types like Market/Auction)" Color="Color.Primary" Dense="true" Class="ml-2"/>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isListingRequirementsFormValid || _isSavingListingRequirements)" OnClick="SaveListingRequirements">
+                                @if (_isSavingListingRequirements) { <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" /> <MudText Class="ms-2">Saving...</MudText> } else { <MudText>Save Requirements</MudText> }
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudForm>
+            }
+            else if (_selectedListingTypeForRequirements != null)
+            {
+                <MudText>No requirements data loaded for @_selectedListingTypeForRequirements.ToString(). You might need to save initial settings.</MudText>
+                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="InitializeAndSaveListingRequirements" Class="mt-2">Initialize & Save for @_selectedListingTypeForRequirements.ToString()</MudButton>
+            }
+            else
+            {
+                <MudText>Select a listing type to see or configure its requirements.</MudText>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Bot Roles">
+            <MudText Typo="Typo.h6" GutterBottom="true">Configure Bot Roles</MudText>
+            @if (_isLoadingBotRoles || _discordRoles == null)
+            {
+                <MudProgressCircular Indeterminate="true" />
+            }
+            else if (_botRoleSettings == null)
+            {
+                <MudAlert Severity="Severity.Error">Could not load bot role settings. @(_errorMessage)</MudAlert>
+            }
+            else
+            {
+                <MudForm @ref="_botRolesForm" @bind-IsValid="@_isBotRolesFormValid" Model="@_botRoleSettings" Class="mt-4">
+                    <MudCard>
+                        <MudCardHeader><MudText Typo="Typo.subtitle1">Assign server roles to bot functionalities</MudText></MudCardHeader>
+                        <MudCardContent>
+                            <MudSelect T="ulong?" @bind-Value="_botRoleSettings.ManagerRoleId" For="@(() => _botRoleSettings.ManagerRoleId)" Label="Manager Role" HelperText="Users with this role can manage critical bot settings." Variant="Variant.Outlined" Clearable="true">
+                                @foreach (var role in _discordRoles) { <MudSelectItem T="ulong?" Value="@role.Id">@role.Name</MudSelectItem> }
+                            </MudSelect>
+
+                            <MudSelect T="ulong?" @bind-Value="_botRoleSettings.BrokerRoleId" For="@(() => _botRoleSettings.BrokerRoleId)" Label="Broker Role" HelperText="Role for users who can facilitate or oversee transactions." Variant="Variant.Outlined" Class="mt-3" Clearable="true">
+                                @foreach (var role in _discordRoles) { <MudSelectItem T="ulong?" Value="@role.Id">@role.Name</MudSelectItem> }
+                            </MudSelect>
+
+                            <MudSelect T="ulong?" @bind-Value="_botRoleSettings.MerchantRoleId" For="@(() => _botRoleSettings.MerchantRoleId)" Label="Merchant Role" HelperText="Default role for users who list items." Variant="Variant.Outlined" Class="mt-3" Clearable="true">
+                                @foreach (var role in _discordRoles) { <MudSelectItem T="ulong?" Value="@role.Id">@role.Name</MudSelectItem> }
+                            </MudSelect>
+
+                            <MudSelect T="ulong?" @bind-Value="_botRoleSettings.BuyerRoleId" For="@(() => _botRoleSettings.BuyerRoleId)" Label="Buyer Role" HelperText="Default role for users who purchase items or bid." Variant="Variant.Outlined" Class="mt-3" Clearable="true">
+                                @foreach (var role in _discordRoles) { <MudSelectItem T="ulong?" Value="@role.Id">@role.Name</MudSelectItem> }
+                            </MudSelect>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isBotRolesFormValid || _isSavingBotRoles)" OnClick="SaveBotRoles">
+                                @if (_isSavingBotRoles) { <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" /> <MudText Class="ms-2">Saving...</MudText> } else { <MudText>Save Bot Roles</MudText> }
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudForm>
+            }
+        </MudTabPanel>
+
+    </MudTabs>
+}
+
+<MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="@(() => GoBackToServers())" Class="mt-6">Back to Server List</MudButton>
+
+@code {
+    [Parameter]
+    public string? GuildId { get; set; }
+    private ulong _parsedGuildId;
+
+    // General Settings
+    private Agora.SettingsManager.Client.Models.GuildSettings? _settings;
+    private MudForm? _generalSettingsForm;
+    private bool _isGeneralSettingsFormValid;
+    private bool _isSavingGeneralSettings = false;
+
+    // Shared
+    private List<Agora.SettingsManager.Client.Services.DiscordChannelInfo> _discordChannels = new();
+    private List<Agora.SettingsManager.Client.Services.DiscordRoleInfo> _discordRoles = new();
+    private bool _isLoadingInitial = true;
+    private string? _errorMessage;
+
+    // Showrooms
+    private List<Agora.SettingsManager.Client.Models.Showroom> _showrooms = new(); bool _isLoadingShowrooms; MudForm? _addShowroomForm; bool _isAddShowroomFormValid; bool _isAddingShowroom; ulong _newShowroomChannelId; ListingType _newShowroomType = ListingType.Auction;
+    // Categories
+    private List<Agora.SettingsManager.Client.Models.GuildCategory> _guildCategories = new(); bool _isLoadingCategories; MudForm? _addCategoryForm; bool _isAddCategoryFormValid; class NewCategoryModel { public string Name { get; set; } = string.Empty; } NewCategoryModel _newCategoryNameObject = new(); bool _isAddingCategory;
+    // Currencies
+    private List<Agora.SettingsManager.Client.Models.CurrencyInfo> _guildCurrencies = new(); bool _isLoadingCurrencies; MudForm? _addCurrencyForm; bool _isAddCurrencyFormValid; Agora.SettingsManager.Client.Models.CurrencyInfo _newCurrency = new Client.Models.CurrencyInfo{Id=Guid.NewGuid().ToString()}; bool _isAddingCurrency;
+    // Listing Requirements
+    private ListingType? _selectedListingTypeForRequirementsCache;
+    private ListingType? _selectedListingTypeForRequirements { get => _selectedListingTypeForRequirementsCache; set { if (_selectedListingTypeForRequirementsCache != value) { _selectedListingTypeForRequirementsCache = value; InvokeAsync(() => OnSelectedListingTypeChanged(value)); } } }
+    private Agora.SettingsManager.Client.Models.ListingRequirements? _currentListingRequirements; MudForm? _listingRequirementsForm; bool _isListingRequirementsFormValid; bool _isLoadingListingRequirements; bool _isSavingListingRequirements;
+    // Bot Roles
+    private Agora.SettingsManager.Client.Models.BotRoleSettings? _botRoleSettings; MudForm? _botRolesForm; bool _isBotRolesFormValid; bool _isLoadingBotRoles; bool _isSavingBotRoles;
+
+    // Server Reset
+    private bool _isResettingServer = false;
+
+    protected override async Task OnParametersSetAsync() {
+        if (string.IsNullOrEmpty(GuildId) || !ulong.TryParse(GuildId, out _parsedGuildId) || _parsedGuildId == 0) { _errorMessage = "Invalid server ID."; _isLoadingInitial = false; return; }
+        await LoadAllSettings(_parsedGuildId);
+    }
+
+    private async Task LoadAllSettings(ulong guildId) {
+        _isLoadingInitial = true; _errorMessage = null;
+        try {
+            var generalSettingsTask = SettingsApiService.GetGuildSettingsAsync(guildId);
+            var discordChannelsTask = SettingsApiService.GetDiscordChannelsAsync(guildId);
+            var discordRolesTask = SettingsApiService.GetDiscordRolesAsync(guildId);
+            var showroomsTask = SettingsApiService.GetShowroomsAsync(guildId);
+            var categoriesTask = SettingsApiService.GetCategoriesAsync(guildId);
+            var currenciesTask = SettingsApiService.GetCurrenciesAsync(guildId);
+
+            _isLoadingBotRoles = true; // Set loading flag for bot roles
+            var botRolesTask = SettingsApiService.GetBotRoleSettingsAsync(guildId);
+
+            await System.Threading.Tasks.Task.WhenAll(
+                generalSettingsTask, discordChannelsTask, discordRolesTask,
+                showroomsTask, categoriesTask, currenciesTask, botRolesTask
+            );
+
+            _settings = await generalSettingsTask ?? new Agora.SettingsManager.Client.Models.GuildSettings{GuildId=guildId};
+            _discordChannels = await discordChannelsTask ?? new List<DiscordChannelInfo>();
+            _discordRoles = await discordRolesTask ?? new List<DiscordRoleInfo>();
+            _showrooms = await showroomsTask ?? new List<Showroom>();
+            _guildCategories = await categoriesTask ?? new List<GuildCategory>();
+            _guildCurrencies = await currenciesTask ?? new List<CurrencyInfo>();
+            _botRoleSettings = await botRolesTask ?? new Agora.SettingsManager.Client.Models.BotRoleSettings();
+
+            if (_settings.GuildId == 0 && _parsedGuildId != 0) _settings.GuildId = _parsedGuildId;
+            if (_botRoleSettings == null) _botRoleSettings = new Agora.SettingsManager.Client.Models.BotRoleSettings();
+
+        } catch (Exception ex) { Logger.LogError(ex, "Error loading settings"); _errorMessage = $"Error: {ex.Message}"; if (_settings == null && _parsedGuildId != 0) _settings = new Agora.SettingsManager.Client.Models.GuildSettings { GuildId = _parsedGuildId }; if (_botRoleSettings == null) _botRoleSettings = new Agora.SettingsManager.Client.Models.BotRoleSettings(); }
+        finally {
+            _isLoadingInitial = false;
+            _isLoadingBotRoles = false; // Clear loading flag for bot roles
+        }
+    }
+
+    private async Task SaveGeneralSettings() {
+        if (_parsedGuildId == 0 || _settings == null) return;
+        await _generalSettingsForm!.Validate();
+        if (!_isGeneralSettingsFormValid) { Snackbar.Add("Correct General Settings errors.", Severity.Warning); return; }
+        _isSavingGeneralSettings = true;
+        try {
+            var success = await SettingsApiService.UpdateGuildSettingsAsync(_parsedGuildId, _settings);
+            Snackbar.Add(success ? "General settings saved!" : "Failed to save.", success ? Severity.Success : Severity.Error);
+        } catch (Exception ex) { Logger.LogError(ex, "Err saving general"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isSavingGeneralSettings = false; }
+    }
+    private async Task HandleAddShowroom() {
+        if (_parsedGuildId == 0) return;
+        await _addShowroomForm!.Validate();
+        if (!_isAddShowroomFormValid || _newShowroomChannelId == 0) { Snackbar.Add("Select channel/type.", Severity.Warning); return; }
+        _isAddingShowroom = true;
+        var selChannel = _discordChannels.FirstOrDefault(c => c.Id == _newShowroomChannelId);
+        if (selChannel == null) { Snackbar.Add("Channel not found.", Severity.Error); _isAddingShowroom = false; return; }
+        var newSr = new Showroom { Id = _newShowroomChannelId.ToString(), ChannelId = _newShowroomChannelId, ChannelName = selChannel.Name, Type = _newShowroomType };
+        try {
+            var success = await SettingsApiService.AddShowroomAsync(_parsedGuildId, newSr);
+            if (success) { Snackbar.Add("Showroom added!", Severity.Success); _newShowroomChannelId = 0; _newShowroomType = ListingType.Auction; _addShowroomForm?.ResetValidation(); await LoadShowrooms(); }
+            else { Snackbar.Add("Failed to add showroom.", Severity.Error); }
+        } catch (Exception ex) { Logger.LogError(ex, "Err adding showroom"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isAddingShowroom = false; }
+    }
+    private async Task LoadShowrooms() {
+        if (_parsedGuildId == 0) return; _isLoadingShowrooms = true;
+        try { _showrooms = (await SettingsApiService.GetShowroomsAsync(_parsedGuildId)) ?? new List<Showroom>(); }
+        catch (Exception ex) { Logger.LogError(ex, "Err loading showrooms"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isLoadingShowrooms = false; StateHasChanged(); }
+    }
+    private async Task HandleRemoveShowroom(Showroom s) {
+        if (_parsedGuildId == 0) return; _isLoadingShowrooms = true;
+        try {
+            var success = await SettingsApiService.RemoveShowroomAsync(_parsedGuildId, string.IsNullOrEmpty(s.Id) ? s.ChannelId.ToString() : s.Id);
+            if (success) { Snackbar.Add("Showroom removed!", Severity.Success); await LoadShowrooms(); }
+            else { Snackbar.Add("Failed to remove.", Severity.Error); _isLoadingShowrooms = false; StateHasChanged(); }
+        } catch (Exception ex) { Logger.LogError(ex, "Err removing showroom"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); _isLoadingShowrooms = false; StateHasChanged(); }
+    }
+    private async Task HandleAddCategory() {
+        if (_parsedGuildId == 0) return;
+        await _addCategoryForm!.Validate();
+        if (!_isAddCategoryFormValid || string.IsNullOrWhiteSpace(_newCategoryNameObject.Name)) { Snackbar.Add("Name required.", Severity.Warning); return; }
+        _isAddingCategory = true;
+        var newCat = new GuildCategory { Name = _newCategoryNameObject.Name, Id = Guid.NewGuid().ToString() };
+        try {
+            var success = await SettingsApiService.AddCategoryAsync(_parsedGuildId, newCat);
+            if (success) { Snackbar.Add("Category added!", Severity.Success); _newCategoryNameObject.Name = string.Empty; _addCategoryForm?.ResetValidation(); await LoadCategories(); }
+            else { Snackbar.Add("Failed to add category.", Severity.Error); }
+        } catch (Exception ex) { Logger.LogError(ex, "Err adding category"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isAddingCategory = false; }
+    }
+    private async Task LoadCategories() {
+        if (_parsedGuildId == 0) return; _isLoadingCategories = true;
+        try { _guildCategories = (await SettingsApiService.GetCategoriesAsync(_parsedGuildId)) ?? new List<GuildCategory>(); }
+        catch (Exception ex) { Logger.LogError(ex, "Err loading categories"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isLoadingCategories = false; StateHasChanged(); }
+    }
+    private async Task HandleRemoveCategory(GuildCategory c) {
+        if (_parsedGuildId == 0) return; _isLoadingCategories = true;
+        try {
+            var success = await SettingsApiService.RemoveCategoryAsync(_parsedGuildId, c.Id);
+            if (success) { Snackbar.Add("Category removed!", Severity.Success); await LoadCategories(); }
+            else { Snackbar.Add("Failed to remove.", Severity.Error); _isLoadingCategories = false; StateHasChanged(); }
+        } catch (Exception ex) { Logger.LogError(ex, "Err removing category"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); _isLoadingCategories = false; StateHasChanged(); }
+    }
+    private async Task HandleAddCurrency() {
+        if (_parsedGuildId == 0) return;
+        await _addCurrencyForm!.Validate();
+        if (!_isAddCurrencyFormValid) { Snackbar.Add("Please correct currency form errors.", Severity.Warning); return; }
+        _isAddingCurrency = true;
+        if(string.IsNullOrEmpty(_newCurrency.Id)) _newCurrency.Id = Guid.NewGuid().ToString();
+        try {
+            var success = await SettingsApiService.AddCurrencyAsync(_parsedGuildId, _newCurrency);
+            if (success) {
+                Snackbar.Add("Currency added!", Severity.Success);
+                _newCurrency = new Agora.SettingsManager.Client.Models.CurrencyInfo { Id = Guid.NewGuid().ToString() };
+                _addCurrencyForm?.ResetValidation();
+                await LoadCurrencies();
+            }
+            else { Snackbar.Add("Failed to add currency.", Severity.Error); }
+        } catch (Exception ex) { Logger.LogError(ex, "Error adding currency"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isAddingCurrency = false; }
+    }
+    private async Task LoadCurrencies() {
+        if (_parsedGuildId == 0) return; _isLoadingCurrencies = true;
+        try { _guildCurrencies = (await SettingsApiService.GetCurrenciesAsync(_parsedGuildId)) ?? new List<Client.Models.CurrencyInfo>(); }
+        catch (Exception ex) { Logger.LogError(ex, "Error loading currencies"); Snackbar.Add($"Error loading currencies: {ex.Message}", Severity.Error); }
+        finally { _isLoadingCurrencies = false; StateHasChanged(); }
+    }
+    private async Task HandleRemoveCurrency(CurrencyInfo c) {
+        if (_parsedGuildId == 0) return; _isLoadingCurrencies = true;
+        try {
+            var success = await SettingsApiService.RemoveCurrencyAsync(_parsedGuildId, c.Id);
+            if (success) { Snackbar.Add("Currency removed!", Severity.Success); await LoadCurrencies(); }
+            else { Snackbar.Add("Failed to remove currency.", Severity.Error); _isLoadingCurrencies = false; StateHasChanged(); }
+        } catch (Exception ex) { Logger.LogError(ex, "Error removing currency"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); _isLoadingCurrencies = false; StateHasChanged(); }
+    }
+    private async Task OnSelectedListingTypeChanged(ListingType? newType) {
+        _selectedListingTypeForRequirementsCache = newType;
+        if (newType == null || _parsedGuildId == 0) {
+            _currentListingRequirements = null;
+            StateHasChanged();
+            return;
+        }
+        _isLoadingListingRequirements = true;
+        StateHasChanged();
+        try {
+            _currentListingRequirements = await SettingsApiService.GetListingRequirementsAsync(_parsedGuildId, newType.Value) ?? new Client.Models.ListingRequirements { Type = newType.Value };
+        } catch(Exception ex) {
+            Logger.LogError(ex, "Error loading listing reqs");
+            _currentListingRequirements = new Client.Models.ListingRequirements { Type = newType.Value };
+        } finally {
+            _isLoadingListingRequirements = false;
+            StateHasChanged();
+        }
+    }
+    private async Task InitializeAndSaveListingRequirements() {
+        if(_selectedListingTypeForRequirementsCache.HasValue && _parsedGuildId != 0) {
+            _currentListingRequirements = new Client.Models.ListingRequirements{Type = _selectedListingTypeForRequirementsCache.Value, RequireImage = false, RequireDescription = true, RequirePrice = true};
+            await SaveListingRequirements();
+        }
+    }
+    private async Task SaveListingRequirements() {
+        if(_parsedGuildId == 0 || _currentListingRequirements == null) return;
+        _currentListingRequirements.Type = _selectedListingTypeForRequirementsCache ?? _currentListingRequirements.Type;
+        await _listingRequirementsForm!.Validate();
+        if(!_isListingRequirementsFormValid) { Snackbar.Add("Correct errors.", Severity.Warning); return; }
+        _isSavingListingRequirements = true;
+        try {
+            var success = await SettingsApiService.UpdateListingRequirementsAsync(_parsedGuildId, _currentListingRequirements);
+            Snackbar.Add(success ? "Requirements saved!" : "Failed to save.", success ? Severity.Success : Severity.Error);
+            if(success) await OnSelectedListingTypeChanged(_selectedListingTypeForRequirementsCache);
+        } catch (Exception ex) { Logger.LogError(ex, "Err saving listing reqs"); Snackbar.Add($"Error: {ex.Message}", Severity.Error); }
+        finally { _isSavingListingRequirements = false; }
+    }
+
+    // New methods for Bot Roles
+    private async Task SaveBotRoles()
+    {
+        if (_parsedGuildId == 0 || _botRoleSettings == null)
+        {
+            Snackbar.Add("Cannot save bot roles: Invalid Guild ID or settings not loaded.", Severity.Error);
+            return;
+        }
+
+        await _botRolesForm!.Validate();
+        if (!_isBotRolesFormValid)
+        {
+            Snackbar.Add("Please correct validation errors in Bot Roles.", Severity.Warning);
+            return;
+        }
+
+        _isSavingBotRoles = true;
+        try
+        {
+            var success = await SettingsApiService.UpdateBotRoleSettingsAsync(_parsedGuildId, _botRoleSettings);
+            Snackbar.Add(success ? "Bot roles saved successfully!" : "Failed to save bot roles.", success ? Severity.Success : Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error saving bot roles for Guild ID: {GuildId}", _parsedGuildId);
+            Snackbar.Add($"An error occurred while saving bot roles: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSavingBotRoles = false;
+        }
+    }
+
+    private void GoBackToServers()
+    {
+        NavigationManager.NavigateTo("/servers");
+    }
+
+    // New methods for Server Reset (copied from original prompt for this subtask)
+    private async Task ConfirmAndResetServerSettings()
+    {
+        if (_parsedGuildId == 0) return;
+
+        bool confirmed = false;
+        // Direct to JSInterop confirm due to prior issues with IDialogService/MudConfirmationDialog
+        confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "ARE YOU ABSOLUTELY SURE you want to reset all settings for this server? This action cannot be undone.");
+
+        if (confirmed)
+        {
+            _isResettingServer = true;
+            StateHasChanged();
+            try
+            {
+                var success = await SettingsApiService.ResetGuildSettingsAsync(_parsedGuildId);
+                if (success)
+                {
+                    Snackbar.Add("Server settings have been reset successfully.", Severity.Success);
+                    NavigationManager.NavigateTo("/servers", forceLoad: true);
+                }
+                else
+                {
+                    Snackbar.Add("Failed to reset server settings. Please try again.", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error resetting server settings for Guild ID: {GuildId}", _parsedGuildId);
+                Snackbar.Add($"An error occurred while resetting settings: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _isResettingServer = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            Snackbar.Add("Server reset cancelled.", Severity.Info);
+        }
+    }
+}

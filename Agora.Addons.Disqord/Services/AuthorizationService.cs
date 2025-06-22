@@ -87,7 +87,7 @@ namespace Agora.Addons.Disqord
                     AuthorizationPolicy.CanSubmitOffer => await ValidateSubmissionAsync(currentUser, request),
                     AuthorizationPolicy.CanModify => await ValidateUpdateAsync(currentUser, request),
                     AuthorizationPolicy.Manager => await ValidateManagerAsync(currentUser, request),
-                    AuthorizationPolicy.OwnerOnly => ValidateOwner(currentUser, request),
+                    AuthorizationPolicy.OwnerOnly => await ValidateOwnerAsync(currentUser, request),
                     AuthorizationPolicy.StaffOnly => ValidateStaff(),
                     _ => null
                 };
@@ -384,11 +384,16 @@ namespace Agora.Addons.Disqord
 
         private static string ValidateStaff() => "Not implemented";
 
-        private static string ValidateOwner<TRequest>(IEmporiumUser currentUser, TRequest request)
+        private async Task<string> ValidateOwnerAsync<TRequest>(IEmporiumUser currentUser, TRequest request)
         {
+            var botUserId = _agora.CurrentUser.Id.RawValue;
+
+            var admin = await _userManager.IsAdministrator(currentUser);
+
             var isOwner = request switch
             {
-                AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner),
+                AcceptListingCommand command => currentUser.Equals(command.Showroom.Listings.FirstOrDefault()?.Owner) || 
+                                                (admin.IsSuccessful && command.Showroom.Listings.FirstOrDefault()?.Owner.ReferenceNumber.Value == botUserId),
                 _ => true
             };
 

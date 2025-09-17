@@ -11,6 +11,7 @@ namespace Agora.Addons.Disqord
     {
         private readonly Dictionary<string, string> _confirmationRequired = new()
         {
+            { "withdrawGiveaway", "Remove Giveaway Listing" },
             { "withdrawAuction", "Remove Auction Listing" },
             { "withdrawMarket", "Remove Market Listing" },
             { "withdrawTrade", "Remove Trade Listing" },

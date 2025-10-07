@@ -123,7 +123,12 @@ namespace Agora.Addons.Disqord
                 x.Embeds = new[] { embed.WithFooter("The message attached to this listing failed to be delivered.") };
             });
 
-            if (productListing.Status == ListingStatus.Sold && channel is CachedForumChannel) await LockPostAsync();
+            if (productListing.Status == ListingStatus.Sold && channel is CachedForumChannel)
+            {
+                var settings = await _settingsService.GetGuildSettingsAsync(EmporiumId.Value);
+
+                if (!settings.InlineResults) await LockPostAsync();
+            }
 
             return ReferenceNumber.Create(message.Id);
         }

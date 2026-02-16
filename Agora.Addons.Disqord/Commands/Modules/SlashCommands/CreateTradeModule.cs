@@ -279,7 +279,7 @@ namespace Agora.Addons.Disqord.Commands
             [AutoComplete("standard")]
             [AutoComplete("request")]
             //[AutoComplete("open")]
-            public async Task AutoComplete(AutoComplete<string> category, AutoComplete<string> subcategory)
+            public async Task AutoComplete(AutoComplete<string> category, AutoComplete<string> subcategory, AutoComplete<string> currency)
             {
                 var emporium = await Cache.GetEmporiumAsync(Context.GuildId);
 
@@ -325,6 +325,15 @@ namespace Agora.Addons.Disqord.Commands
                             subcategory.Choices.Add($"No configured subcategories exist for {currentCategory}");
                         }
                     }
+                }
+                else if (currency.IsFocused)
+                {
+                    if (emporium.Currencies.Count == 0) return;
+
+                    if (currency.RawArgument == string.Empty)
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).ToArray());
+                    else
+                        currency.Choices.AddRange(emporium.Currencies.Select(x => x.Code).Where(s => s.Contains(currency.RawArgument, StringComparison.OrdinalIgnoreCase)).ToArray());
                 }
 
                 return;
